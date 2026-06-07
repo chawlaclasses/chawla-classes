@@ -897,8 +897,12 @@ alert("Something went wrong. Please try again.");
 });
 </script> 
 <script>
-alert("Feedback Script Working");  
+
+alert("Feedback Script Working");
+
 document.getElementById("feedbackForm").addEventListener("submit", async function(e){
+
+alert("Submit Clicked");
 
 e.preventDefault();
 
@@ -928,10 +932,13 @@ this.reset();
 } catch(error){
 
 alert("Something went wrong. Please try again.");
+console.error(error);
 
 }
 
 });
-</script>  
+
+</script>
+ 
 </body>
 </html>
