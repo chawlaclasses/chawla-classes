@@ -803,5 +803,45 @@ window.open(whatsappURL, "_blank");
 
 });
 </script>
+  <script>
+document.getElementById("admissionForm").addEventListener("submit", async function(e) {
+
+e.preventDefault();
+
+const inputs = this.querySelectorAll("input");
+const select = this.querySelector("select");
+const textarea = this.querySelector("textarea");
+
+const data = {
+studentName: inputs[0].value,
+parentName: inputs[1].value,
+mobile: inputs[2].value,
+email: inputs[3].value,
+school: inputs[4].value,
+course: select.value,
+address: textarea.value
+};
+
+try {
+
+await fetch("https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec", {
+method: "POST",
+body: JSON.stringify(data)
+});
+
+alert("Admission Form Submitted Successfully!");
+
+window.location.href = "#home";
+
+this.reset();
+
+} catch(error){
+
+alert("Something went wrong. Please try again.");
+
+}
+
+});
+</script>
 </body>
 </html>
