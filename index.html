@@ -550,7 +550,7 @@ Admission Form
 
 <div class="admission-form-box">
 
-<form>
+<form id="admissionForm">
 
 <input type="text" placeholder="Student Name" required>
 
@@ -597,8 +597,8 @@ Admission Form
 
 <textarea placeholder="Address"></textarea>
 
-<button type="submit">
-Apply For Admission
+<button type="submit" class="btn-primary">
+Submit Admission Form
 </button>
 
 </form>
@@ -766,6 +766,42 @@ class="whatsapp-btn">
 <i class="fab fa-whatsapp"></i>
 
 </a>
+<script>
+document.getElementById("admissionForm").addEventListener("submit", function(e) {
 
+e.preventDefault();
+
+const inputs = this.querySelectorAll("input");
+const select = this.querySelector("select");
+
+const studentName = inputs[0].value;
+const parentName = inputs[1].value;
+const mobile = inputs[2].value;
+const email = inputs[3].value;
+const school = inputs[4].value;
+const selectedClass = select.value;
+
+const message =
+`🎓 New Admission Enquiry
+
+👨‍🎓 Student Name: ${studentName}
+
+👨‍👩‍👧 Parent Name: ${parentName}
+
+📱 Mobile Number: ${mobile}
+
+📧 Email: ${email}
+
+🏫 School Name: ${school}
+
+📚 Class/Course: ${selectedClass}`;
+
+const whatsappURL =
+`https://wa.me/919717914003?text=${encodeURIComponent(message)}`;
+
+window.open(whatsappURL, "_blank");
+
+});
+</script>
 </body>
 </html>
