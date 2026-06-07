@@ -924,15 +924,16 @@ await fetch("https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8
 method: "POST",
 body: JSON.stringify(data)
 });
-
+alert("Request Sent Successfully");
 alert("Thank You For Your Feedback!");
 
 this.reset();
 
-} catch(error){
+catch(error){
 
-alert("Something went wrong. Please try again.");
 console.error(error);
+
+alert("Error: " + error.message);
 
 }
 
