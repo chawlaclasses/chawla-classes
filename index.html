@@ -766,35 +766,6 @@ class="whatsapp-btn">
 <i class="fab fa-whatsapp"></i>
 
 </a>
-<script>
-document.getElementById("admissionForm").addEventListener("submit", function(e) {
-
-e.preventDefault();
-
-const inputs = this.querySelectorAll("input");
-const select = this.querySelector("select");
-
-const studentName = inputs[0].value;
-const parentName = inputs[1].value;
-const mobile = inputs[2].value;
-const email = inputs[3].value;
-const school = inputs[4].value;
-const selectedClass = select.value;
-
-const message =
-`🎓 New Admission Enquiry
-
-👨‍🎓 Student Name: ${studentName}
-
-👨‍👩‍👧 Parent Name: ${parentName}
-
-📱 Mobile Number: ${mobile}
-
-📧 Email: ${email}
-
-🏫 School Name: ${school}
-
-📚 Class/Course: ${selectedClass}`;
 
   <script>
 document.getElementById("admissionForm").addEventListener("submit", async function(e) {
