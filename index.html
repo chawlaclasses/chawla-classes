@@ -919,7 +919,7 @@ document.getElementById("feedbackForm").addEventListener("submit", async functio
   };
 
   try {
-
+  alert(JSON.stringify(data));
     await fetch("https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec", {
       method: "POST",
       body: JSON.stringify(data)
