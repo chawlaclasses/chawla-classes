@@ -898,11 +898,7 @@ alert("Something went wrong. Please try again.");
 </script> 
 <script>
 
-alert("Feedback Script Working");
-
 document.getElementById("feedbackForm").addEventListener("submit", async function(e){
-
-  alert("Submit Clicked");
 
   e.preventDefault();
 
@@ -919,21 +915,19 @@ document.getElementById("feedbackForm").addEventListener("submit", async functio
   };
 
   try {
-  alert(JSON.stringify(data));
-    await fetch("https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec", {
+
+    const response = await fetch("https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec", {
       method: "POST",
       body: JSON.stringify(data)
     });
 
-    alert("Request Sent Successfully");
     alert("Thank You For Your Feedback!");
 
     this.reset();
 
   } catch(error) {
 
-    console.error(error);
-    alert("Error: " + error.message);
+    alert("Unable to submit feedback. Please try again.");
 
   }
 
