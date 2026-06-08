@@ -883,33 +883,35 @@ document.getElementById("feedbackForm").addEventListener("submit", async functio
 <script>
 
 async function loadFeedback() {
+  try {
+    const response = await fetch(
+      "https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec"
+      // ✅ GET request mein mode:"no-cors" mat lagao — warna response read nahi hoga
+    );
+    const feedbacks = await response.json();
+    const container = document.getElementById("feedbackContainer");
+    container.innerHTML = "";
 
-const response = await fetch(
-"https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec"
-);
+    if (feedbacks.length === 0) {
+      container.innerHTML = "<p>No feedback yet.</p>";
+      return;
+    }
 
-const feedbacks = await response.json();
+    feedbacks.forEach(item => {
+      container.innerHTML += `
+        <div class="testimonial-card">
+          <p>"${item.feedback}"</p>
+          <h4>
+            ${item.rating}<br>
+            — ${item.studentName} (${item.studentClass})
+          </h4>
+        </div>
+      `;
+    });
 
-const container =
-document.getElementById("feedbackContainer");
-
-container.innerHTML = "";
-
-feedbacks.forEach(item => {
-
-container.innerHTML += `
-<div class="testimonial-card">
-<p>"${item.feedback}"</p>
-<h4>
-${item.rating}<br>
-— ${item.studentName}
-(${item.studentClass})
-</h4>
-</div>
-`;
-
-});
-
+  } catch(error) {
+    console.error("Feedback load error:", error);
+  }
 }
 
 loadFeedback();
