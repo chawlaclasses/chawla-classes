@@ -897,9 +897,11 @@ alert("Something went wrong. Please try again.");
 });
 </script> 
 <script>
-alert("NEW FEEDBACK SCRIPT");
+document.getElementById("feedbackForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  alert("Feedback Submit Started");
+});
 </script>
 
- 
 </body>
 </html>
