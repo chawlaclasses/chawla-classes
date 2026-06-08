@@ -185,11 +185,6 @@ line-height:1.4;
 margin-bottom:20px;
 }
 
-.hero-left p{
-font-size:20px;
-line-height:1.8;
-}
-
 .hero-buttons{
 
 display:flex;
@@ -913,10 +908,6 @@ cursor:pointer;
    FOOTER
 ===================== */
 
-/* =====================
-   FOOTER
-===================== */
-
 footer{
 background:#081b36;
 padding:60px 8% 20px;
@@ -947,11 +938,6 @@ color:#ddd;
 text-decoration:none;
 margin-bottom:10px;
 transition:.3s;
-}
-
-.footer-box a:hover{
-color:#f4b400;
-padding-left:5px;
 }
 
 .map-link{
@@ -1272,10 +1258,7 @@ transition:.3s;
 .location-btn:hover{
 transform:translateY(-3px);
 }
-.footer-logo{
-width:80px;
-margin-bottom:15px;
-}
+
 .footer-logo{
 width:110px;
 margin-bottom:20px;
