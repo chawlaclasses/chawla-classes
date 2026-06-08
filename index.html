@@ -901,6 +901,8 @@ document.getElementById("feedbackForm").addEventListener("submit", async functio
 
   e.preventDefault();
 
+  alert("Feedback Submit Started");
+
   const inputs = this.querySelectorAll("input");
   const selects = this.querySelectorAll("select");
   const textarea = this.querySelector("textarea");
@@ -913,23 +915,29 @@ document.getElementById("feedbackForm").addEventListener("submit", async functio
     feedback: textarea.value
   };
 
-  await fetch(
-    "https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec",
-    {
-      method: "POST",
-      body: JSON.stringify(data)
-    }
-  );
+  try {
 
-  alert("Thank You For Your Feedback!");
+    const response = await fetch(
+      "https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec",
+      {
+        method: "POST",
+        body: JSON.stringify(data)
+      }
+    );
 
-  this.reset();
+    alert("Status: " + response.status);
+    alert("Thank You For Your Feedback!");
+
+    this.reset();
+
+  } catch(error) {
+
+    alert("ERROR: " + error.message);
+
+  }
 
 });
 </script>
-
-
-
  
 </body>
 </html>
