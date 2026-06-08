@@ -1303,3 +1303,36 @@ font-style:italic;
 font-size:18px;
 margin-top:15px;
 }
+.menu-toggle{
+display:none;
+font-size:28px;
+cursor:pointer;
+}
+
+@media (max-width:768px){
+
+.menu-toggle{
+display:block;
+}
+
+.nav-links{
+display:none;
+flex-direction:column;
+position:absolute;
+top:80px;
+left:0;
+width:100%;
+background:#fff;
+padding:20px 0;
+text-align:center;
+box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+.nav-links.active{
+display:flex;
+}
+
+.call-btn{
+display:none;
+}
+}
