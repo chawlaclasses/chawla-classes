@@ -29,6 +29,10 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
 </div>
 
 </div>
+  
+<div class="menu-toggle">
+  <i class="fas fa-bars"></i>
+</div>
 
 <ul class="nav-links">
 
@@ -916,6 +920,14 @@ async function loadFeedback() {
 
 loadFeedback();
 
+</script>
+<script>
+const menuToggle = document.querySelector(".menu-toggle");
+const navLinks = document.querySelector(".nav-links");
+
+menuToggle.addEventListener("click", () => {
+  navLinks.classList.toggle("active");
+});
 </script>
 
 </body>
