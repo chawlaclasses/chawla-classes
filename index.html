@@ -915,18 +915,18 @@ feedback: textarea.value
 
 try {
 
-await fetch("https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec", {
+const response = await fetch("https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec", {
 method: "POST",
 body: JSON.stringify(data)
 });
 
-alert("Thank You For Your Feedback!");
+alert(response.status);
 
 this.reset();
 
 } catch(error){
 
-alert("Feedback submission failed.");
+alert("error.message");
 
 }
 
