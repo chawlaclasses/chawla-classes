@@ -23,8 +23,10 @@
       </div>
     </div>
 
-    <div class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
-      <i class="fas fa-bars"></i>
+    <div class="menu-toggle" id="menuToggle" aria-label="Toggle Menu" role="button" tabindex="0">
+      <span></span>
+      <span></span>
+      <span></span>
     </div>
 
     <ul class="nav-links" id="navLinks">
@@ -46,8 +48,86 @@
   </nav>
 </header>
 
-<!-- ================= HERO SECTION ================= -->
-<main>
+<!-- ================= MOBILE DRAWER ================= -->
+<div class="mobile-overlay" id="mobileOverlay"></div>
+
+<div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation Menu">
+
+  <div class="drawer-header">
+    <div class="drawer-logo">
+      <div class="drawer-logo-circle"><span>CC</span></div>
+      <div class="drawer-logo-text">
+        <h4>CHAWLA CLASSES</h4>
+        <p>Since 2002 · Uttam Nagar</p>
+      </div>
+    </div>
+    <button class="drawer-close" id="drawerClose" aria-label="Close Menu">✕</button>
+  </div>
+
+  <ul class="drawer-nav" id="drawerNav">
+    <li><a href="#home" class="active">
+      <i class="fas fa-home" aria-hidden="true"></i> Home
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#about">
+      <i class="fas fa-info-circle" aria-hidden="true"></i> About
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#courses">
+      <i class="fas fa-book-open" aria-hidden="true"></i> Courses
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#faculty">
+      <i class="fas fa-users" aria-hidden="true"></i> Faculty
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li class="drawer-divider"></li>
+    <li><a href="#results">
+      <i class="fas fa-trophy" aria-hidden="true"></i> Results
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#gallery">
+      <i class="fas fa-images" aria-hidden="true"></i> Gallery
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#admission">
+      <i class="fas fa-file-alt" aria-hidden="true"></i> Admission
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#feedback">
+      <i class="fas fa-star" aria-hidden="true"></i> Feedback
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#contact">
+      <i class="fas fa-map-marker-alt" aria-hidden="true"></i> Contact
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+  </ul>
+
+  <div class="drawer-footer">
+    <a href="tel:9717914003" class="drawer-call-cta">
+      <div class="drawer-call-icon">
+        <i class="fas fa-phone-alt" aria-hidden="true"></i>
+      </div>
+      <div class="drawer-call-text">
+        <h5>Call: 9717914003</h5>
+        <p>Mon–Sat · 8am – 8pm</p>
+      </div>
+    </a>
+    <div class="drawer-bottom-row">
+      <a href="https://wa.me/919717914003" target="_blank" rel="noopener" class="drawer-wa-btn">
+        <i class="fab fa-whatsapp" aria-hidden="true"></i>
+        <span>WhatsApp</span>
+      </a>
+      <div class="drawer-since">
+        <span>Since 2002<br>24+ Years</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
 <section id="home" class="hero">
 
   <div class="hero-left">
@@ -534,20 +614,46 @@
 
 <!-- ================= SCRIPTS ================= -->
 
-<!-- Mobile Menu Toggle -->
+<!-- Mobile Drawer -->
 <script>
-  const menuToggle = document.getElementById("menuToggle");
-  const navLinks   = document.getElementById("navLinks");
+  const menuToggle  = document.getElementById("menuToggle");
+  const mobileDrawer = document.getElementById("mobileDrawer");
+  const mobileOverlay = document.getElementById("mobileOverlay");
+  const drawerClose  = document.getElementById("drawerClose");
+
+  function openDrawer() {
+    mobileDrawer.classList.add("active");
+    mobileOverlay.classList.add("active");
+    menuToggle.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDrawer() {
+    mobileDrawer.classList.remove("active");
+    mobileOverlay.classList.remove("active");
+    menuToggle.classList.remove("open");
+    document.body.style.overflow = "";
+  }
 
   menuToggle.addEventListener("click", () => {
-    navLinks.classList.toggle("active");
+    mobileDrawer.classList.contains("active") ? closeDrawer() : openDrawer();
   });
 
-  // Nav link click pe menu band ho jaye
-  navLinks.querySelectorAll("a").forEach(link => {
+  drawerClose.addEventListener("click", closeDrawer);
+  mobileOverlay.addEventListener("click", closeDrawer);
+
+  // Close on nav link click + set active
+  document.querySelectorAll(".drawer-nav a").forEach(link => {
     link.addEventListener("click", () => {
-      navLinks.classList.remove("active");
+      document.querySelectorAll(".drawer-nav a").forEach(l => l.classList.remove("active"));
+      link.classList.add("active");
+      closeDrawer();
     });
+  });
+
+  // Close on Escape key
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeDrawer();
   });
 </script>
 
