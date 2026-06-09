@@ -1425,3 +1425,21 @@ height:45px;
 }
 
 }
+.logo-area h2,
+.logo-area h2 span{
+color:#ffffff !important;
+}
+
+.logo-area p{
+color:#dddddd !important;
+}
+.logo-area{
+display:flex;
+align-items:center;
+gap:12px;
+}
+
+.logo-area div{
+display:flex;
+flex-direction:column;
+}
