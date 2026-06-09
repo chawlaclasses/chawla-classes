@@ -245,6 +245,19 @@ body {
 }
 
 /* =====================
+   HERO LOGO
+===================== */
+
+.hero-logo {
+  width: 120px;
+  margin-bottom: 20px;
+  background: #fff;
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, .2);
+}
+
+/* =====================
    STATS SECTION
 ===================== */
 
@@ -465,53 +478,54 @@ body {
   line-height: 1.8;
   color: #555;
 }
-<!-- ================= WHY CHOOSE US ================= -->
 
-<section class="why-section">
+/* =====================
+   WHY CHOOSE US
+===================== */
 
-<h2 class="section-title">Why Choose Chawla Classes?</h2>
+.why-section {
+  padding: 100px 8%;
+  background: #ffffff;
+}
 
-<div class="why-grid">
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+}
 
-<div class="why-card">
-<i class="fas fa-award"></i>
-<h3>Since 2002</h3>
-<p>24+ years of excellence in education with trusted results.</p>
-</div>
+.why-card {
+  background: #fff;
+  padding: 35px 25px;
+  text-align: center;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
+  transition: .4s;
+  border-top: 5px solid var(--secondary);
+}
 
-<div class="why-card">
-<i class="fas fa-user-graduate"></i>
-<h3>Personal Attention</h3>
-<p>Individual focus on every student for better understanding.</p>
-</div>
+.why-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(11, 31, 58, .15);
+}
 
-<div class="why-card">
-<i class="fas fa-chalkboard-teacher"></i>
-<h3>Experienced Faculty</h3>
-<p>Highly qualified and experienced teachers for all subjects.</p>
-</div>
+.why-card i {
+  font-size: 45px;
+  color: var(--secondary);
+  margin-bottom: 20px;
+}
 
-<div class="why-card">
-<i class="fas fa-file-alt"></i>
-<h3>Regular Tests</h3>
-<p>Frequent assessments and progress tracking.</p>
-</div>
+.why-card h3 {
+  font-size: 24px;
+  color: var(--primary);
+  margin-bottom: 12px;
+}
 
-<div class="why-card">
-<i class="fas fa-users"></i>
-<h3>Small Batch Size</h3>
-<p>Better interaction and doubt solving in every class.</p>
-</div>
+.why-card p {
+  line-height: 1.8;
+  color: #555;
+}
 
-<div class="why-card">
-<i class="fas fa-trophy"></i>
-<h3>Excellent Results</h3>
-<p>Consistent academic success and outstanding performances.</p>
-</div>
-
-</div>
-
-</section>
 /* =====================
    FACULTY SECTION
 ===================== */
@@ -1378,7 +1392,8 @@ footer {
   .faculty-grid,
   .testimonial-grid,
   .stats-section,
-  .vision-grid {
+  .vision-grid,
+  .why-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1390,67 +1405,5 @@ footer {
   .footer-box a:hover {
     padding-left: 0;
   }
-
-}
-.hero-logo{
-width:120px;
-margin-bottom:20px;
-background:#fff;
-padding:8px;
-border-radius:12px;
-box-shadow:0 5px 15px rgba(0,0,0,.2);
-}
-/* =====================
-   WHY CHOOSE US
-===================== */
-
-.why-section{
-padding:100px 8%;
-background:#ffffff;
-}
-
-.why-grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-gap:25px;
-}
-
-.why-card{
-background:#fff;
-padding:35px 25px;
-text-align:center;
-border-radius:20px;
-box-shadow:0 10px 25px rgba(0,0,0,.08);
-transition:.4s;
-border-top:5px solid #f4b400;
-}
-
-.why-card:hover{
-transform:translateY(-10px);
-box-shadow:0 20px 40px rgba(11,31,58,.15);
-}
-
-.why-card i{
-font-size:45px;
-color:#f4b400;
-margin-bottom:20px;
-}
-
-.why-card h3{
-font-size:24px;
-color:#0b1f3a;
-margin-bottom:12px;
-}
-
-.why-card p{
-line-height:1.8;
-color:#555;
-}
-
-@media(max-width:768px){
-
-.why-grid{
-grid-template-columns:1fr;
-}
 
 }
