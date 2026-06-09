@@ -927,20 +927,21 @@ footer {
   transition: transform .35s ease, opacity .35s ease;
 }
 
-/* Hamburger → X animation */
 .menu-toggle.open span:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
 }
+
 .menu-toggle.open span:nth-child(2) {
   opacity: 0;
   transform: scaleX(0);
 }
+
 .menu-toggle.open span:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
 }
 
 /* =====================
-   MOBILE DRAWER OVERLAY
+   MOBILE OVERLAY
 ===================== */
 
 .mobile-overlay {
@@ -980,7 +981,6 @@ footer {
   right: 0;
 }
 
-/* Drawer Header */
 .drawer-header {
   display: flex;
   justify-content: space-between;
@@ -1040,7 +1040,7 @@ footer {
   justify-content: center;
   color: #aaa;
   font-size: 18px;
-  transition: background .2s;
+  transition: background .2s, color .2s;
 }
 
 .drawer-close:hover {
@@ -1048,7 +1048,6 @@ footer {
   color: white;
 }
 
-/* Drawer Nav Items */
 .drawer-nav {
   flex: 1;
   padding: 10px 0;
@@ -1103,12 +1102,13 @@ footer {
 }
 
 .drawer-divider {
+  display: block;
+  list-style: none;
   height: 0.5px;
   background: rgba(255, 255, 255, .07);
   margin: 6px 20px;
 }
 
-/* Drawer Footer */
 .drawer-footer {
   padding: 16px 20px 24px;
   border-top: 0.5px solid rgba(255, 255, 255, .08);
