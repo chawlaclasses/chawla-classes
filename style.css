@@ -16,7 +16,7 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 body {
@@ -49,46 +49,54 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 8%;
+  padding: 14px 4%;
   background: rgba(11, 31, 58, .95);
   backdrop-filter: blur(10px);
   z-index: 1000;
+  gap: 12px;
 }
 
 .logo-area {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .logo-area img {
-  width: 55px;
-  height: 55px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: white;
   padding: 5px;
+  flex-shrink: 0;
 }
 
 .logo-area h2 {
   color: white;
-  font-size: 22px;
+  font-size: 17px;
+  white-space: nowrap;
 }
 
 .logo-area p {
   color: #ddd;
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .nav-links {
   display: flex;
-  gap: 25px;
+  gap: 14px;
   list-style: none;
+  flex-wrap: nowrap;
 }
 
 .nav-links a {
   text-decoration: none;
   color: white;
   font-weight: 500;
+  font-size: 13px;
+  white-space: nowrap;
   transition: color .3s;
 }
 
@@ -97,12 +105,15 @@ body {
 }
 
 .call-btn {
-  padding: 12px 20px;
+  padding: 10px 16px;
   background: var(--secondary);
   color: black;
   text-decoration: none;
   border-radius: 30px;
   font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: transform .3s;
 }
 
@@ -1216,6 +1227,18 @@ footer {
 ===================== */
 
 @media (max-width: 992px) {
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .call-btn {
+    display: none;
+  }
 
   .hero,
   .results-section,
