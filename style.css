@@ -911,9 +911,304 @@ footer {
 
 .menu-toggle {
   display: none;
-  font-size: 28px;
+  flex-direction: column;
+  gap: 5px;
   cursor: pointer;
+  padding: 6px;
+  z-index: 1100;
+}
+
+.menu-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--secondary);
+  transition: transform .35s ease, opacity .35s ease;
+}
+
+/* Hamburger → X animation */
+.menu-toggle.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.menu-toggle.open span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.menu-toggle.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* =====================
+   MOBILE DRAWER OVERLAY
+===================== */
+
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  z-index: 1050;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+.mobile-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+/* =====================
+   MOBILE DRAWER
+===================== */
+
+.mobile-drawer {
+  position: fixed;
+  top: 0;
+  right: -320px;
+  width: 300px;
+  height: 100%;
+  background: var(--primary);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  transition: right .35s cubic-bezier(.4, 0, .2, 1);
+  overflow-y: auto;
+}
+
+.mobile-drawer.active {
+  right: 0;
+}
+
+/* Drawer Header */
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 16px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, .08);
+}
+
+.drawer-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-logo-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.drawer-logo-circle span {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--primary);
+  text-align: center;
+  line-height: 1.1;
+}
+
+.drawer-logo-text h4 {
   color: white;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.drawer-logo-text p {
+  color: #aaa;
+  font-size: 10px;
+  margin: 0;
+}
+
+.drawer-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .07);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-size: 18px;
+  transition: background .2s;
+}
+
+.drawer-close:hover {
+  background: rgba(255, 255, 255, .14);
+  color: white;
+}
+
+/* Drawer Nav Items */
+.drawer-nav {
+  flex: 1;
+  padding: 10px 0;
+  list-style: none;
+}
+
+.drawer-nav li a {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  color: rgba(255, 255, 255, .72);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: background .2s, border-color .2s, color .2s;
+}
+
+.drawer-nav li a i {
+  font-size: 19px;
+  width: 22px;
+  text-align: center;
+  color: rgba(255, 255, 255, .38);
+  transition: color .2s;
+  flex-shrink: 0;
+}
+
+.drawer-nav li a .arrow {
+  margin-left: auto;
+  font-size: 14px;
+  color: rgba(255, 255, 255, .18);
+  transition: color .2s, transform .2s;
+}
+
+.drawer-nav li a:hover,
+.drawer-nav li a.active {
+  background: rgba(244, 180, 0, .07);
+  border-left-color: var(--secondary);
+  color: white;
+}
+
+.drawer-nav li a:hover i,
+.drawer-nav li a.active i {
+  color: var(--secondary);
+}
+
+.drawer-nav li a:hover .arrow,
+.drawer-nav li a.active .arrow {
+  color: var(--secondary);
+  transform: translateX(3px);
+}
+
+.drawer-divider {
+  height: 0.5px;
+  background: rgba(255, 255, 255, .07);
+  margin: 6px 20px;
+}
+
+/* Drawer Footer */
+.drawer-footer {
+  padding: 16px 20px 24px;
+  border-top: 0.5px solid rgba(255, 255, 255, .08);
+}
+
+.drawer-call-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--secondary);
+  border-radius: 14px;
+  padding: 13px 16px;
+  text-decoration: none;
+  margin-bottom: 12px;
+  transition: opacity .2s;
+}
+
+.drawer-call-cta:hover {
+  opacity: .9;
+}
+
+.drawer-call-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.drawer-call-icon i {
+  color: var(--primary);
+  font-size: 18px;
+}
+
+.drawer-call-text h5 {
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.drawer-call-text p {
+  color: rgba(0, 0, 0, .5);
+  font-size: 10px;
+  margin: 0;
+}
+
+.drawer-bottom-row {
+  display: flex;
+  gap: 10px;
+}
+
+.drawer-wa-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(37, 211, 102, .1);
+  border: 0.5px solid rgba(37, 211, 102, .28);
+  border-radius: 10px;
+  padding: 11px;
+  text-decoration: none;
+  transition: background .2s;
+}
+
+.drawer-wa-btn:hover {
+  background: rgba(37, 211, 102, .18);
+}
+
+.drawer-wa-btn i {
+  color: #25d366;
+  font-size: 18px;
+}
+
+.drawer-wa-btn span {
+  color: #25d366;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.drawer-since {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .04);
+  border: 0.5px solid rgba(255, 255, 255, .08);
+  border-radius: 10px;
+  padding: 11px;
+}
+
+.drawer-since span {
+  color: rgba(255, 255, 255, .38);
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.4;
 }
 
 /* =====================
@@ -968,28 +1263,11 @@ footer {
 @media (max-width: 768px) {
 
   .menu-toggle {
-    display: block;
+    display: flex;
   }
 
   .nav-links {
     display: none;
-    flex-direction: column;
-    position: absolute;
-    top: 80px;
-    left: 0;
-    width: 100%;
-    background: var(--primary);
-    padding: 20px 0;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, .2);
-  }
-
-  .nav-links.active {
-    display: flex;
-  }
-
-  .nav-links li {
-    padding: 8px 0;
   }
 
   .call-btn {
