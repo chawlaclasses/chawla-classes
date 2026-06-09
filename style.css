@@ -61,27 +61,41 @@ body {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .logo-area img {
   width: 48px;
   height: 48px;
+  min-width: 48px;
   border-radius: 50%;
   background: white;
   padding: 5px;
   flex-shrink: 0;
+  display: block;
+  object-fit: contain;
+}
+
+.logo-area > .logo-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .logo-area h2 {
   color: white;
-  font-size: 17px;
+  font-size: 16px;
+  font-weight: 700;
   white-space: nowrap;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
 }
 
 .logo-area p {
   color: #ddd;
   font-size: 11px;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .nav-links {
