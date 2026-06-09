@@ -653,7 +653,76 @@ body {
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
 }
+/* =====================
+   FEES SECTION
+===================== */
 
+.fees-section {
+  padding: 100px 8%;
+  background: #f7f9fc;
+}
+
+.fees-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.fees-card {
+  background: #fff;
+  padding: 40px 35px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
+  border-top: 5px solid var(--secondary);
+  transition: transform .4s;
+}
+
+.fees-card:hover {
+  transform: translateY(-8px);
+}
+
+.fees-card i {
+  font-size: 45px;
+  color: var(--secondary);
+  margin-bottom: 20px;
+}
+
+.fees-card h3 {
+  font-size: 24px;
+  color: var(--primary);
+  margin-bottom: 15px;
+}
+
+.fees-card p {
+  line-height: 1.8;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.fees-btn {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 12px 25px;
+  background: var(--secondary);
+  color: #000;
+  font-weight: 600;
+  border-radius: 30px;
+  text-decoration: none;
+  transition: transform .3s;
+}
+
+.fees-btn:hover {
+  transform: translateY(-3px);
+}
+
+@media (max-width: 768px) {
+  .fees-grid {
+    grid-template-columns: 1fr;
+  }
+}
 /* =====================
    GALLERY SECTION
 ===================== */
