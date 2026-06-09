@@ -559,7 +559,7 @@ batch timings and course details.
 
 <div class="faq-buttons">
 
-<a href="#enquiry" class="faq-btn-primary">
+<a href="#enquirySection" class="faq-btn-primary">
 Ask Your Question
 </a>
 
@@ -684,7 +684,7 @@ Call Now
     <p>✉ 4chawlaclasses@gmail.com</p>
   </div>
 
-  <div class="contact-right" id="enquiry">
+  <div class="contact-right" id="enquirySection">
     <h3>Quick Enquiry</h3>
     <form id="enquiryForm">
 
@@ -964,6 +964,11 @@ Call Now
 
   loadFeedback();
 </script>
-
+<script>
+  document.querySelector('a[href="#enquirySection"]').addEventListener("click", function(e) {
+    e.preventDefault();
+    document.getElementById("enquirySection").scrollIntoView();
+  });
+</script>
 </body>
 </html>
