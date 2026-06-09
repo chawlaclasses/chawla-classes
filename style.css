@@ -1461,3 +1461,66 @@ footer {
   }
 
 }
+/* =====================
+   BATCH SCHEDULE TABLE
+===================== */
+
+.schedule-table{
+margin-top:50px;
+background:#fff;
+padding:30px;
+border-radius:20px;
+box-shadow:0 10px 25px rgba(0,0,0,.08);
+}
+
+.schedule-table h3{
+text-align:center;
+font-size:28px;
+margin-bottom:25px;
+color:#0b1f3a;
+}
+
+.schedule-table table{
+width:100%;
+border-collapse:collapse;
+}
+
+.schedule-table th{
+background:#0b1f3a;
+color:#fff;
+padding:15px;
+}
+
+.schedule-table td{
+padding:15px;
+text-align:center;
+border:1px solid #ddd;
+}
+
+.schedule-table tr:nth-child(even){
+background:#f7f9fc;
+}
+/* =====================
+   CALL BUTTON
+===================== */
+
+.call-floating-btn{
+position:fixed;
+bottom:105px;
+right:25px;
+width:65px;
+height:65px;
+background:#0b1f3a;
+display:flex;
+justify-content:center;
+align-items:center;
+border-radius:50%;
+text-decoration:none;
+z-index:999;
+box-shadow:0 8px 20px rgba(0,0,0,.25);
+}
+
+.call-floating-btn i{
+font-size:28px;
+color:#fff;
+}
