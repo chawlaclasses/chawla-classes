@@ -1609,12 +1609,12 @@ padding:12px 25px;
 border-radius:30px;
 text-decoration:none;
 font-weight:600;
+transition:.3s;
 }
 
 .faq-btn-primary:hover,
 .faq-btn-secondary:hover{
 transform:translateY(-3px);
-transition:.3s;
 }
 
 @media(max-width:768px){
