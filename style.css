@@ -654,70 +654,55 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
 }
 /* =====================
-   FEES SECTION
+   FEES & TIMINGS
 ===================== */
-
-.fees-section {
-  padding: 100px 8%;
-  background: #f7f9fc;
+.fees-section{
+padding:100px 8%;
+background:#f7f9fc;
 }
-
-.fees-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 30px;
-  max-width: 900px;
-  margin: 0 auto;
+.fees-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+gap:30px;
 }
-
-.fees-card {
-  background: #fff;
-  padding: 40px 35px;
-  border-radius: 20px;
-  text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
-  border-top: 5px solid var(--secondary);
-  transition: transform .4s;
+.fees-card{
+background:#fff;
+padding:40px;
+text-align:center;
+border-radius:20px;
+box-shadow:0 10px 25px rgba(0,0,0,.08);
+border-top:5px solid #f4b400;
+transition:.4s;
 }
-
-.fees-card:hover {
-  transform: translateY(-8px);
+.fees-card:hover{
+transform:translateY(-10px);
+box-shadow:0 20px 40px rgba(11,31,58,.15);
 }
-
-.fees-card i {
-  font-size: 45px;
-  color: var(--secondary);
-  margin-bottom: 20px;
+.fees-card i{
+font-size:50px;
+color:#f4b400;
+margin-bottom:20px;
 }
-
-.fees-card h3 {
-  font-size: 24px;
-  color: var(--primary);
-  margin-bottom: 15px;
+.fees-card h3{
+font-size:28px;
+color:#0b1f3a;
+margin-bottom:20px;
 }
-
-.fees-card p {
-  line-height: 1.8;
-  color: #555;
-  margin-bottom: 10px;
+.fees-card p{
+line-height:2;
+margin-bottom:15px;
+color:#555;
 }
-
-.fees-btn {
-  display: inline-block;
-  margin-top: 15px;
-  padding: 12px 25px;
-  background: var(--secondary);
-  color: #000;
-  font-weight: 600;
-  border-radius: 30px;
-  text-decoration: none;
-  transition: transform .3s;
+.fees-btn{
+display:inline-block;
+margin-top:10px;
+padding:12px 25px;
+background:#f4b400;
+color:#000;
+text-decoration:none;
+border-radius:30px;
+font-weight:600;
 }
-
-.fees-btn:hover {
-  transform: translateY(-3px);
-}
-
 @media (max-width: 768px) {
   .fees-grid {
     grid-template-columns: 1fr;
