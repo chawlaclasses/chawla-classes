@@ -1524,3 +1524,107 @@ box-shadow:0 8px 20px rgba(0,0,0,.25);
 font-size:28px;
 color:#fff;
 }
+/* =====================
+   FAQ SECTION
+===================== */
+
+.faq-section{
+padding:100px 8%;
+background:#ffffff;
+}
+
+.faq-container{
+max-width:1000px;
+margin:auto;
+display:grid;
+gap:20px;
+}
+
+.faq-item{
+background:#fff;
+padding:25px;
+border-radius:15px;
+box-shadow:0 8px 20px rgba(0,0,0,.08);
+border-left:5px solid #f4b400;
+transition:.3s;
+}
+
+.faq-item:hover{
+transform:translateY(-5px);
+}
+
+.faq-item h3{
+color:#0b1f3a;
+margin-bottom:10px;
+font-size:22px;
+}
+
+.faq-item p{
+color:#555;
+line-height:1.8;
+}
+/* FAQ CONTACT BOX */
+
+.faq-contact-box{
+max-width:800px;
+margin:40px auto 0;
+text-align:center;
+background:#0b1f3a;
+padding:40px 30px;
+border-radius:20px;
+}
+
+.faq-contact-box h3{
+color:#fff;
+font-size:30px;
+margin-bottom:15px;
+}
+
+.faq-contact-box p{
+color:#ddd;
+line-height:1.8;
+margin-bottom:25px;
+}
+
+.faq-buttons{
+display:flex;
+justify-content:center;
+gap:15px;
+flex-wrap:wrap;
+}
+
+.faq-btn-primary{
+background:#f4b400;
+color:#000;
+padding:12px 25px;
+border-radius:30px;
+text-decoration:none;
+font-weight:600;
+}
+
+.faq-btn-secondary{
+border:2px solid #fff;
+color:#fff;
+padding:12px 25px;
+border-radius:30px;
+text-decoration:none;
+font-weight:600;
+}
+
+.faq-btn-primary:hover,
+.faq-btn-secondary:hover{
+transform:translateY(-3px);
+transition:.3s;
+}
+
+@media(max-width:768px){
+
+.faq-contact-box h3{
+font-size:24px;
+}
+
+.faq-buttons{
+flex-direction:column;
+}
+
+}
