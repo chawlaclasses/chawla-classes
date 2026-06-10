@@ -1182,3 +1182,34 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   outline: none;
   border-color: var(--secondary);
 }
+.hero-brand{
+display:flex;
+align-items:center;
+gap:20px;
+margin-bottom:20px;
+}
+
+.hero-logo{
+width:100px;
+height:auto;
+}
+
+.hero-brand-text h1{
+margin:0;
+}
+
+.hero-since{
+margin-top:5px;
+font-size:16px;
+letter-spacing:2px;
+color:#f4b400;
+font-weight:600;
+}
+@media(max-width:768px){
+
+.hero-brand{
+flex-direction:column;
+text-align:center;
+}
+
+}
