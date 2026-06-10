@@ -215,6 +215,50 @@ body {
   transform: translateY(-3px);
 }
 
+.btn-offline-demo {
+  background: transparent;
+  border: 2px solid white;
+  padding: 14px 24px;
+  border-radius: 35px;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform .3s, background .3s, color .3s, border-color .3s;
+  font-family: 'Poppins', sans-serif;
+}
+
+.btn-offline-demo:hover {
+  background: white;
+  color: var(--primary);
+  transform: translateY(-3px);
+}
+
+.btn-online-demo {
+  background: transparent;
+  border: 2px solid var(--secondary);
+  padding: 14px 24px;
+  border-radius: 35px;
+  color: var(--secondary);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform .3s, background .3s, color .3s;
+  font-family: 'Poppins', sans-serif;
+}
+
+.btn-online-demo:hover {
+  background: var(--secondary);
+  color: var(--primary);
+  transform: translateY(-3px);
+}
+
 .hero-right { width: 40%; }
 
 .hero-right img {
