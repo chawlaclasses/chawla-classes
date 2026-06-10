@@ -1236,3 +1236,27 @@ font-weight:600;
 }
 
 }
+@media (max-width:768px){
+
+.hero-brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.hero-logo{
+    width:70px;
+}
+
+.hero-brand-text h1{
+    font-size:1.7rem;
+    line-height:1.1;
+    white-space:normal;
+    word-break:break-word;
+}
+
+.hero-since{
+    font-size:14px;
+}
+
+}
