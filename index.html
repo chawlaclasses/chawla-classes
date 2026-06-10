@@ -4,15 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chawla Classes | Since 2002 | Uttam Nagar, New Delhi</title>
-
-<link rel="icon" type="image/png" sizes="32x32" href="images/favicon.png">
-<link rel="icon" type="image/png" sizes="16x16" href="images/favicon.png">
-<link rel="apple-touch-icon" sizes="180x180" href="images/favicon.png">
-<link rel="apple-touch-icon" href="images/favicon.png">
-<link rel="shortcut icon" href="images/favicon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Chawla Classes">
-<meta name="theme-color" content="#0b1f3a">
 <meta name="description" content="Chawla Classes - Trusted coaching institute since 2002 in Uttam Nagar. Classes 1st-12th, Commerce, Arts, B.Com, BBA, B.A., CUET, SSC preparation.">
 
 <link rel="stylesheet" href="style.css">
@@ -20,41 +11,49 @@
 </head>
 <body>
 
-<!-- NAVBAR -->
+<!-- ================= NAVBAR ================= -->
 <header>
   <nav class="navbar">
+
     <div class="logo-area">
-      <img src="images/logo.png" alt="Chawla Classes Logo">
+      <img src="images/logo.png" alt="Chawla Classes Logo"
+           onerror="this.style.display='none'">
       <div class="logo-text">
-        <h2>CHAWLA CLASSES</h2>
+        <h2>CHAWLA&nbsp;CLASSES</h2>
         <p>Since 2002</p>
       </div>
     </div>
+
     <div class="menu-toggle" id="menuToggle" aria-label="Toggle Menu" role="button" tabindex="0">
-      <span></span><span></span><span></span>
+      <span></span>
+      <span></span>
+      <span></span>
     </div>
+
     <ul class="nav-links" id="navLinks">
       <li><a href="#home">Home</a></li>
       <li><a href="#about">About</a></li>
       <li><a href="#courses">Courses</a></li>
       <li><a href="#faculty">Faculty</a></li>
       <li><a href="#results">Results</a></li>
-      <li><a href="#fees">Fees & Timings</a></li>
-      <li><a href="#learning-modes">Offline & Online</a></li>
       <li><a href="#gallery">Gallery</a></li>
       <li><a href="#admission">Admission</a></li>
       <li><a href="#feedback">Feedback</a></li>
       <li><a href="#contact">Contact</a></li>
     </ul>
+
     <a href="tel:9717914003" class="call-btn">
       <i class="fas fa-phone"></i> 9717914003
     </a>
+
   </nav>
 </header>
 
-<!-- MOBILE DRAWER -->
+<!-- ================= MOBILE DRAWER ================= -->
 <div class="mobile-overlay" id="mobileOverlay"></div>
+
 <div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation Menu">
+
   <div class="drawer-header">
     <div class="drawer-logo">
       <div class="drawer-logo-circle"><span>CC</span></div>
@@ -63,218 +62,301 @@
         <p>Since 2002 · Uttam Nagar</p>
       </div>
     </div>
-    <button class="drawer-close" id="drawerClose" aria-label="Close Menu">&#x2715;</button>
+    <button class="drawer-close" id="drawerClose" aria-label="Close Menu">✕</button>
   </div>
+
   <ul class="drawer-nav" id="drawerNav">
-    <li><a href="#home" class="active"><i class="fas fa-home"></i> Home <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#about"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#courses"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#faculty"><i class="fas fa-users"></i> Faculty <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li><a href="#home" class="active">
+      <i class="fas fa-home" aria-hidden="true"></i> Home
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#about">
+      <i class="fas fa-info-circle" aria-hidden="true"></i> About
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#courses">
+      <i class="fas fa-book-open" aria-hidden="true"></i> Courses
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#faculty">
+      <i class="fas fa-users" aria-hidden="true"></i> Faculty
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
     <li class="drawer-divider"></li>
-    <li><a href="#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#learning-modes"><i class="fas fa-laptop-house"></i> Offline & Online <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#gallery"><i class="fas fa-images"></i> Gallery <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#admission"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#feedback"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#contact"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li><a href="#results">
+      <i class="fas fa-trophy" aria-hidden="true"></i> Results
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#gallery">
+      <i class="fas fa-images" aria-hidden="true"></i> Gallery
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#admission">
+      <i class="fas fa-file-alt" aria-hidden="true"></i> Admission
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#feedback">
+      <i class="fas fa-star" aria-hidden="true"></i> Feedback
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
+    <li><a href="#contact">
+      <i class="fas fa-map-marker-alt" aria-hidden="true"></i> Contact
+      <i class="fas fa-chevron-right arrow" aria-hidden="true"></i>
+    </a></li>
   </ul>
+
   <div class="drawer-footer">
     <a href="tel:9717914003" class="drawer-call-cta">
-      <div class="drawer-call-icon"><i class="fas fa-phone-alt"></i></div>
+      <div class="drawer-call-icon">
+        <i class="fas fa-phone-alt" aria-hidden="true"></i>
+      </div>
       <div class="drawer-call-text">
         <h5>Call: 9717914003</h5>
-        <p>Mon–Sat · 9am – 8:30pm</p>
+        <p>Mon–Sat · 8am – 8pm</p>
       </div>
     </a>
     <div class="drawer-bottom-row">
       <a href="https://wa.me/919717914003" target="_blank" rel="noopener" class="drawer-wa-btn">
-        <i class="fab fa-whatsapp"></i> <span>WhatsApp</span>
+        <i class="fab fa-whatsapp" aria-hidden="true"></i>
+        <span>WhatsApp</span>
       </a>
-      <div class="drawer-since"><span>Since 2002<br>24+ Years</span></div>
+      <div class="drawer-since">
+        <span>Since 2002<br>24+ Years</span>
+      </div>
     </div>
   </div>
+
 </div>
 
-<main>
 
-<!-- HERO -->
 <section id="home" class="hero">
+
   <div class="hero-left">
-    <img src="images/logo.png" alt="Chawla Classes Logo" class="hero-logo">
+
     <p class="hero-since">SINCE 2002</p>
+
     <h1>CHAWLA <span>CLASSES</span></h1>
+
     <h3>Classes 1st–12th | Commerce | Arts & Humanities</h3>
-    <p>B.Com | BBA | B.A. Coaching | CUET | SSC | Olympiad | KVPY Preparation</p>
-    <p>Building Strong Foundations for Academic Success with Personal Attention & Expert Faculty.</p>
-    <p class="hero-tagline">Trusted Coaching Institute in Uttam Nagar, New Delhi</p>
+
+    <p>
+      B.Com | BBA | B.A. Coaching | CUET | SSC | Olympiad | KVPY Preparation
+    </p>
+
+    <p>
+      Building Strong Foundations for Academic Success
+      with Personal Attention & Expert Faculty.
+    </p>
+
+    <p class="hero-tagline">
+      Trusted Coaching Institute in Uttam Nagar, New Delhi
+    </p>
+
     <div class="hero-buttons">
       <a href="#admission" class="btn-primary">Admission Open</a>
-      <!-- ✅ NEW: Demo Class Button -->
-      <a href="https://wa.me/919717914003?text=Hello%2C%20I%20want%20to%20book%20a%20Free%20Demo%20Class" class="btn-demo" target="_blank" rel="noopener">
-        <i class="fas fa-chalkboard-teacher"></i> Free Demo Class
-      </a>
-      <a href="https://wa.me/919717914003" class="btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+      <button class="btn-demo btn-offline-demo" onclick="bookDemo('offline')">
+        <i class="fas fa-school"></i> Offline Demo Class
+      </button>
+      <button class="btn-demo btn-online-demo" onclick="bookDemo('online')">
+        <i class="fas fa-laptop"></i> Online Demo Class
+      </button>
     </div>
+
   </div>
+
   <div class="hero-right">
     <img src="images/hero-student.jpg" alt="Chawla Classes Student">
   </div>
+
 </section>
 
-<!-- NOTICE BOARD -->
-<section class="notice-board">
-  <div class="notice-marquee">
-    <marquee behavior="scroll" direction="left">
-      <i class="fas fa-graduation-cap"></i> Admissions Open for Session 2026-27 &nbsp;|&nbsp;
-      <i class="fas fa-school"></i> New Batches Started for Classes 9th, 10th, 11th &amp; 12th &nbsp;|&nbsp;
-      <i class="fas fa-book"></i> SSC Preparation Batch Starting Soon &nbsp;|&nbsp;
-      <i class="fas fa-user-graduate"></i> B.Com, BBA &amp; B.A. Coaching Batches Starting Soon &nbsp;|&nbsp;
-      <i class="fas fa-trophy"></i> Regular Weekly Tests &amp; Performance Assessments &nbsp;|&nbsp;
-      <i class="fas fa-chalkboard-teacher"></i> Free Demo Classes Available &nbsp;|&nbsp;
-      <i class="fas fa-phone"></i> Contact: 9717914003
-    </marquee>
-  </div>
-</section>
-
-<!-- ✅ ANIMATED STATS -->
+<!-- ================= STATS ================= -->
 <section class="stats-section">
+
   <div class="stat-box">
     <i class="fas fa-graduation-cap"></i>
-    <h2 class="counter" data-target="24">0</h2>
+    <h2>24+</h2>
     <p>Years of Excellence</p>
   </div>
+
   <div class="stat-box">
     <i class="fas fa-users"></i>
-    <h2 class="counter" data-target="1000">0</h2>
+    <h2>1000+</h2>
     <p>Students Guided</p>
   </div>
+
   <div class="stat-box">
     <i class="fas fa-trophy"></i>
-    <h2 class="counter" data-target="95">0</h2>
-    <p>Board Results %</p>
+    <h2>95%+</h2>
+    <p>Board Results</p>
   </div>
+
   <div class="stat-box">
     <i class="fas fa-chalkboard-teacher"></i>
-    <h2 class="counter" data-target="5">0</h2>
+    <h2>5</h2>
     <p>Expert Faculty</p>
   </div>
+
 </section>
 
-<!-- ABOUT -->
+<!-- ================= ABOUT ================= -->
 <section id="about" class="about-section">
   <div class="container">
+
     <div class="about-left">
       <h2>About Chawla Classes</h2>
-      <p>Chawla Classes has been a trusted name in education since 2002. Under the guidance of Founder <strong>Manju Chawla</strong>, thousands of students have achieved academic excellence. We provide quality education, personal attention and strong conceptual learning from Classes 1st to 12th.</p>
+      <p>
+        Chawla Classes has been a trusted name in education since 2002.
+        Under the guidance of Founder <strong>Manju Chawla</strong>,
+        thousands of students have achieved academic excellence.
+        We provide quality education, personal attention and strong
+        conceptual learning from Classes 1st to 12th.
+      </p>
       <a href="#courses" class="about-btn">Know More</a>
     </div>
+
     <div class="about-right">
       <img src="images/classroom.jpg" alt="Chawla Classes Classroom">
     </div>
+
   </div>
 </section>
 
-<!-- VISION & MISSION -->
+<!-- ================= VISION & MISSION ================= -->
 <section class="vision-section">
+
   <h2 class="section-title">Our Vision & Mission</h2>
+
   <div class="vision-grid">
+
     <div class="vision-card">
       <h3>Our Vision</h3>
-      <p>To become a leading educational institution by providing quality education, conceptual learning and academic excellence while nurturing confidence, discipline and leadership among students.</p>
+      <p>
+        To become a leading educational institution by providing quality
+        education, conceptual learning and academic excellence while
+        nurturing confidence, discipline and leadership among students.
+      </p>
     </div>
+
     <div class="vision-card">
       <h3>Our Mission</h3>
-      <p>To empower students with knowledge, critical thinking and strong fundamentals through expert guidance, personal attention and result-oriented teaching methods.</p>
+      <p>
+        To empower students with knowledge, critical thinking and strong
+        fundamentals through expert guidance, personal attention and
+        result-oriented teaching methods.
+      </p>
     </div>
+
   </div>
+
 </section>
 
-<!-- COURSES -->
+<!-- ================= COURSES ================= -->
 <section id="courses" class="courses-section">
+
   <h2 class="section-title">Courses We Offer</h2>
-  <p class="course-subtitle">Academic Excellence from School to College and Competitive Exams</p>
+  <p class="course-subtitle">
+    Academic Excellence from School to College and Competitive Exams
+  </p>
+
   <div class="courses-grid">
-    <div class="course-card"><div class="icon"><i class="fas fa-school"></i></div><h3>Junior Wing</h3><p>Classes 1st–8th<br>All Subjects</p></div>
-    <div class="course-card"><div class="icon"><i class="fas fa-book-open"></i></div><h3>Classes 9th & 10th</h3><p>Mathematics<br>Science<br>English<br>Social Science</p></div>
-    <div class="course-card"><div class="icon"><i class="fas fa-chart-line"></i></div><h3>11th & 12th Commerce</h3><p>Accountancy<br>Business Studies<br>Economics<br>Mathematics<br>English</p></div>
-    <div class="course-card"><div class="icon"><i class="fas fa-landmark"></i></div><h3>11th & 12th Arts & Humanities</h3><p>History<br>Geography<br>Political Science<br>Economics<br>English</p></div>
-    <div class="course-card"><div class="icon"><i class="fas fa-briefcase"></i></div><h3>B.Com & BBA</h3><p>Financial Accounting<br>Cost Accounting<br>Corporate Accounting<br>Business Mathematics<br>Business Statistics</p></div>
-    <div class="course-card"><div class="icon"><i class="fas fa-globe"></i></div><h3>B.A.</h3><p>History<br>Geography<br>Political Science<br>Sociology</p></div>
-    <div class="course-card"><div class="icon"><i class="fas fa-trophy"></i></div><h3>Entrance Exam Prep</h3><p>CUET<br>SSC<br>Olympiad<br>KVPY<br>Foundation Courses</p></div>
+
+    <div class="course-card">
+      <div class="icon"><i class="fas fa-school"></i></div>
+      <h3>Junior Wing</h3>
+      <p>Classes 1st–8th<br>All Subjects</p>
+    </div>
+
+    <div class="course-card">
+      <div class="icon"><i class="fas fa-book-open"></i></div>
+      <h3>Classes 9th & 10th</h3>
+      <p>Mathematics<br>Science<br>English<br>Social Science</p>
+    </div>
+
+    <div class="course-card">
+      <div class="icon"><i class="fas fa-chart-line"></i></div>
+      <h3>11th & 12th Commerce</h3>
+      <p>Accountancy<br>Business Studies<br>Economics<br>Mathematics<br>English</p>
+    </div>
+
+    <div class="course-card">
+      <div class="icon"><i class="fas fa-landmark"></i></div>
+      <h3>11th & 12th Arts & Humanities</h3>
+      <p>History<br>Geography<br>Political Science<br>Economics<br>English</p>
+    </div>
+
+    <div class="course-card">
+      <div class="icon"><i class="fas fa-briefcase"></i></div>
+      <h3>B.Com & BBA</h3>
+      <p>Financial Accounting<br>Cost Accounting<br>Corporate Accounting<br>Business Mathematics<br>Business Statistics</p>
+    </div>
+
+    <div class="course-card">
+      <div class="icon"><i class="fas fa-globe"></i></div>
+      <h3>B.A.</h3>
+      <p>History<br>Geography<br>Political Science<br>Sociology</p>
+    </div>
+
+    <div class="course-card">
+      <div class="icon"><i class="fas fa-trophy"></i></div>
+      <h3>Entrance Exam Prep</h3>
+      <p>CUET<br>SSC<br>Olympiad<br>KVPY<br>Foundation Courses</p>
+    </div>
+
   </div>
-</section>
-
-<!-- WHY CHOOSE US -->
-<section class="why-section">
-  <h2 class="section-title">Why Choose Chawla Classes?</h2>
-  <div class="why-grid">
-    <div class="why-card"><i class="fas fa-award"></i><h3>Since 2002</h3><p>24+ years of excellence in education with trusted results.</p></div>
-    <div class="why-card"><i class="fas fa-user-graduate"></i><h3>Personal Attention</h3><p>Individual focus on every student for better understanding.</p></div>
-    <div class="why-card"><i class="fas fa-chalkboard-teacher"></i><h3>Experienced Faculty</h3><p>Highly qualified and experienced teachers for all subjects.</p></div>
-    <div class="why-card"><i class="fas fa-file-alt"></i><h3>Regular Tests</h3><p>Frequent assessments and progress tracking.</p></div>
-    <div class="why-card"><i class="fas fa-users"></i><h3>Small Batch Size</h3><p>Better interaction and doubt solving in every class.</p></div>
-    <div class="why-card"><i class="fas fa-trophy"></i><h3>Excellent Results</h3><p>Consistent academic success and outstanding performances.</p></div>
-  </div>
-</section>
-<section id="learning-modes" class="learning-section">
-
-<h2 class="section-title">Offline & Online Classes</h2>
-
-<div class="learning-grid">
-
-<div class="learning-card">
-<i class="fas fa-school"></i>
-
-<h3>Offline Classroom Coaching</h3>
-
-<p>
-Personal attention, classroom interaction,
-regular tests and disciplined learning environment.
-</p>
-
-<a href="#enquirySection"
-onclick="setEnquiryType('offline')"
-class="learn-more-btn">
-Enquire Now
-</a>
-
-</div>
-
-<div class="learning-card">
-<i class="fas fa-laptop"></i>
-
-<h3>Online Live Classes</h3>
-
-<p>
-Attend live Google Meet classes from anywhere
-with notes, assignments and doubt solving support.
-</p>
-
-<a href="#online-classes"
-class="learn-more-btn">
-Know More
-</a>
-
-</div>
-
-</div>
 
 </section>
-<!-- FACULTY -->
+
+<!-- ================= FACULTY ================= -->
 <section id="faculty" class="faculty-section">
+
   <h2 class="section-title">Our Faculty</h2>
+
   <div class="faculty-grid">
-    <div class="faculty-card"><img src="images/manju.jpg" alt="Manju Chawla - Founder"><h3>Manju Chawla</h3><h4>Founder</h4><span class="faculty-badge">40+ Years Experience</span><p>Maths Expert</p></div>
-    <div class="faculty-card"><img src="images/rohit.jpg" alt="Rohit Chawla - Co-Founder"><h3>Rohit Chawla</h3><h4>Co-Founder</h4><p>Mathematics Faculty<br>14 Years Experience</p></div>
-    <div class="faculty-card"><img src="images/jyoti.jpg" alt="Jyoti Chawla - Junior Wing Faculty"><h3>Jyoti Chawla</h3><h4>Junior Wing Faculty</h4><p>Classes 1st–8th<br>All Subjects</p></div>
-    <div class="faculty-card"><div class="placeholder-photo">Photo Coming Soon</div><h3>Amit Sir</h3><h4>Arts & Humanities</h4><p>Senior Faculty</p></div>
-    <div class="faculty-card"><div class="placeholder-photo">Photo Coming Soon</div><h3>Anita Ma'am</h3><h4>Science Faculty</h4><p>10 Years Experience</p></div>
+
+    <div class="faculty-card">
+      <img src="images/manju.jpg" alt="Manju Chawla - Founder">
+      <h3>Manju Chawla</h3>
+      <h4>Founder</h4>
+      <span class="faculty-badge">40+ Years Experience</span>
+      <p>Maths Expert</p>
+    </div>
+
+    <div class="faculty-card">
+      <img src="images/rohit.jpg" alt="Rohit Chawla - Co-Founder">
+      <h3>Rohit Chawla</h3>
+      <h4>Co-Founder</h4>
+      <p>Mathematics Faculty<br>14 Years Experience</p>
+    </div>
+
+    <div class="faculty-card">
+      <img src="images/jyoti.jpg" alt="Jyoti Chawla - Junior Wing Faculty">
+      <h3>Jyoti Chawla</h3>
+      <h4>Junior Wing Faculty</h4>
+      <p>Classes 1st–8th<br>All Subjects</p>
+    </div>
+
+    <div class="faculty-card">
+      <div class="placeholder-photo">Photo Coming Soon</div>
+      <h3>Amit Sir</h3>
+      <h4>Arts & Humanities</h4>
+      <p>Senior Faculty</p>
+    </div>
+
+    <div class="faculty-card">
+      <div class="placeholder-photo">Photo Coming Soon</div>
+      <h3>Anita Ma'am</h3>
+      <h4>Science Faculty</h4>
+      <p>10 Years Experience</p>
+    </div>
+
   </div>
+
 </section>
 
-<!-- RESULTS -->
+<!-- ================= RESULTS ================= -->
 <section id="results" class="results-section">
+
   <div class="results-left">
     <h2>Excellent Results</h2>
     <p>Our students consistently achieve excellent board results every year.</p>
@@ -285,254 +367,213 @@ Know More
       <li>Personal Attention to Every Student</li>
     </ul>
   </div>
+
   <div class="results-right">
     <img src="images/results.jpg" alt="Chawla Classes Results">
   </div>
+
 </section>
 
-<!-- FEES & TIMINGS -->
-<section id="fees" class="fees-section">
-  <h2 class="section-title">Batch Timings & Fee Structure</h2>
-  <div class="fees-grid">
-    <div class="schedule-table">
-      <h3>Batch Schedule</h3>
-      <table>
-        <tr><th>Class</th><th>Timing</th></tr>
-        <tr><td>1st - 5th</td><td>3:00 PM - 5:00 PM</td></tr>
-        <tr><td>6th - 8th</td><td>3:00 PM - 5:00 PM</td></tr>
-        <tr><td>9th - 10th</td><td>5:00 PM - 7:00 PM</td></tr>
-        <tr><td>11th - 12th</td><td>6:00 PM - 8:00 PM</td></tr>
-        <tr><td>B.Com / BBA / B.A.</td><td>Flexible Batches</td></tr>
-      </table>
-    </div>
-    <div class="fees-card">
-      <i class="fas fa-clock"></i>
-      <h3>Batch Timings</h3>
-      <p>Morning Batch<br>9:00 AM – 11:30 AM</p>
-      <p>Evening Batch<br>3:00 PM – 8:30 PM</p>
-      <p>Weekend Special Batches Available</p>
-      <p>Every Sunday Test</p>
-    </div>
-    <div class="fees-card">
-      <i class="fas fa-money-bill-wave"></i>
-      <h3>Fee Structure</h3>
-      <p>Affordable & Competitive Fees</p>
-      <p>Special Discounts for Siblings</p>
-      <p>Contact Us for Latest Fee Details</p>
-      <a href="tel:9210660809" class="fees-btn">Call For Fee Details</a>
-    </div>
-  </div>
-</section>
-
-<!-- ONLINE CLASSES -->
-<section id="online-classes" class="online-section">
-  <h2 class="section-title">Online Classes Available</h2>
-  <p class="online-subtitle">Join Live Online Classes from Anywhere Through Google Meet.</p>
-  <div class="online-grid">
-    <div class="online-card">
-      <div class="card-icon"><i class="fas fa-video"></i></div>
-      <h3>Live Google Meet Classes</h3>
-      <p>Attend classes from home with expert faculty.</p>
-    </div>
-    <div class="online-card">
-      <div class="card-icon"><i class="fas fa-book-open"></i></div>
-      <h3>Notes & Assignments</h3>
-      <p>Get study material and assignments regularly.</p>
-    </div>
-    <div class="online-card">
-      <div class="card-icon"><i class="fas fa-comments"></i></div>
-      <h3>Doubt Solving</h3>
-      <p>Interactive sessions with live doubt support.</p>
-    </div>
-    <div class="online-card">
-      <div class="card-icon"><i class="fas fa-chart-bar"></i></div>
-      <h3>Regular Tests</h3>
-      <p>Online assessments and performance tracking.</p>
-    </div>
-  </div>
-  <a href="https://wa.me/919717914003" class="online-btn" target="_blank" rel="noopener">
-    <svg style="width:22px;height:22px;margin-right:8px;vertical-align:middle;fill:#0f1f3d;" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Enquire for Online Classes
-  </a>
-</section>
-
-<!-- ✅ GALLERY WITH LIGHTBOX -->
+<!-- ================= GALLERY ================= -->
 <section id="gallery" class="gallery-section">
+
   <h2 class="section-title">Gallery</h2>
+
   <div class="gallery-grid">
-    <img src="images/classroom.jpg"  alt="Chawla Classes Classroom"   onclick="openLightbox(this.src, this.alt)">
-    <img src="images/gallery1.jpg"   alt="Chawla Classes Activity 1"  onclick="openLightbox(this.src, this.alt)">
-    <img src="images/gallery2.jpg"   alt="Chawla Classes Activity 2"  onclick="openLightbox(this.src, this.alt)">
-    <img src="images/gallery3.jpg"   alt="Chawla Classes Activity 3"  onclick="openLightbox(this.src, this.alt)">
-    <img src="images/gallery4.jpg"   alt="Chawla Classes Activity 4"  onclick="openLightbox(this.src, this.alt)">
-    <img src="images/gallery5.jpg"   alt="Chawla Classes Activity 5"  onclick="openLightbox(this.src, this.alt)">
+    <img src="images/classroom.jpg"  alt="Chawla Classes Classroom">
+    <img src="images/gallery1.jpg"   alt="Chawla Classes Activity 1">
+    <img src="images/gallery2.jpg"   alt="Chawla Classes Activity 2">
+    <img src="images/gallery3.jpg"   alt="Chawla Classes Activity 3">
+    <img src="images/gallery4.jpg"   alt="Chawla Classes Activity 4">
+    <img src="images/gallery5.jpg"   alt="Chawla Classes Activity 5">
   </div>
+
 </section>
 
-<!-- ✅ LIGHTBOX MODAL -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lightbox-close" onclick="closeLightbox()">&#x2715;</button>
-  <img id="lightboxImg" src="" alt="">
-  <p id="lightboxCaption"></p>
-</div>
-
-<!-- TESTIMONIALS -->
+<!-- ================= TESTIMONIALS ================= -->
 <section class="testimonial-section">
+
   <h2 class="section-title">Student Reviews</h2>
+
   <div id="feedbackContainer" class="testimonial-grid">
     <p style="color:#ddd;text-align:center;">Loading reviews...</p>
   </div>
+
 </section>
 
-<!-- FAQ -->
-<section id="faq" class="faq-section">
-  <h2 class="section-title">Frequently Asked Questions</h2>
-  <div class="faq-container">
-    <div class="faq-item"><h3>Do you provide demo classes?</h3><p>Yes, students can attend a demo class before taking admission.</p></div>
-    <div class="faq-item"><h3>Do you provide study material?</h3><p>Yes, notes, worksheets, assignments and test papers are provided.</p></div>
-    <div class="faq-item"><h3>What classes do you teach?</h3><p>We teach Classes 1st–12th, B.Com, BBA, B.A. and Entrance Exam Preparation.</p></div>
-    <div class="faq-item"><h3>Which entrance exams do you prepare students for?</h3><p>CUET, SSC, Olympiad, KVPY and other competitive exams.</p></div>
-    <div class="faq-item"><h3>Are regular tests conducted?</h3><p>Yes, regular tests and performance assessments are conducted.</p></div>
-    <div class="faq-item"><h3>How can I get fee details?</h3><p>You can call us or submit the enquiry form for the latest fee structure.</p></div>
-  </div>
-  <div class="faq-contact-box">
-    <h3>Still Have a Question?</h3>
-    <p>Our team is happy to help you with admissions, fees, batch timings and course details.</p>
-    <div class="faq-buttons">
-      <a href="#enquirySection" class="faq-btn-primary">Ask Your Question</a>
-      <a href="tel:9717914003" class="faq-btn-secondary">Call Now</a>
-    </div>
-  </div>
-</section>
-
-<!-- ADMISSION FORM -->
+<!-- ================= ADMISSION FORM ================= -->
 <section id="admission" class="admission-section">
+
   <h2 class="section-title">Admission Form</h2>
+
   <div class="admission-form-box">
     <form id="admissionForm">
-      <input type="text" placeholder="Student Name" required>
-      <input type="text" placeholder="Parents Name" required>
-      <input type="tel" placeholder="Mobile Number" required>
+
+      <input type="text"  placeholder="Student Name"   required>
+      <input type="text"  placeholder="Parents Name"   required>
+      <input type="tel"   placeholder="Mobile Number"  required>
       <input type="email" placeholder="Email Address">
-      <input type="text" placeholder="School Name">
+      <input type="text"  placeholder="School Name">
+
       <select required>
         <option value="">Select Class</option>
-        <option>1st Class</option><option>2nd Class</option><option>3rd Class</option>
-        <option>4th Class</option><option>5th Class</option><option>6th Class</option>
-        <option>7th Class</option><option>8th Class</option><option>9th Class</option>
-        <option>10th Class</option><option>11th Commerce</option><option>12th Commerce</option>
-        <option>11th Arts & Humanities</option><option>12th Arts & Humanities</option>
-        <option>B.Com</option><option>BBA</option><option>B.A.</option>
-        <option>CUET Preparation</option><option>SSC Preparation</option>
-        <option>Olympiad Preparation</option><option>KVPY Preparation</option>
+        <option>1st Class</option>
+        <option>2nd Class</option>
+        <option>3rd Class</option>
+        <option>4th Class</option>
+        <option>5th Class</option>
+        <option>6th Class</option>
+        <option>7th Class</option>
+        <option>8th Class</option>
+        <option>9th Class</option>
+        <option>10th Class</option>
+        <option>11th Commerce</option>
+        <option>12th Commerce</option>
+        <option>11th Arts & Humanities</option>
+        <option>12th Arts & Humanities</option>
+        <option>B.Com</option>
+        <option>BBA</option>
+        <option>B.A.</option>
+        <option>CUET Preparation</option>
+        <option>SSC Preparation</option>
+        <option>Olympiad Preparation</option>
+        <option>KVPY Preparation</option>
       </select>
+
       <textarea placeholder="Address"></textarea>
+
       <button type="submit" class="btn-primary">Submit Admission Form</button>
+
     </form>
   </div>
+
 </section>
 
-<!-- FEEDBACK FORM -->
+<!-- ================= FEEDBACK FORM ================= -->
 <section id="feedback" class="admission-section">
+
   <h2 class="section-title">Student Feedback & Rating</h2>
+
   <div class="admission-form-box">
     <form id="feedbackForm">
+
       <input type="text" placeholder="Student Name" required>
+
       <select required>
         <option value="">Select Class</option>
-        <option>1st Class</option><option>2nd Class</option><option>3rd Class</option>
-        <option>4th Class</option><option>5th Class</option><option>6th Class</option>
-        <option>7th Class</option><option>8th Class</option><option>9th Class</option>
-        <option>10th Class</option><option>11th Commerce</option><option>12th Commerce</option>
-        <option>B.Com</option><option>BBA</option><option>B.A.</option>
+        <option>1st Class</option>
+        <option>2nd Class</option>
+        <option>3rd Class</option>
+        <option>4th Class</option>
+        <option>5th Class</option>
+        <option>6th Class</option>
+        <option>7th Class</option>
+        <option>8th Class</option>
+        <option>9th Class</option>
+        <option>10th Class</option>
+        <option>11th Commerce</option>
+        <option>12th Commerce</option>
+        <option>B.Com</option>
+        <option>BBA</option>
+        <option>B.A.</option>
       </select>
+
       <select required>
         <option value="">Rate Chawla Classes</option>
-        <option>5 Stars - Excellent</option>
-        <option>4 Stars - Very Good</option>
-        <option>3 Stars - Good</option>
-        <option>2 Stars - Average</option>
-        <option>1 Star - Poor</option>
+        <option>⭐⭐⭐⭐⭐ Excellent</option>
+        <option>⭐⭐⭐⭐ Very Good</option>
+        <option>⭐⭐⭐ Good</option>
+        <option>⭐⭐ Average</option>
+        <option>⭐ Poor</option>
       </select>
+
       <textarea placeholder="Write Your Feedback" required></textarea>
+
       <button type="submit" class="btn-primary">Submit Feedback</button>
+
     </form>
   </div>
+
 </section>
 
-<!-- CONTACT -->
+<!-- ================= CONTACT ================= -->
 <section id="contact" class="contact-section">
+
   <div class="contact-left">
     <h2>Contact Us</h2>
     <p>
-      <i class="fas fa-map-marker-alt" style="color:#ffc400;margin-right:6px;"></i>
-      Shop 72, Hastsal Road, Opp. Sabji Mandi,<br>
+      📍 Shop 72, Hastsal Road, Opp. Sabji Mandi,<br>
       Near Metro Pillar 657, Uttam Nagar,<br>
       New Delhi - 110059
     </p>
     <a href="https://www.google.com/maps/place/Chawla+Classes/@28.6250389,77.0596209,17z"
        target="_blank" rel="noopener" class="location-btn">
-      <i class="fas fa-map-marker-alt"></i> Open in Google Maps
+      📍 Open in Google Maps
     </a>
-    <p><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9210660809</p>
-    <p><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9717914003</p>
-    <p><i class="fas fa-envelope" style="color:#ffc400;margin-right:6px;"></i> 4chawlaclasses@gmail.com</p>
+    <p>📞 9210660809<br>📞 9717914003</p>
+    <p>✉ 4chawlaclasses@gmail.com</p>
   </div>
-  <div class="contact-right" id="enquirySection">
-    <h3>Quick Enquiry</h3>
+
+  <div class="contact-right">
+    <h3 id="enquiryFormTitle">Quick Enquiry</h3>
     <form id="enquiryForm">
-      <input type="text" placeholder="Student Name" required>
-      <input type="tel" placeholder="Mobile Number" required>
-      <select id="enquiryType" required>
-<option value="">Select Enquiry Type</option>
-<option value="offline">
-Enquiry for Offline Classes
-</option>
-<option value="online">
-Enquiry for Online Classes
-</option>
-<option value="demo-offline">
-Demo for Offline Classes
-</option>
-<option value="demo-online">
-Demo for Online Classes
-</option>
-<option value="other">
-Other
-</option>
-</select>
+
+      <input type="hidden" id="enquiryType" name="enquiryType" value="general">
+
+      <input type="text" placeholder="Student Name"  required>
+      <input type="tel"  placeholder="Mobile Number" required>
+
       <select required>
         <option value="">Select Class</option>
-        <option>1st Class</option><option>2nd Class</option><option>3rd Class</option>
-        <option>4th Class</option><option>5th Class</option><option>6th Class</option>
-        <option>7th Class</option><option>8th Class</option><option>9th Class</option>
-        <option>10th Class</option><option>11th Commerce</option><option>12th Commerce</option>
-        <option>11th Arts & Humanities</option><option>12th Arts & Humanities</option>
-        <option>B.Com</option><option>BBA</option><option>B.A.</option>
-        <option>CUET Preparation</option><option>SSC Preparation</option>
-        <option>Olympiad Preparation</option><option>KVPY Preparation</option>
+        <option>1st Class</option>
+        <option>2nd Class</option>
+        <option>3rd Class</option>
+        <option>4th Class</option>
+        <option>5th Class</option>
+        <option>6th Class</option>
+        <option>7th Class</option>
+        <option>8th Class</option>
+        <option>9th Class</option>
+        <option>10th Class</option>
+        <option>11th Commerce</option>
+        <option>12th Commerce</option>
+        <option>11th Arts & Humanities</option>
+        <option>12th Arts & Humanities</option>
+        <option>B.Com</option>
+        <option>BBA</option>
+        <option>B.A.</option>
+        <option>CUET Preparation</option>
+        <option>SSC Preparation</option>
+        <option>Olympiad Preparation</option>
+        <option>KVPY Preparation</option>
       </select>
-      <textarea
-id="otherMessage"
-placeholder="Please tell us your requirement"
-style="display:none;">
-</textarea>
+
       <button type="submit">Request Callback</button>
+
     </form>
   </div>
+
 </section>
 
-<!-- MAP -->
+<!-- ================= MAP ================= -->
 <section class="map-section">
-  <iframe src="https://maps.google.com/maps?q=28.6250342,77.0621958&output=embed"
-    width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"
-    title="Chawla Classes Location"></iframe>
+  <iframe
+    src="https://maps.google.com/maps?q=28.6250342,77.0621958&output=embed"
+    width="100%"
+    height="450"
+    style="border:0;"
+    allowfullscreen=""
+    loading="lazy"
+    title="Chawla Classes Location">
+  </iframe>
 </section>
 
 </main>
 
-<!-- FOOTER -->
+<!-- ================= FOOTER ================= -->
 <footer>
   <div class="footer-container">
+
     <div class="footer-box">
       <img src="images/logo.png" alt="Chawla Classes Logo" class="footer-logo">
       <h2>CHAWLA CLASSES</h2>
@@ -541,6 +582,7 @@ style="display:none;">
       <p>B.Com | BBA | B.A. | CUET | SSC | Olympiad | KVPY</p>
       <p class="footer-tagline">"Step Towards Success"</p>
     </div>
+
     <div class="footer-box">
       <h3>Quick Links</h3>
       <a href="#home">Home</a>
@@ -548,55 +590,67 @@ style="display:none;">
       <a href="#courses">Courses</a>
       <a href="#faculty">Faculty</a>
       <a href="#results">Results</a>
-      <a href="#fees">Fees &amp; Timings</a>
-      <a href="#online-classes">Online Classes</a>
       <a href="#gallery">Gallery</a>
       <a href="#admission">Admission</a>
       <a href="#feedback">Feedback</a>
       <a href="#contact">Contact</a>
-      <a href="#faq">FAQ</a>
     </div>
+
     <div class="footer-box">
       <h3>Contact Info</h3>
-      <p><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9210660809</p>
-      <p><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9717914003</p>
-      <p><i class="fas fa-envelope" style="color:#ffc400;margin-right:6px;"></i> 4chawlaclasses@gmail.com</p>
-      <p><i class="fas fa-map-marker-alt" style="color:#ffc400;margin-right:6px;"></i> Shop 72, Hastsal Road, Opp. Sabji Mandi, Near Metro Pillar 657, Uttam Nagar, New Delhi - 110059</p>
+      <p>📞 9210660809</p>
+      <p>📞 9717914003</p>
+      <p>📧 4chawlaclasses@gmail.com</p>
+      <p>📍 Shop 72, Hastsal Road, Opp. Sabji Mandi, Near Metro Pillar 657, Uttam Nagar, New Delhi - 110059</p>
       <a href="https://www.google.com/maps/place/Chawla+Classes/@28.6250389,77.0596209,17z"
          target="_blank" rel="noopener" class="map-link">
-        <i class="fas fa-map-marker-alt"></i> View on Google Maps
+        📍 View on Google Maps
       </a>
     </div>
+
   </div>
+
   <div class="footer-bottom">
-    &copy; 2026 Chawla Classes | All Rights Reserved
+    © 2026 Chawla Classes | All Rights Reserved
   </div>
 </footer>
 
-<!-- ✅ SCROLL TO TOP -->
-<button class="scroll-top" id="scrollTop" aria-label="Scroll to top">
-  <i class="fas fa-chevron-up"></i>
-</button>
-
-<a href="tel:9717914003" class="call-floating-btn"><i class="fas fa-phone"></i></a>
+<!-- ================= WHATSAPP BUTTON ================= -->
 <a href="https://wa.me/919717914003" class="whatsapp-btn" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
   <i class="fab fa-whatsapp"></i>
 </a>
 
-<!-- SCRIPTS -->
+<!-- ================= SCRIPTS ================= -->
+
+<!-- Mobile Drawer -->
 <script>
-  // Mobile Drawer
-  const menuToggle   = document.getElementById("menuToggle");
+  const menuToggle  = document.getElementById("menuToggle");
   const mobileDrawer = document.getElementById("mobileDrawer");
-  const mobileOverlay= document.getElementById("mobileOverlay");
+  const mobileOverlay = document.getElementById("mobileOverlay");
   const drawerClose  = document.getElementById("drawerClose");
 
-  function openDrawer()  { mobileDrawer.classList.add("active"); mobileOverlay.classList.add("active"); menuToggle.classList.add("open"); document.body.style.overflow = "hidden"; }
-  function closeDrawer() { mobileDrawer.classList.remove("active"); mobileOverlay.classList.remove("active"); menuToggle.classList.remove("open"); document.body.style.overflow = ""; }
+  function openDrawer() {
+    mobileDrawer.classList.add("active");
+    mobileOverlay.classList.add("active");
+    menuToggle.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
 
-  menuToggle.addEventListener("click", () => mobileDrawer.classList.contains("active") ? closeDrawer() : openDrawer());
+  function closeDrawer() {
+    mobileDrawer.classList.remove("active");
+    mobileOverlay.classList.remove("active");
+    menuToggle.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  menuToggle.addEventListener("click", () => {
+    mobileDrawer.classList.contains("active") ? closeDrawer() : openDrawer();
+  });
+
   drawerClose.addEventListener("click", closeDrawer);
   mobileOverlay.addEventListener("click", closeDrawer);
+
+  // Close on nav link click + set active
   document.querySelectorAll(".drawer-nav a").forEach(link => {
     link.addEventListener("click", () => {
       document.querySelectorAll(".drawer-nav a").forEach(l => l.classList.remove("active"));
@@ -604,171 +658,178 @@ style="display:none;">
       closeDrawer();
     });
   });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
-</script>
 
-<script>
-  // ✅ Animated Stats Counter
-  const counters = document.querySelectorAll(".counter");
-  let counted = false;
-
-  function runCounters() {
-    counters.forEach(counter => {
-      const target = +counter.getAttribute("data-target");
-      const suffix = target >= 1000 ? "+" : target === 95 ? "%+" : "+";
-      let count = 0;
-      const step = Math.ceil(target / 60);
-      const timer = setInterval(() => {
-        count += step;
-        if (count >= target) {
-          counter.textContent = target + suffix;
-          clearInterval(timer);
-        } else {
-          counter.textContent = count + suffix;
-        }
-      }, 30);
-    });
-  }
-
-  const statsSection = document.querySelector(".stats-section");
-  const observer = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && !counted) {
-      counted = true;
-      runCounters();
-    }
-  }, { threshold: 0.3 });
-  observer.observe(statsSection);
-</script>
-
-<script>
-  // ✅ Gallery Lightbox
-  function openLightbox(src, alt) {
-    const lb = document.getElementById("lightbox");
-    document.getElementById("lightboxImg").src = src;
-    document.getElementById("lightboxCaption").textContent = alt;
-    lb.classList.add("active");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeLightbox() {
-    document.getElementById("lightbox").classList.remove("active");
-    document.body.style.overflow = "";
-  }
-
+  // Close on Escape key
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape") closeLightbox();
+    if (e.key === "Escape") closeDrawer();
   });
 </script>
 
-<script>
-  // ✅ Scroll to Top
-  const scrollTopBtn = document.getElementById("scrollTop");
-  window.addEventListener("scroll", () => {
-    scrollTopBtn.classList.toggle("visible", window.scrollY > 400);
-  });
-  scrollTopBtn.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  });
-</script>
-
+<!-- Google Sheets API URL -->
 <script>
   const SHEET_URL = "https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec";
 </script>
 
+<!-- Admission Form -->
 <script>
   document.getElementById("admissionForm").addEventListener("submit", async function(e) {
     e.preventDefault();
-    const inputs = this.querySelectorAll("input");
-    const select = this.querySelector("select");
+    const inputs   = this.querySelectorAll("input");
+    const select   = this.querySelector("select");
     const textarea = this.querySelector("textarea");
-    const data = { type: "admission", studentName: inputs[0].value, parentName: inputs[1].value, mobile: inputs[2].value, email: inputs[3].value, school: inputs[4].value, course: select.value, address: textarea.value };
-    try { await fetch(SHEET_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) }); alert("Admission Form Submitted Successfully!"); this.reset(); window.location.href = "#home"; }
-    catch(err) { alert("Something went wrong. Please try again."); }
+
+    const data = {
+      type:        "admission",
+      studentName: inputs[0].value,
+      parentName:  inputs[1].value,
+      mobile:      inputs[2].value,
+      email:       inputs[3].value,
+      school:      inputs[4].value,
+      course:      select.value,
+      address:     textarea.value
+    };
+
+    try {
+      await fetch(SHEET_URL, {
+        method: "POST",
+        mode:   "no-cors",
+        body:   JSON.stringify(data)
+      });
+      alert("Admission Form Submitted Successfully!");
+      this.reset();
+      window.location.href = "#home";
+    } catch(err) {
+      alert("Something went wrong. Please try again.");
+    }
   });
 </script>
 
+<!-- Enquiry Form -->
 <script>
   document.getElementById("enquiryForm").addEventListener("submit", async function(e) {
     e.preventDefault();
-    const inputs = this.querySelectorAll("input");
+    const inputs = this.querySelectorAll("input[type='text'], input[type='tel']");
     const select = this.querySelector("select");
-    const data = { type: "enquiry", studentName: inputs[0].value, mobile: inputs[1].value, course: select.value };
-    try { await fetch(SHEET_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) }); alert("Enquiry Submitted Successfully!"); this.reset(); }
-    catch(err) { alert("Something went wrong. Please try again."); }
+    const typeField = document.getElementById("enquiryType");
+
+    const data = {
+      type:        "enquiry",
+      enquiryType: typeField.value || "general",
+      studentName: inputs[0].value,
+      mobile:      inputs[1].value,
+      course:      select.value
+    };
+
+    try {
+      await fetch(SHEET_URL, {
+        method: "POST",
+        mode:   "no-cors",
+        body:   JSON.stringify(data)
+      });
+      alert("Enquiry Submitted Successfully!");
+      this.reset();
+    } catch(err) {
+      alert("Something went wrong. Please try again.");
+    }
   });
 </script>
 
+<!-- Feedback Form -->
 <script>
   document.getElementById("feedbackForm").addEventListener("submit", async function(e) {
     e.preventDefault();
-    const inputs = this.querySelectorAll("input");
-    const selects = this.querySelectorAll("select");
+    const inputs   = this.querySelectorAll("input");
+    const selects  = this.querySelectorAll("select");
     const textarea = this.querySelector("textarea");
-    const data = { type: "feedback", studentName: inputs[0].value, studentClass: selects[0].value, rating: selects[1].value, feedback: textarea.value };
-    try { await fetch(SHEET_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) }); alert("Feedback Submitted Successfully!"); this.reset(); }
-    catch(err) { alert("Error: " + err.message); }
+
+    const data = {
+      type:         "feedback",
+      studentName:  inputs[0].value,
+      studentClass: selects[0].value,
+      rating:       selects[1].value,
+      feedback:     textarea.value
+    };
+
+    try {
+      await fetch(SHEET_URL, {
+        method: "POST",
+        mode:   "no-cors",
+        body:   JSON.stringify(data)
+      });
+      alert("Feedback Submitted Successfully!");
+      this.reset();
+    } catch(err) {
+      alert("Error: " + err.message);
+    }
   });
 </script>
 
+<!-- Load Feedback / Testimonials -->
 <script>
   async function loadFeedback() {
     const container = document.getElementById("feedbackContainer");
     try {
-      const response = await fetch(SHEET_URL);
+      const response  = await fetch(SHEET_URL);
       const feedbacks = await response.json();
+
       container.innerHTML = "";
-      if (!feedbacks || feedbacks.length === 0) { container.innerHTML = "<p style='color:#ddd;text-align:center;'>No feedback yet.</p>"; return; }
+
+      if (!feedbacks || feedbacks.length === 0) {
+        container.innerHTML = "<p style='color:#ddd;text-align:center;'>No feedback yet.</p>";
+        return;
+      }
+
       feedbacks.forEach(item => {
-        container.innerHTML += `<div class="testimonial-card"><p>"${item.feedback}"</p><h4>${item.rating}<br>— ${item.studentName} (${item.studentClass})</h4></div>`;
+        container.innerHTML += `
+          <div class="testimonial-card">
+            <p>"${item.feedback}"</p>
+            <h4>${item.rating}<br>— ${item.studentName} (${item.studentClass})</h4>
+          </div>
+        `;
       });
-    } catch(err) { container.innerHTML = "<p style='color:#ddd;text-align:center;'>Reviews could not be loaded.</p>"; }
+
+    } catch(err) {
+      container.innerHTML = "<p style='color:#ddd;text-align:center;'>Reviews could not be loaded.</p>";
+      console.error("Feedback load error:", err);
+    }
   }
+
   loadFeedback();
 </script>
 
+<!-- Demo Class Booking Script -->
 <script>
-  document.querySelector('a[href="#enquirySection"]').addEventListener("click", function(e) {
-    e.preventDefault();
-    const heading = document.querySelector("#enquirySection h3");
-    const navHeight = document.querySelector(".navbar").offsetHeight;
-    const top = heading.getBoundingClientRect().top + window.pageYOffset - navHeight - 20;
-    window.scrollTo({ top: top, behavior: "auto" });
-  });
+  function bookDemo(type) {
+    const typeField = document.getElementById("enquiryType");
+    const title     = document.getElementById("enquiryFormTitle");
+
+    if (type === "offline") {
+      // Set form type
+      typeField.value = "Enquiry for Offline Demo Class";
+      title.textContent = "Book Offline Demo Class";
+
+      // Scroll directly to contact/enquiry form
+      document.getElementById("contact").scrollIntoView();
+
+    } else if (type === "online") {
+      // Set form type
+      typeField.value = "Enquiry for Online Demo Class";
+      title.textContent = "Book Online Demo Class";
+
+      // First scroll to online section (if it exists), then after 2.5s scroll to form
+      const onlineSection = document.getElementById("online");
+      if (onlineSection) {
+        onlineSection.scrollIntoView();
+        setTimeout(() => {
+          document.getElementById("contact").scrollIntoView();
+        }, 2500);
+      } else {
+        // No online section — go directly to form
+        document.getElementById("contact").scrollIntoView();
+      }
+    }
+  }
 </script>
-<script>
 
-const enquiryType =
-document.getElementById("enquiryType");
-
-const otherMessage =
-document.getElementById("otherMessage");
-
-enquiryType.addEventListener("change",function(){
-
-if(this.value==="other"){
-
-otherMessage.style.display="block";
-otherMessage.required=true;
-
-}else{
-
-otherMessage.style.display="none";
-otherMessage.required=false;
-
-}
-
-});
-
-function setEnquiryType(type){
-
-enquiryType.value=type;
-
-enquiryType.dispatchEvent(
-new Event("change")
-);
-
-}
-
-</script>
 </body>
 </html>
