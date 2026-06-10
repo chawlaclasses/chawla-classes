@@ -40,7 +40,7 @@
       <li><a href="#faculty">Faculty</a></li>
       <li><a href="#results">Results</a></li>
       <li><a href="#fees">Fees & Timings</a></li>
-      <li><a href="#online-classes">Online Classes</a></li>
+      <li><a href="#learning-modes">Offline & Online</a></li>
       <li><a href="#gallery">Gallery</a></li>
       <li><a href="#admission">Admission</a></li>
       <li><a href="#feedback">Feedback</a></li>
@@ -73,7 +73,7 @@
     <li class="drawer-divider"></li>
     <li><a href="#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
     <li><a href="#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#online-classes"><i class="fas fa-laptop"></i> Online Classes <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li><a href="#learning-modes"><i class="fas fa-laptop-house"></i> Offline & Online <i class="fas fa-chevron-right arrow"></i></a></li>
     <li><a href="#gallery"><i class="fas fa-images"></i> Gallery <i class="fas fa-chevron-right arrow"></i></a></li>
     <li><a href="#admission"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
     <li><a href="#feedback"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
@@ -217,7 +217,50 @@
     <div class="why-card"><i class="fas fa-trophy"></i><h3>Excellent Results</h3><p>Consistent academic success and outstanding performances.</p></div>
   </div>
 </section>
+<section id="learning-modes" class="learning-section">
 
+<h2 class="section-title">Offline & Online Classes</h2>
+
+<div class="learning-grid">
+
+<div class="learning-card">
+<i class="fas fa-school"></i>
+
+<h3>Offline Classroom Coaching</h3>
+
+<p>
+Personal attention, classroom interaction,
+regular tests and disciplined learning environment.
+</p>
+
+<a href="#enquirySection"
+onclick="setEnquiryType('offline')"
+class="learn-more-btn">
+Enquire Now
+</a>
+
+</div>
+
+<div class="learning-card">
+<i class="fas fa-laptop"></i>
+
+<h3>Online Live Classes</h3>
+
+<p>
+Attend live Google Meet classes from anywhere
+with notes, assignments and doubt solving support.
+</p>
+
+<a href="#online-classes"
+class="learn-more-btn">
+Know More
+</a>
+
+</div>
+
+</div>
+
+</section>
 <!-- FACULTY -->
 <section id="faculty" class="faculty-section">
   <h2 class="section-title">Our Faculty</h2>
@@ -439,6 +482,24 @@
     <form id="enquiryForm">
       <input type="text" placeholder="Student Name" required>
       <input type="tel" placeholder="Mobile Number" required>
+      <select id="enquiryType" required>
+<option value="">Select Enquiry Type</option>
+<option value="offline">
+Enquiry for Offline Classes
+</option>
+<option value="online">
+Enquiry for Online Classes
+</option>
+<option value="demo-offline">
+Demo for Offline Classes
+</option>
+<option value="demo-online">
+Demo for Online Classes
+</option>
+<option value="other">
+Other
+</option>
+</select>
       <select required>
         <option value="">Select Class</option>
         <option>1st Class</option><option>2nd Class</option><option>3rd Class</option>
@@ -450,6 +511,11 @@
         <option>CUET Preparation</option><option>SSC Preparation</option>
         <option>Olympiad Preparation</option><option>KVPY Preparation</option>
       </select>
+      <textarea
+id="otherMessage"
+placeholder="Please tell us your requirement"
+style="display:none;">
+</textarea>
       <button type="submit">Request Callback</button>
     </form>
   </div>
@@ -669,6 +735,40 @@
     window.scrollTo({ top: top, behavior: "auto" });
   });
 </script>
+<script>
 
+const enquiryType =
+document.getElementById("enquiryType");
+
+const otherMessage =
+document.getElementById("otherMessage");
+
+enquiryType.addEventListener("change",function(){
+
+if(this.value==="other"){
+
+otherMessage.style.display="block";
+otherMessage.required=true;
+
+}else{
+
+otherMessage.style.display="none";
+otherMessage.required=false;
+
+}
+
+});
+
+function setEnquiryType(type){
+
+enquiryType.value=type;
+
+enquiryType.dispatchEvent(
+new Event("change")
+);
+
+}
+
+</script>
 </body>
 </html>
