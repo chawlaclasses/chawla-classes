@@ -40,6 +40,7 @@
       <li><a href="#faculty">Faculty</a></li>
       <li><a href="#results">Results</a></li>
       <li><a href="#fees">Fees & Timings</a></li>
+      <li><a href="#classes-overview">Classes</a></li>
       <li><a href="#online-classes">Online Classes</a></li>
       <li><a href="#gallery">Gallery</a></li>
       <li><a href="#admission">Admission</a></li>
@@ -73,6 +74,7 @@
     <li class="drawer-divider"></li>
     <li><a href="#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
     <li><a href="#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li><a href="#classes-overview"><i class="fas fa-layer-group"></i> Classes <i class="fas fa-chevron-right arrow"></i></a></li>
     <li><a href="#online-classes"><i class="fas fa-laptop"></i> Online Classes <i class="fas fa-chevron-right arrow"></i></a></li>
     <li><a href="#gallery"><i class="fas fa-images"></i> Gallery <i class="fas fa-chevron-right arrow"></i></a></li>
     <li><a href="#admission"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
@@ -110,8 +112,12 @@
     <p class="hero-tagline">Trusted Coaching Institute in Uttam Nagar, New Delhi</p>
     <div class="hero-buttons">
       <a href="#admission" class="btn-primary">Admission Open</a>
-      <a href="#enquirySection" class="btn-demo" id="demoBtnHero">
-        <i class="fas fa-chalkboard-teacher"></i> Free Demo Class
+      <!-- ✅ Two Demo Buttons -->
+      <a href="#enquirySection" class="btn-demo" id="demoBtnOffline">
+        <i class="fas fa-school"></i> Demo — Offline
+      </a>
+      <a href="#enquirySection" class="btn-demo" id="demoBtnOnline">
+        <i class="fas fa-laptop"></i> Demo — Online
       </a>
       <a href="https://wa.me/919717914003" class="btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
     </div>
@@ -258,7 +264,57 @@
   </div>
 </section>
 
-<!-- ONLINE CLASSES -->
+<!-- ✅ OFFLINE & ONLINE CLASSES OVERVIEW -->
+<section id="classes-overview" class="classes-overview-section">
+  <h2 class="section-title">Our Classes</h2>
+  <p class="classes-overview-subtitle">Choose the mode that suits you best — learn at our centre or from home</p>
+
+  <div class="classes-overview-grid">
+
+    <!-- OFFLINE CARD -->
+    <div class="overview-card offline-card">
+      <div class="overview-icon">
+        <i class="fas fa-school"></i>
+      </div>
+      <h3>Offline Classes</h3>
+      <p class="overview-tagline">Learn at Our Centre — Uttam Nagar, New Delhi</p>
+      <ul class="overview-features">
+        <li><i class="fas fa-check-circle"></i> Face-to-face learning with expert faculty</li>
+        <li><i class="fas fa-check-circle"></i> Small batch size for personal attention</li>
+        <li><i class="fas fa-check-circle"></i> Regular tests every Sunday</li>
+        <li><i class="fas fa-check-circle"></i> Study material & assignments provided</li>
+        <li><i class="fas fa-check-circle"></i> Morning & Evening batches available</li>
+        <li><i class="fas fa-check-circle"></i> Classes 1st–12th, B.Com, BBA, B.A.</li>
+      </ul>
+      <a href="#enquirySection" class="overview-btn-primary" id="offlineEnquiryBtn">
+        <i class="fas fa-paper-plane"></i> Enquiry Now
+      </a>
+    </div>
+
+    <!-- ONLINE CARD -->
+    <div class="overview-card online-card-overview">
+      <div class="overview-icon">
+        <i class="fas fa-laptop"></i>
+      </div>
+      <h3>Online Classes</h3>
+      <p class="overview-tagline">Learn from Anywhere — Live on Google Meet</p>
+      <ul class="overview-features">
+        <li><i class="fas fa-check-circle"></i> Live interactive classes on Google Meet</li>
+        <li><i class="fas fa-check-circle"></i> Same expert faculty as offline</li>
+        <li><i class="fas fa-check-circle"></i> Notes & assignments shared digitally</li>
+        <li><i class="fas fa-check-circle"></i> Live doubt solving sessions</li>
+        <li><i class="fas fa-check-circle"></i> Online tests & performance tracking</li>
+        <li><i class="fas fa-check-circle"></i> Flexible batch timings</li>
+      </ul>
+      <a href="#online-classes" class="overview-btn-secondary" id="onlineKnowMoreBtn">
+        <i class="fas fa-arrow-right"></i> Know More
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ONLINE CLASSES SECTION -->
 <section id="online-classes" class="online-section">
   <h2 class="section-title">Online Classes Available</h2>
   <p class="online-subtitle">Join Live Online Classes from Anywhere Through Google Meet.</p>
@@ -284,7 +340,6 @@
       <p>Online assessments and performance tracking.</p>
     </div>
   </div>
-  <!-- Online Classes enquiry button → goes to enquiry form with pre-selection -->
   <a href="#enquirySection" class="online-btn" id="onlineEnquiryBtn">
     <svg style="width:22px;height:22px;margin-right:8px;vertical-align:middle;fill:#0f1f3d;" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Enquire for Online Classes
   </a>
@@ -333,7 +388,7 @@
     <h3>Still Have a Question?</h3>
     <p>Our team is happy to help you with admissions, fees, batch timings and course details.</p>
     <div class="faq-buttons">
-      <a href="#enquirySection" class="faq-btn-primary">Ask Your Question</a>
+      <a href="#enquirySection" class="faq-btn-primary" id="faqEnquiryBtn">Ask Your Question</a>
       <a href="tel:9717914003" class="faq-btn-secondary">Call Now</a>
     </div>
   </div>
@@ -394,7 +449,7 @@
   </div>
 </section>
 
-<!-- CONTACT -->
+<!-- CONTACT + ENQUIRY FORM -->
 <section id="contact" class="contact-section">
   <div class="contact-left">
     <h2>Contact Us</h2>
@@ -407,7 +462,7 @@
     <p><i class="fas fa-envelope" style="color:#ffc400;margin-right:6px;"></i> 4chawlaclasses@gmail.com</p>
   </div>
 
-  <!-- ✅ UPDATED ENQUIRY FORM -->
+  <!-- ENQUIRY FORM -->
   <div class="contact-right" id="enquirySection">
     <h3>Quick Enquiry</h3>
     <form id="enquiryForm">
@@ -425,7 +480,7 @@
         <option>Olympiad Preparation</option><option>KVPY Preparation</option>
       </select>
 
-      <!-- ✅ Enquiry Type Dropdown -->
+      <!-- Enquiry Type -->
       <select id="enquiryType" required>
         <option value="">Select Enquiry Type</option>
         <option value="Enquiry for Online Classes">Enquiry for Online Classes</option>
@@ -435,7 +490,7 @@
         <option value="Other">Other</option>
       </select>
 
-      <!-- ✅ Message box — only shows when "Other" selected -->
+      <!-- Message box — shows only for "Other" -->
       <textarea id="enquiryMessage" placeholder="Please describe your enquiry..." style="display:none;"></textarea>
 
       <button type="submit">Submit Enquiry</button>
@@ -467,7 +522,9 @@
       <h3>Quick Links</h3>
       <a href="#home">Home</a><a href="#about">About</a><a href="#courses">Courses</a>
       <a href="#faculty">Faculty</a><a href="#results">Results</a>
-      <a href="#fees">Fees &amp; Timings</a><a href="#online-classes">Online Classes</a>
+      <a href="#fees">Fees &amp; Timings</a>
+      <a href="#classes-overview">Classes</a>
+      <a href="#online-classes">Online Classes</a>
       <a href="#gallery">Gallery</a><a href="#admission">Admission</a>
       <a href="#feedback">Feedback</a><a href="#contact">Contact</a><a href="#faq">FAQ</a>
     </div>
@@ -503,8 +560,8 @@
   const mobileOverlay = document.getElementById("mobileOverlay");
   const drawerClose   = document.getElementById("drawerClose");
 
-  function openDrawer()  { mobileDrawer.classList.add("active"); mobileOverlay.classList.add("active"); menuToggle.classList.add("open"); document.body.style.overflow = "hidden"; }
-  function closeDrawer() { mobileDrawer.classList.remove("active"); mobileOverlay.classList.remove("active"); menuToggle.classList.remove("open"); document.body.style.overflow = ""; }
+  function openDrawer()  { mobileDrawer.classList.add("active"); mobileOverlay.classList.add("active"); menuToggle.classList.add("open"); document.body.style.overflow="hidden"; }
+  function closeDrawer() { mobileDrawer.classList.remove("active"); mobileOverlay.classList.remove("active"); menuToggle.classList.remove("open"); document.body.style.overflow=""; }
 
   menuToggle.addEventListener("click", () => mobileDrawer.classList.contains("active") ? closeDrawer() : openDrawer());
   drawerClose.addEventListener("click", closeDrawer);
@@ -516,14 +573,14 @@
       closeDrawer();
     });
   });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") { closeDrawer(); closeLightbox(); } });
+  document.addEventListener("keydown", e => { if (e.key==="Escape") { closeDrawer(); closeLightbox(); } });
 </script>
 
 <script>
-  // ✅ Enquiry Type — show message box when "Other" selected
   const enquiryType    = document.getElementById("enquiryType");
   const enquiryMessage = document.getElementById("enquiryMessage");
 
+  // Show/hide message box
   enquiryType.addEventListener("change", function() {
     if (this.value === "Other") {
       enquiryMessage.style.display = "block";
@@ -535,22 +592,6 @@
     }
   });
 
-  // ✅ Hero Demo Button → scroll to enquiry + pre-select "Demo for Offline Classes"
-  document.getElementById("demoBtnHero").addEventListener("click", function(e) {
-    e.preventDefault();
-    enquiryType.value = "Demo for Offline Classes";
-    enquiryMessage.style.display = "none";
-    scrollToEnquiry();
-  });
-
-  // ✅ Online Classes Enquiry Button → scroll to enquiry + pre-select "Enquiry for Online Classes"
-  document.getElementById("onlineEnquiryBtn").addEventListener("click", function(e) {
-    e.preventDefault();
-    enquiryType.value = "Enquiry for Online Classes";
-    enquiryMessage.style.display = "none";
-    scrollToEnquiry();
-  });
-
   function scrollToEnquiry() {
     const heading   = document.querySelector("#enquirySection h3");
     const navHeight = document.querySelector(".navbar").offsetHeight;
@@ -558,8 +599,48 @@
     window.scrollTo({ top: top, behavior: "smooth" });
   }
 
-  // FAQ Ask Question button
-  document.querySelector('a[href="#enquirySection"]').addEventListener("click", function(e) {
+  function setEnquiryType(value) {
+    enquiryType.value = value;
+    enquiryMessage.style.display = "none";
+    enquiryMessage.required = false;
+    scrollToEnquiry();
+  }
+
+  // Hero — Demo Offline
+  document.getElementById("demoBtnOffline").addEventListener("click", function(e) {
+    e.preventDefault();
+    setEnquiryType("Demo for Offline Classes");
+  });
+
+  // Hero — Demo Online
+  document.getElementById("demoBtnOnline").addEventListener("click", function(e) {
+    e.preventDefault();
+    setEnquiryType("Demo for Online Classes");
+  });
+
+  // Overview — Offline Enquiry Now
+  document.getElementById("offlineEnquiryBtn").addEventListener("click", function(e) {
+    e.preventDefault();
+    setEnquiryType("Enquiry for Offline Classes");
+  });
+
+  // Overview — Online Know More → scroll to online section
+  document.getElementById("onlineKnowMoreBtn").addEventListener("click", function(e) {
+    e.preventDefault();
+    const section   = document.getElementById("online-classes");
+    const navHeight = document.querySelector(".navbar").offsetHeight;
+    const top = section.getBoundingClientRect().top + window.pageYOffset - navHeight - 10;
+    window.scrollTo({ top: top, behavior: "smooth" });
+  });
+
+  // Online Classes section — Enquire button
+  document.getElementById("onlineEnquiryBtn").addEventListener("click", function(e) {
+    e.preventDefault();
+    setEnquiryType("Enquiry for Online Classes");
+  });
+
+  // FAQ Ask Question
+  document.getElementById("faqEnquiryBtn").addEventListener("click", function(e) {
     e.preventDefault();
     scrollToEnquiry();
   });
@@ -582,20 +663,18 @@
       }, 30);
     });
   }
-  const statsSection = document.querySelector(".stats-section");
   const observer = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting && !counted) { counted = true; runCounters(); }
   }, { threshold: 0.3 });
-  observer.observe(statsSection);
+  observer.observe(document.querySelector(".stats-section"));
 </script>
 
 <script>
   // Gallery Lightbox
   function openLightbox(src, alt) {
-    const lb = document.getElementById("lightbox");
     document.getElementById("lightboxImg").src = src;
     document.getElementById("lightboxCaption").textContent = alt;
-    lb.classList.add("active");
+    document.getElementById("lightbox").classList.add("active");
     document.body.style.overflow = "hidden";
   }
   function closeLightbox() {
@@ -616,53 +695,48 @@
 </script>
 
 <script>
-  // Admission Form
   document.getElementById("admissionForm").addEventListener("submit", async function(e) {
     e.preventDefault();
     const inputs = this.querySelectorAll("input");
     const select = this.querySelector("select");
     const textarea = this.querySelector("textarea");
-    const data = { type: "admission", studentName: inputs[0].value, parentName: inputs[1].value, mobile: inputs[2].value, email: inputs[3].value, school: inputs[4].value, course: select.value, address: textarea.value };
-    try { await fetch(SHEET_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) }); alert("Admission Form Submitted Successfully!"); this.reset(); window.location.href = "#home"; }
+    const data = { type:"admission", studentName:inputs[0].value, parentName:inputs[1].value, mobile:inputs[2].value, email:inputs[3].value, school:inputs[4].value, course:select.value, address:textarea.value };
+    try { await fetch(SHEET_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(data)}); alert("Admission Form Submitted Successfully!"); this.reset(); window.location.href="#home"; }
     catch(err) { alert("Something went wrong. Please try again."); }
   });
 </script>
 
 <script>
-  // ✅ Updated Enquiry Form with enquiry type + message
   document.getElementById("enquiryForm").addEventListener("submit", async function(e) {
     e.preventDefault();
     const inputs  = this.querySelectorAll("input");
     const selects = this.querySelectorAll("select");
-    const message = document.getElementById("enquiryMessage").value;
     const data = {
-      type:         "enquiry",
-      studentName:  inputs[0].value,
-      mobile:       inputs[1].value,
-      course:       selects[0].value,
-      enquiryType:  selects[1].value,
-      message:      message || ""
+      type:        "enquiry",
+      studentName: inputs[0].value,
+      mobile:      inputs[1].value,
+      course:      selects[0].value,
+      enquiryType: selects[1].value,
+      message:     enquiryMessage.value || ""
     };
-    try { await fetch(SHEET_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) }); alert("Enquiry Submitted Successfully!"); this.reset(); enquiryMessage.style.display = "none"; }
+    try { await fetch(SHEET_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(data)}); alert("Enquiry Submitted Successfully!"); this.reset(); enquiryMessage.style.display="none"; }
     catch(err) { alert("Something went wrong. Please try again."); }
   });
 </script>
 
 <script>
-  // Feedback Form
   document.getElementById("feedbackForm").addEventListener("submit", async function(e) {
     e.preventDefault();
     const inputs  = this.querySelectorAll("input");
     const selects = this.querySelectorAll("select");
     const textarea = this.querySelector("textarea");
-    const data = { type: "feedback", studentName: inputs[0].value, studentClass: selects[0].value, rating: selects[1].value, feedback: textarea.value };
-    try { await fetch(SHEET_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) }); alert("Feedback Submitted Successfully!"); this.reset(); }
-    catch(err) { alert("Error: " + err.message); }
+    const data = { type:"feedback", studentName:inputs[0].value, studentClass:selects[0].value, rating:selects[1].value, feedback:textarea.value };
+    try { await fetch(SHEET_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(data)}); alert("Feedback Submitted Successfully!"); this.reset(); }
+    catch(err) { alert("Error: "+err.message); }
   });
 </script>
 
 <script>
-  // Load Testimonials
   async function loadFeedback() {
     const container = document.getElementById("feedbackContainer");
     try {
