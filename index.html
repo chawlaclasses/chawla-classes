@@ -26,6 +26,8 @@
 <!-- NAVBAR -->
 <header>
   <nav class="navbar">
+
+    <!-- Logo -->
     <div class="logo-area">
       <img src="images/logo.png" alt="Chawla Classes Logo">
       <div class="logo-text">
@@ -33,24 +35,33 @@
         <p>Since 2002</p>
       </div>
     </div>
+
+    <!-- Hamburger -->
     <div class="menu-toggle" id="menuToggle" aria-label="Toggle Menu" role="button" tabindex="0">
       <span></span><span></span><span></span>
     </div>
+
+    <!-- Nav Links -->
     <ul class="nav-links" id="navLinks">
-      <li><a href="#home">Home</a></li>
+      <li><a href="#home" class="nav-active">Home</a></li>
       <li><a href="#about">About</a></li>
       <li><a href="#courses">Courses</a></li>
       <li><a href="#faculty">Leadership</a></li>
       <li><a href="#results">Results</a></li>
-      <li><a href="#fees">Fees & Timings</a></li>
-      <li><a href="#classes-overview">Offline & Online Classes</a></li>
+      <li><a href="#fees">Fees &amp; Timings</a></li>
+      <li><a href="#classes-overview">Classes</a></li>
       <li><a href="#admission">Admission</a></li>
       <li><a href="#feedback">Feedback</a></li>
       <li><a href="#contact">Contact</a></li>
     </ul>
-    <a href="tel:9717914003" class="call-btn">
-      <i class="fas fa-phone"></i> 9717914003
+
+    <!-- CTA Button -->
+    <a href="#admission" class="call-btn">
+      Admission Open
     </a>
+
+  </nav>
+</header>
   </nav>
 </header>
 
@@ -103,16 +114,14 @@
 <section id="home" class="hero-new">
   <div class="hero-content">
     <div class="hero-left">
-      <div class="hero-badge">SINCE 2002</div>
-
       <h1>CHAWLA<br><span>CLASSES</span></h1>
       <h2>Building Academic Excellence Since 2002</h2>
 
       <div class="hero-features">
         <div class="feature-item"><i class="fas fa-graduation-cap"></i><span>Classes 1st–12th</span></div>
-        <div class="feature-item"><i class="fas fa-book"></i><span>Commerce & Arts</span></div>
+        <div class="feature-item"><i class="fas fa-book"></i><span>Commerce &amp; Humanities</span></div>
         <div class="feature-item"><i class="fas fa-users"></i><span>B.Com | BBA | B.A.</span></div>
-        <div class="feature-item"><i class="fas fa-bullseye"></i><span>CUET | SSC</span></div>
+        <div class="feature-item"><i class="fas fa-bullseye"></i><span>CUET | SSC Preparation</span></div>
       </div>
 
       <p class="hero-description">
@@ -120,22 +129,20 @@
       </p>
 
       <div class="hero-buttons">
-        <!-- FIX: Added id="demoBtnOffline" -->
         <a href="#admission" class="hero-btn-primary" id="demoBtnOffline">
           Admission Open
         </a>
-        <!-- FIX: Added id="demoBtnOnline" -->
         <a href="#enquirySection" class="hero-btn-outline" id="demoBtnOnline">
-          Book Free Demo
+          <i class="fas fa-calendar-check"></i> Book Free Demo
         </a>
         <a href="https://wa.me/919717914003" target="_blank" class="hero-btn-whatsapp">
-          WhatsApp Us
+          <i class="fab fa-whatsapp"></i> WhatsApp Us
         </a>
       </div>
     </div>
 
     <div class="hero-right">
-      <img src="images/hero-student1.png" alt="Students Learning">
+      <img src="images/hero-student.jpg" alt="Students Learning">
     </div>
   </div>
 </section>
@@ -167,10 +174,10 @@
 
 <!-- ANIMATED STATS -->
 <section class="stats-section">
-  <div class="stat-box"><i class="fas fa-graduation-cap"></i><h2 class="counter" data-target="24">0</h2><p>Years of Excellence</p></div>
-  <div class="stat-box"><i class="fas fa-users"></i><h2 class="counter" data-target="1000">0</h2><p>Students Guided</p></div>
-  <div class="stat-box"><i class="fas fa-trophy"></i><h2 class="counter" data-target="95">0</h2><p>Board Results %</p></div>
-  <div class="stat-box"><i class="fas fa-chalkboard-teacher"></i><h2 class="counter" data-target="5">0</h2><p>Expert Faculty</p></div>
+  <div class="stat-box"><i class="fas fa-award"></i><div><h2 class="counter" data-target="24">0</h2><p>YEARS<br><span style="font-size:11px;color:#8899aa;">of Excellence</span></p></div></div>
+  <div class="stat-box"><i class="fas fa-users"></i><div><h2 class="counter" data-target="1000">0</h2><p>STUDENTS<br><span style="font-size:11px;color:#8899aa;">Guided Successfully</span></p></div></div>
+  <div class="stat-box"><i class="fas fa-chart-line"></i><div><h2 class="counter" data-target="95">0</h2><p>RESULTS<br><span style="font-size:11px;color:#8899aa;">Academic Success</span></p></div></div>
+  <div class="stat-box"><i class="fas fa-university"></i><div><h2 style="color:#f4b400;font-size:32px;font-weight:800;line-height:1;">SINCE<br>2002</h2><p style="color:#aabbcc;font-size:13px;">Building Futures</p></div></div>
 </section>
 
 <!-- ABOUT -->
