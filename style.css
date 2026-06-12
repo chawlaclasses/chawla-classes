@@ -1725,13 +1725,8 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
 
   .leadership-grid { grid-template-columns: 1fr; }
 }
+
 @media (min-width: 769px) and (max-width: 1024px) {
-  .hero-right img {
-    object-position: center 20%;
-    border-radius: 20px;
-  }
-}
-@media (min-width: 600px) and (max-width: 1024px) {
   .hero-content {
     flex-direction: row;
   }
