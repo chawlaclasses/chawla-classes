@@ -1725,7 +1725,12 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
 
   .leadership-grid { grid-template-columns: 1fr; }
 }
-
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hero-right img {
+    object-position: center 20%;
+    border-radius: 20px;
+  }
+}
 /* =====================
    RESPONSIVE — 768px
    FIX: Merged all duplicate mobile hero blocks into one clean block
