@@ -231,7 +231,7 @@ body {
 .hero-left {
   width: 50%;
   flex-shrink: 0;
-  padding: 20px 0 30px 6%;
+  padding: 20px 4% 30px 6%;
   position: relative;
   z-index: 3;
 }
@@ -367,7 +367,7 @@ body {
   right: -50px;
   top: -60px;
   bottom: 0;
-  width: 580px;
+  width: 600px;
   z-index: 2;
 }
 
