@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Progress — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628;
+    --gold: #F5A623;
+    --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18);
+    --white: #F8F9FC;
+    --text: #e2e8f4;
+    --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --surface: rgba(30,58,110,0.35);
+    --success: #22c55e;
+    --warn: #eab308;
+    --danger: #ef4444;
+    --input-bg: rgba(10,22,40,0.7);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--navy); color: var(--text); font-family: 'Inter', sans-serif;
+    min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: -200px; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+  .wrap { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+    margin-bottom: 24px; padding: 20px 28px;
+    background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius);
+    backdrop-filter: blur(20px); position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim)); border-radius: 4px 0 0 4px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 44px; height: 44px; background: var(--gold-glow); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  h1 { font-size: 24px; font-weight: 800; line-height: 1.15; margin: 0 0 4px; color: var(--white); }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px;
+    border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--card-bg);
+    color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+  .banner { display: none; padding: 13px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; border: 1px solid transparent; }
+  .banner.show { display: block; }
+  .banner.error { background: rgba(239,68,68,0.08); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+  .banner.success { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+  .tab { padding: 9px 18px; border-radius: 20px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .tab.active { border-color: var(--gold); background: var(--gold-glow); color: var(--gold); }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  .toolbar select {
+    background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+    padding: 9px 12px; color: var(--white); font-family: inherit; font-size: 13px;
+  }
+
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 22px 24px; margin-bottom: 18px; backdrop-filter: blur(12px);
+  }
+  .card h3 { font-size: 14px; color: var(--white); margin-bottom: 16px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+  .stat { text-align: center; padding: 14px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm); }
+  .stat .val { font-size: 20px; font-weight: 800; color: var(--gold); }
+  .stat .lbl { font-size: 10.5px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding-top: 10px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--gold), var(--gold-dim)); min-height: 3px; }
+  .bar.fail { background: linear-gradient(180deg, #f87171, #b91c1c); }
+  .bar-val { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .bar-lbl { font-size: 9.5px; color: var(--muted); margin-top: 6px; }
+
+  .prog-row { margin-bottom: 12px; }
+  .prog-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+  .prog-top .name { color: var(--white); font-weight: 600; }
+  .prog-top .meta { color: var(--muted); font-size: 11.5px; }
+  .prog-track { height: 8px; border-radius: 6px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 6px; }
+  .prog-fill.strong { background: var(--success); }
+  .prog-fill.medium { background: var(--warn); }
+  .prog-fill.weak { background: var(--danger); }
+
+  .chapter-list { display: flex; flex-direction: column; gap: 8px; }
+  .chapter-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm); font-size: 13px; }
+  .chapter-tag { font-size: 10.5px; padding: 3px 10px; border-radius: 20px; font-weight: 700; }
+  .chapter-tag.strong { background: rgba(34,197,94,0.15); color: #86efac; }
+  .chapter-tag.medium { background: rgba(234,179,8,0.15); color: #fde047; }
+  .chapter-tag.weak { background: rgba(239,68,68,0.15); color: #fca5a5; }
+
+  .empty-state { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 16px 12px 60px; }
+    header { padding: 16px 18px; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="header-left">
+      <div class="header-icon">📈</div>
+      <div>
+        <p class="eyebrow">Student Portal</p>
+        <h1>Progress</h1>
+        <p class="subtitle">How you're doing across tests &amp; practice</p>
+      </div>
+    </div>
+    <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="tests" onclick="switchTab('tests')">📝 Tests</div>
+    <div class="tab" data-tab="practice" onclick="switchTab('practice')">🎯 Practice</div>
+  </div>
+
+  <div id="testsTab">
+    <div class="toolbar">
+      <select id="periodSelect" onchange="loadTestsTab()">
+        <option value="week">Last Week</option>
+        <option value="month" selected>Last Month</option>
+        <option value="year">Last Year</option>
+        <option value="all">All Time</option>
+      </select>
+      <button class="btn" onclick="exportReport(this)">⬇ Export PDF Report</button>
+    </div>
+
+    <div class="card">
+      <h3>Overview</h3>
+      <div class="stat-grid" id="testSummaryGrid"><div class="empty-state">Loading…</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Improvement (last 10 tests)</h3>
+      <div id="improvementChart"><div class="empty-state">Loading…</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Subject-wise Accuracy</h3>
+      <div id="subjectAnalysis"><div class="empty-state">Loading…</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Chapter-wise Breakdown</h3>
+      <div id="chapterAnalysis"><div class="empty-state">Loading…</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Difficulty &amp; Time</h3>
+      <div class="stat-grid" id="difficultyTimeGrid"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+
+  <div id="practiceTab" style="display:none;">
+    <div class="card">
+      <h3>Overview</h3>
+      <div class="stat-grid" id="practiceSummaryGrid"><div class="empty-state">Loading…</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Subject-wise Accuracy (Practice)</h3>
+      <div id="practiceSubjects"><div class="empty-state">Loading…</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Chapter-wise Breakdown (Practice)</h3>
+      <div id="practiceChapters"><div class="empty-state">Loading…</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Wrong Question Notebook</h3>
+      <div class="stat-grid" id="wrongGrid"><div class="empty-state">Loading…</div></div>
+      <div style="margin-top:14px;">
+        <a href="/student/wrong-notebook.html" class="btn">Open Wrong Question Notebook →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = '/api';
+  const token = localStorage.getItem('studentToken');
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  async function apiCall(endpoint, options = {}) {
+    const defaultOptions = { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, { ...defaultOptions, ...options });
+      if (response.status === 401) {
+        showBanner('Session expired. Redirecting to login...', 'error');
+        setTimeout(() => { localStorage.removeItem('studentToken'); window.location.href = '/student/login.html'; }, 1500);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      showBanner('Network error. Please try again.', 'error');
+      return null;
+    }
+  }
+
+  function showBanner(msg, type) {
+    const banner = document.getElementById('banner');
+    banner.textContent = msg;
+    banner.className = `banner show ${type}`;
+    setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function statusClass(accuracy) {
+    return accuracy > 70 ? 'strong' : accuracy > 40 ? 'medium' : 'weak';
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.getElementById('testsTab').style.display = tab === 'tests' ? 'block' : 'none';
+    document.getElementById('practiceTab').style.display = tab === 'practice' ? 'block' : 'none';
+    if (tab === 'practice' && !practiceLoaded) loadPracticeTab();
+  }
+
+  async function loadTestsTab() {
+    const period = document.getElementById('periodSelect').value;
+
+    const [summary, improvement, subjects, chapters, difficulty, time] = await Promise.all([
+      apiCall(`/analytics/dashboard?period=${period}`),
+      apiCall('/analytics/improvement-graph?tests=10'),
+      apiCall('/analytics/subject-analysis'),
+      apiCall('/analytics/chapter-analysis'),
+      apiCall('/analytics/difficulty-analysis'),
+      apiCall('/analytics/time-analysis')
+    ]);
+
+    renderTestSummary(summary?.data);
+    renderImprovement(improvement?.data);
+    renderSubjects(subjects?.data);
+    renderChapters(chapters?.data);
+    renderDifficultyTime(difficulty?.data, time?.data);
+  }
+
+  function renderTestSummary(d) {
+    const grid = document.getElementById('testSummaryGrid');
+    if (!d) { grid.innerHTML = '<div class="empty-state">Could not load.</div>'; return; }
+    const stats = [
+      { val: d.totalTests, lbl: 'Tests Taken' },
+      { val: `${d.averagePercentage}%`, lbl: 'Average' },
+      { val: `${d.bestPercentage}%`, lbl: 'Best Score' },
+      { val: `${d.passRate}%`, lbl: 'Pass Rate' },
+      { val: `${Math.round((d.totalTimeSpent || 0) / 60)}m`, lbl: 'Time Spent' }
+    ];
+    grid.innerHTML = stats.map(s => `<div class="stat"><div class="val">${escapeHtml(String(s.val))}</div><div class="lbl">${s.lbl}</div></div>`).join('');
+    if (d.totalTests === 0) {
+      grid.innerHTML += '<div style="grid-column:1/-1;" class="empty-state">No tests attempted in this period yet.</div>';
+    }
+  }
+
+  function renderImprovement(data) {
+    const el = document.getElementById('improvementChart');
+    if (!data || !data.length) { el.innerHTML = '<div class="empty-state">No test history yet.</div>'; return; }
+    el.innerHTML = `<div class="bar-chart">${data.map(t => `
+      <div class="bar-col">
+        <div class="bar-val">${Math.round(t.percentage)}%</div>
+        <div class="bar ${t.percentage < 40 ? 'fail' : ''}" style="height:${Math.max(3, t.percentage)}%;"></div>
+        <div class="bar-lbl">#${t.testNumber}</div>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  function renderSubjects(data) {
+    const el = document.getElementById('subjectAnalysis');
+    if (!data || !data.length) { el.innerHTML = '<div class="empty-state">No subject data yet — take a test to see this.</div>'; return; }
+    el.innerHTML = data.map(s => `
+      <div class="prog-row">
+        <div class="prog-top"><span class="name">${escapeHtml(s.subject)}</span><span class="meta">${s.accuracy}% accuracy · ${s.testsAttempted} test(s)</span></div>
+        <div class="prog-track"><div class="prog-fill ${statusClass(s.accuracy)}" style="width:${s.accuracy}%;"></div></div>
+      </div>
+    `).join('');
+  }
+
+  function renderChapters(data) {
+    const el = document.getElementById('chapterAnalysis');
+    if (!data || !data.length) { el.innerHTML = '<div class="empty-state">No chapter data yet.</div>'; return; }
+    el.innerHTML = `<div class="chapter-list">${data.map(c => `
+      <div class="chapter-item">
+        <span>${escapeHtml(c.chapter)} <span style="color:var(--muted);font-size:11px;">(${c.totalQuestions} qs)</span></span>
+        <span class="chapter-tag ${c.status}">${c.accuracy}% · ${c.status}</span>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  function renderDifficultyTime(diff, time) {
+    const grid = document.getElementById('difficultyTimeGrid');
+    const parts = [];
+    (diff || []).forEach(d => {
+      if (d.totalQuestions > 0) parts.push({ val: `${d.accuracy}%`, lbl: `${d.difficulty} (${d.totalQuestions}q)` });
+    });
+    if (time) {
+      parts.push({ val: `${Math.round((time.averageTimePerTest || 0) / 60)}m`, lbl: 'Avg / Test' });
+      parts.push({ val: `${time.averageTimePerQuestion || 0}s`, lbl: 'Avg / Question' });
+    }
+    grid.innerHTML = parts.length
+      ? parts.map(s => `<div class="stat"><div class="val">${escapeHtml(String(s.val))}</div><div class="lbl">${escapeHtml(s.lbl)}</div></div>`).join('')
+      : '<div class="empty-state">No data yet.</div>';
+  }
+
+  async function exportReport(btn) {
+    showBanner('Preparing your report…', 'success');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Preparing...';
+    try {
+      const response = await fetch(`${API_BASE}/analytics/export?format=pdf`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'performance-report.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      showBanner('Could not export report.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  let practiceLoaded = false;
+
+  async function loadPracticeTab() {
+    practiceLoaded = true;
+    const result = await apiCall('/analytics/practice-progress');
+    if (!result || !result.success) {
+      showBanner('Could not load practice progress.', 'error');
+      return;
+    }
+    const d = result.data;
+
+    const grid = document.getElementById('practiceSummaryGrid');
+    grid.innerHTML = [
+      { val: d.sessionsCompleted, lbl: 'Sessions' },
+      { val: d.totalQuestionsAnswered, lbl: 'Questions Answered' },
+      { val: `${d.overallAccuracy}%`, lbl: 'Overall Accuracy' },
+      { val: d.lastPracticedAt ? new Date(d.lastPracticedAt).toLocaleDateString() : '—', lbl: 'Last Practiced' }
+    ].map(s => `<div class="stat"><div class="val">${escapeHtml(String(s.val))}</div><div class="lbl">${s.lbl}</div></div>`).join('');
+
+    const subjEl = document.getElementById('practiceSubjects');
+    subjEl.innerHTML = d.subjects.length ? d.subjects.map(s => `
+      <div class="prog-row">
+        <div class="prog-top"><span class="name">${escapeHtml(s.subject)}</span><span class="meta">${s.accuracy}% accuracy · ${s.attempted} question(s)</span></div>
+        <div class="prog-track"><div class="prog-fill ${statusClass(s.accuracy)}" style="width:${s.accuracy}%;"></div></div>
+      </div>
+    `).join('') : '<div class="empty-state">No practice sessions yet — start practicing!</div>';
+
+    const chapEl = document.getElementById('practiceChapters');
+    chapEl.innerHTML = d.chapters.length ? `<div class="chapter-list">${d.chapters.map(c => `
+      <div class="chapter-item">
+        <span>${escapeHtml(c.subject)} — ${escapeHtml(c.chapter)} <span style="color:var(--muted);font-size:11px;">(${c.attempted} qs)</span></span>
+        <span class="chapter-tag ${c.status}">${c.accuracy}% · ${c.status}</span>
+      </div>
+    `).join('')}</div>` : '<div class="empty-state">No chapter data yet.</div>';
+
+    const wrongGrid = document.getElementById('wrongGrid');
+    wrongGrid.innerHTML = [
+      { val: d.wrongQuestionsPending, lbl: 'Pending Revision' },
+      { val: d.wrongQuestionsImproved, lbl: 'Improved' }
+    ].map(s => `<div class="stat"><div class="val">${escapeHtml(String(s.val))}</div><div class="lbl">${s.lbl}</div></div>`).join('');
+  }
+
+  loadTestsTab();
+</script>
+
+</body>
+</html>

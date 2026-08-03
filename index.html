@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="images/favicon.png">
 <link rel="shortcut icon" href="images/favicon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chawla Classes">
 <meta name="theme-color" content="#0b1f3a">
 <meta name="description" content="Chawla Classes – Uttam Nagar's most trusted coaching institute since 2002. Expert coaching for Classes 1st–12th, Commerce, Arts, B.Com, BBA, B.A., CUET & SSC. 10000+ students guided. Admission open for 2026–27.">
@@ -22,7 +23,7 @@
 <meta property="og:type" content="website">
 
 <!-- FIX: Preload LCP images for better performance -->
-<link rel="preload" as="image" href="images/hero-student.jpg">
+<link rel="preload" as="image" href="images/hero-student1.png">
 
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -57,17 +58,34 @@
       <li><a href="#fees">Fees &amp; Timings</a></li>
       <li><a href="#classes-overview">Classes</a></li>
       <li><a href="#admission">Admission</a></li>
+      <li><a href="/careers.html">Careers</a></li>
       <li><a href="#feedback">Feedback</a></li>
       <li><a href="#contact">Contact</a></li>
+      <!-- Login dropdown -->
+      <li class="nav-login-dropdown">
+        <a href="javascript:void(0)" class="login-toggle">
+          <i class="fas fa-user-circle"></i> Login <i class="fas fa-chevron-down"></i>
+        </a>
+        <div class="login-dropdown-menu">
+          <a href="/student/login.html"><i class="fas fa-user-graduate"></i> Student Login</a>
+          <a href="/admin/login.html"><i class="fas fa-shield-alt"></i> Admin Login</a>
+        </div>
+      </li>
     </ul>
+
+    <!-- Login Buttons -->
+    <!-- <div class="login-buttons">
+        <a href="/student/login.html" class="btn btn-primary">
+            <i class="fas fa-user-graduate"></i>
+            Student Login
+        </a>
+    </div> -->
 
     <!-- CTA Button -->
     <a href="#admission" class="call-btn">
       Admission Open
     </a>
 
-  </nav>
-</header>
   </nav>
 </header>
 
@@ -85,18 +103,28 @@
     <button class="drawer-close" id="drawerClose" aria-label="Close Menu">&#x2715;</button>
   </div>
   <ul class="drawer-nav" id="drawerNav">
-    <li><a href="#home" class="active"><i class="fas fa-home"></i> Home <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#about"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#courses"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#faculty"><i class="fas fa-users"></i> Leadership <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="drawer-divider"></li>
-    <li><a href="#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#classes-overview"><i class="fas fa-layer-group"></i> Classes <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#admission"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#feedback"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li><a href="#contact"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
-  </ul>
+  <li><a href="#home" class="active"><i class="fas fa-home"></i> Home <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li><a href="#about"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li><a href="#courses"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li><a href="#faculty"><i class="fas fa-users"></i> Leadership <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="drawer-divider"></li>
+  <li><a href="#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li><a href="#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li><a href="#classes-overview"><i class="fas fa-layer-group"></i> Classes <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li><a href="#admission"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li><a href="/careers.html"><i class="fas fa-user-tie"></i> Careers <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li><a href="#feedback"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li><a href="#contact"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="drawer-divider"></li>
+  <li style="padding: 0 20px;">
+    <a href="/student/login.html" style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.15);border-radius:8px;margin-bottom:8px;justify-content:center;color:#F5A623;">
+      <i class="fas fa-user-graduate"></i> Student Login <i class="fas fa-chevron-right arrow"></i>
+    </a>
+    <a href="/admin/login.html" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;justify-content:center;">
+      <i class="fas fa-user-shield"></i> Admin Login <i class="fas fa-chevron-right arrow"></i>
+    </a>
+  </li>
+</ul>
   <div class="drawer-footer">
     <a href="tel:9717914003" class="drawer-call-cta">
       <div class="drawer-call-icon"><i class="fas fa-phone-alt"></i></div>
@@ -183,7 +211,7 @@
 <!-- ANIMATED STATS -->
 <section class="stats-section">
   <div class="stat-box"><i class="fas fa-award"></i><div><h2 class="counter" data-target="24">0</h2><p>YEARS<br><span style="font-size:11px;color:#8899aa;">of Excellence</span></p></div></div>
-  <div class="stat-box"><i class="fas fa-users"></i><div><h2 class="counter" data-target="10000">0</h2><p>STUDENTS<br><span style="font-size:11px;color:#8899aa;">Guided Successfully</span></p></div></div>
+  <div class="stat-box"><i class="fas fa-users"></i><div><h2 class="counter" data-target="1000">0</h2><p>STUDENTS<br><span style="font-size:11px;color:#8899aa;">Guided Successfully</span></p></div></div>
   <div class="stat-box"><i class="fas fa-chart-line"></i><div><h2 class="counter" data-target="95">0</h2><p>RESULTS<br><span style="font-size:11px;color:#8899aa;">Academic Success</span></p></div></div>
   <div class="stat-box"><i class="fas fa-university"></i><div><h2 style="color:#f4b400;font-size:32px;font-weight:800;line-height:1;">SINCE<br>2002</h2><p style="color:#aabbcc;font-size:13px;">Building Futures</p></div></div>
 </section>
@@ -602,6 +630,7 @@
       <a href="#fees">Fees &amp; Timings</a>
       <a href="#classes-overview">Classes</a>
       <a href="#admission">Admission</a>
+      <a href="/careers.html">Careers</a>
       <a href="#feedback">Feedback</a><a href="#contact">Contact</a><a href="#faq">FAQ</a>
     </div>
     <div class="footer-box">
@@ -651,6 +680,46 @@
     });
   });
   document.addEventListener("keydown", e => { if (e.key==="Escape") { closeDrawer(); closeLightbox(); } });
+</script>
+
+<script>
+  // ===== LOGIN DROPDOWN CLICK SUPPORT (hover + click) =====
+  // Existing JS ko touch nahi karta
+  (function() {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initDropdown);
+    } else {
+      initDropdown();
+    }
+
+    function initDropdown() {
+      const dropdown = document.querySelector(".nav-login-dropdown");
+      const toggle = dropdown?.querySelector(".login-toggle");
+
+      if (!dropdown || !toggle) return;
+
+      // Click toggle
+      toggle.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropdown.classList.toggle("active");
+      });
+
+      // Click outside se close
+      document.addEventListener("click", function(e) {
+        if (!dropdown.contains(e.target)) {
+          dropdown.classList.remove("active");
+        }
+      });
+
+      // Escape key se close
+      document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+          dropdown.classList.remove("active");
+        }
+      });
+    }
+  })();
 </script>
 
 <script>
@@ -772,7 +841,21 @@
     const select = this.querySelector("select");
     const textarea = this.querySelector("textarea");
     const data = { type:"admission", studentName:inputs[0].value, parentName:inputs[1].value, mobile:inputs[2].value, email:inputs[3].value, school:inputs[4].value, course:select.value, address:textarea.value };
-    try { await fetch(SHEET_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(data)}); alert("Admission Form Submitted Successfully!"); this.reset(); window.location.href="#home"; }
+    const sheetPromise = fetch(SHEET_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(data)});
+    const adminPromise = fetch("/api/enquiry/admission", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentName: data.studentName,
+        parentName: data.parentName,
+        phone: data.mobile,
+        email: data.email,
+        school: data.school,
+        interestedClass: data.course,
+        address: data.address,
+      }),
+    });
+    try { await Promise.allSettled([sheetPromise, adminPromise]); alert("Admission Form Submitted Successfully!"); this.reset(); window.location.href="#home"; }
     catch(err) { alert("Something went wrong. Please try again."); }
   });
 </script>
@@ -790,7 +873,27 @@
       enquiryType: selects[1].value,
       message:     enquiryMessage.value || ""
     };
-    try { await fetch(SHEET_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(data)}); alert("Enquiry Submitted Successfully!"); this.reset(); enquiryMessage.style.display="none"; }
+    // Goes to two places: the Google Sheet (unchanged, kept as-is) and the
+    // admin panel's own Enquiries module (new — this is what makes the
+    // submission actually show up in the admin panel, not just the sheet).
+    // Both are best-effort and run together; either one succeeding is
+    // enough to show the visitor a success message.
+    const sheetPromise = fetch(SHEET_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) });
+    const adminPromise = fetch("/api/enquiry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: data.studentName,
+        phone: data.mobile,
+        interestedClass: data.course,
+        enquiryType: data.enquiryType,
+        message: data.message,
+      }),
+    });
+    try {
+      await Promise.allSettled([sheetPromise, adminPromise]);
+      alert("Enquiry Submitted Successfully!"); this.reset(); enquiryMessage.style.display="none";
+    }
     catch(err) { alert("Something went wrong. Please try again."); }
   });
 </script>

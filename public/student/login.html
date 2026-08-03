@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Login – Chawla Classes</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --ink:        #0A1830;
+  --ink-soft:   #132A4D;
+  --gold:       #D4A017;
+  --gold-light: #F4C430;
+  --gold-pale:  #FBE8A6;
+  --muted:      #5C6B82;
+  --border:     #DDE2EC;
+  --bg-field:   #F7F8FB;
+  --danger:     #C62828;
+  --danger-bg:  #FDE8E8;
+  --success:    #1B7A3E;
+  --success-bg: #E4F5EC;
+  --white:      #FFFFFF;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 16px;
+  font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(circle at 8% 12%,  rgba(212,160,23,.18) 0%, transparent 40%),
+    radial-gradient(circle at 92% 88%, rgba(212,160,23,.12) 0%, transparent 42%),
+    linear-gradient(155deg, var(--ink) 0%, var(--ink-soft) 55%, #0C2452 100%);
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: var(--white);
+  border-radius: 24px;
+  padding: 40px 36px 34px;
+  box-shadow: 0 24px 56px rgba(0,0,0,.38);
+  overflow: hidden;
+  animation: rise .45s ease both;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-pale), var(--gold));
+}
+
+@keyframes rise {
+  from { opacity:0; transform:translateY(18px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.logo-wrap {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 2.5px solid var(--gold);
+  box-shadow: 0 8px 22px rgba(212,160,23,.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.logo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.card h2 {
+  font-family: 'Sora', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+  margin-bottom: 5px;
+}
+.tagline {
+  text-align: center;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.sub {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13.5px;
+  margin-bottom: 28px;
+  letter-spacing: .3px;
+}
+
+.field {
+  position: relative;
+  margin-bottom: 16px;
+}
+.field .icon-left {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 15px;
+  pointer-events: none;
+}
+.field input {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px 0 46px;
+  border: 1.5px solid var(--border);
+  border-radius: 13px;
+  font-size: 14.5px;
+  font-family: 'Inter', sans-serif;
+  color: var(--ink);
+  background: var(--bg-field);
+  transition: border-color .2s, box-shadow .2s, background .2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.field input::placeholder { color: #9AA5B8; }
+.field input:hover  { border-color: var(--gold); }
+.field input:focus  {
+  outline: none;
+  border-color: var(--gold);
+  background: var(--white);
+  box-shadow: 0 0 0 4px rgba(212,160,23,.14);
+}
+#password { padding-right: 48px; }
+
+.eye-btn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 15px;
+  padding: 4px;
+  line-height: 1;
+  transition: color .2s;
+}
+.eye-btn:hover { color: var(--ink); }
+
+#msg {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+#msg.show  { display: flex; }
+#msg.error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid rgba(198,40,40,.2);
+}
+#msg.ok {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid rgba(27,122,62,.2);
+}
+
+.row-opt {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 13.5px;
+}
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.remember input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.help-link {
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 700;
+  transition: color .2s;
+}
+.help-link:hover { color: var(--gold); }
+
+#loginBtn {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  color: var(--ink);
+  font-size: 15.5px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 10px 26px rgba(212,160,23,.38);
+  transition: transform .25s, box-shadow .25s, opacity .25s;
+}
+#loginBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(212,160,23,.52);
+}
+#loginBtn:active:not(:disabled) { transform: scale(.98); }
+#loginBtn:disabled { opacity: .72; cursor: default; }
+
+.divider {
+  border: none;
+  border-top: 1px solid #EAEEF4;
+  margin: 28px 0 20px;
+}
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-top: 20px;
+}
+.footer a {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="logo-wrap">
+    <img src="/images/logo.png" alt="Chawla Classes Logo">
+  </div>
+
+  <h2>Chawla Classes</h2>
+  <p class="tagline">Welcome Back 👋</p>
+  <p class="sub">Student Portal Login</p>
+
+  <div class="field">
+    <i class="fa-solid fa-envelope icon-left" aria-hidden="true"></i>
+    <input type="email" id="email" placeholder="Enter Email" autocomplete="email">
+  </div>
+
+  <div class="field">
+    <i class="fa-solid fa-lock icon-left" aria-hidden="true"></i>
+    <input type="password" id="password" placeholder="Enter Password" autocomplete="current-password">
+    <button type="button" class="eye-btn" id="eyeBtn" aria-label="Show password">
+      <i class="fa-solid fa-eye" id="eyeIcon"></i>
+    </button>
+  </div>
+
+  <div id="msg" role="alert"></div>
+
+  <div class="row-opt">
+    <label class="remember">
+      <input type="checkbox" id="rememberMe">
+      Remember Me
+    </label>
+    <a href="/index.html#contact" class="help-link">Need Help?</a>
+  </div>
+
+  <button id="loginBtn" onclick="doLogin()">
+    <i class="fa-solid fa-right-to-bracket"></i> Login
+  </button>
+
+  <hr class="divider">
+
+  <div style="text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid #EAEEF4;">
+    <a href="/admin/login.html" style="color:var(--muted);font-size:12px;text-decoration:none;">
+      <i class="fa-solid fa-user-shield"></i> Admin Login
+    </a>
+    <span style="color:#ddd;margin:0 8px;">|</span>
+    <a href="/" style="color:var(--muted);font-size:12px;text-decoration:none;">
+      <i class="fa-solid fa-home"></i> Home
+    </a>
+  </div>
+
+  <p class="footer">© 2026 Chawla Classes · Empowering Students Towards Success</p>
+
+</div>
+
+<script>
+(function () {
+  const saved = localStorage.getItem("cc_rememberedEmail");
+  if (saved) {
+    document.getElementById("email").value = saved;
+    document.getElementById("rememberMe").checked = true;
+  }
+})();
+
+// If the previous session ended via auto-logout (inactivity timeout),
+// show why — set in js/idle-logout.js before the redirect.
+(function () {
+  const reason = sessionStorage.getItem("cc_logoutReason");
+  if (reason) {
+    sessionStorage.removeItem("cc_logoutReason");
+    document.addEventListener("DOMContentLoaded", () => showMsg(reason, "error"));
+  }
+})();
+
+function showMsg(text, type) {
+  const el = document.getElementById("msg");
+  const icon = type === "ok"
+    ? '<i class="fa-solid fa-circle-check"></i>'
+    : '<i class="fa-solid fa-triangle-exclamation"></i>';
+  el.innerHTML = icon + " " + text;
+  el.className = "show " + type;
+}
+function hideMsg() {
+  const el = document.getElementById("msg");
+  el.className = "";
+  el.innerHTML = "";
+}
+
+document.getElementById("eyeBtn").addEventListener("click", function () {
+  const inp  = document.getElementById("password");
+  const icon = document.getElementById("eyeIcon");
+  const show = inp.type === "password";
+  inp.type   = show ? "text" : "password";
+  icon.className = show ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+});
+
+document.getElementById("email").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") document.getElementById("password").focus();
+});
+document.getElementById("password").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") doLogin();
+});
+
+async function doLogin() {
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const remember = document.getElementById("rememberMe").checked;
+
+  if (!email || !password) {
+    showMsg("Please enter your email and password.", "error");
+    return;
+  }
+
+  hideMsg();
+
+  if (remember) {
+    localStorage.setItem("cc_rememberedEmail", email);
+  } else {
+    localStorage.removeItem("cc_rememberedEmail");
+  }
+
+  const btn = document.getElementById("loginBtn");
+  let ok = false;
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging in…';
+
+  try {
+    const res  = await fetch("/api/student/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      ok = true;
+      localStorage.setItem("studentEmail", email);
+      localStorage.setItem("studentName", data.data.user.name || "Student");
+      localStorage.setItem("studentToken", data.data.token);
+      localStorage.setItem("userClass", JSON.stringify({ displayName: data.data.user.class || "Not Assigned" }));
+      
+      showMsg("Login successful! Redirecting…", "ok");
+      btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Login Successful';
+      setTimeout(() => { window.location.href = "/student/dashboard.html"; }, 800);
+    } else {
+      showMsg(data.message || "Invalid credentials.", "error");
+    }
+  } catch (err) {
+    showMsg("Server error. Please try again.", "error");
+    console.error("Login error:", err);
+  } finally {
+    if (!ok) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login';
+    }
+  }
+}
+</script>
+</body>
+</html>

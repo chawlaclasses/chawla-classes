@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revision — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628;
+    --gold: #F5A623;
+    --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18);
+    --white: #F8F9FC;
+    --text: #e2e8f4;
+    --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --surface: rgba(30,58,110,0.35);
+    --input-bg: rgba(10,22,40,0.7);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--navy); color: var(--text); font-family: 'Inter', sans-serif;
+    min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: -200px; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+  .wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+    margin-bottom: 24px; padding: 20px 28px;
+    background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius);
+    backdrop-filter: blur(20px); position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim)); border-radius: 4px 0 0 4px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 44px; height: 44px; background: var(--gold-glow); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  h1 { font-size: 24px; font-weight: 800; line-height: 1.15; margin: 0 0 4px; color: var(--white); }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px;
+    border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--card-bg);
+    color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim)); color: var(--navy); border: none;
+    box-shadow: 0 3px 12px var(--gold-glow);
+  }
+  .btn-gold:hover { box-shadow: 0 5px 20px rgba(245,166,35,0.35); transform: translateY(-1px); color: var(--navy); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .banner { display: none; padding: 13px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; border: 1px solid transparent; }
+  .banner.show { display: block; }
+  .banner.error { background: rgba(239,68,68,0.08); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+  .banner.success { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
+
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 22px 24px; margin-bottom: 18px; backdrop-filter: blur(12px);
+  }
+
+  .hero-stat { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .hero-num { font-size: 40px; font-weight: 800; color: var(--gold); }
+  .hero-lbl { font-size: 13px; color: var(--muted); }
+  .hero-breakdown { display: flex; gap: 18px; font-size: 12.5px; color: var(--text); }
+  .hero-breakdown b { color: var(--gold); }
+
+  .empty-state { padding: 50px 20px; text-align: center; color: var(--muted); }
+  .empty-state .icon { font-size: 44px; margin-bottom: 10px; }
+  .empty-state strong { display: block; color: var(--white); font-size: 15px; margin-bottom: 4px; }
+  .empty-state p { font-size: 13px; margin-top: 6px; }
+
+  .rev-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 12px 14px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+  }
+  .rev-left { flex: 1; min-width: 0; }
+  .rev-text { font-size: 13px; color: var(--white); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rev-meta { font-size: 11px; color: var(--muted); }
+  .rev-tag { font-size: 10px; padding: 3px 9px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
+  .rev-tag.wrong { background: rgba(239,68,68,0.12); color: #fca5a5; }
+  .rev-tag.bookmark { background: var(--gold-glow); color: var(--gold); }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 16px 12px 60px; }
+    header { padding: 16px 18px; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="header-left">
+      <div class="header-icon">🔁</div>
+      <div>
+        <p class="eyebrow">Student Portal</p>
+        <h1>Revision</h1>
+        <p class="subtitle">What's due for review today</p>
+      </div>
+    </div>
+    <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <div class="card">
+    <div class="hero-stat">
+      <div>
+        <div class="hero-num" id="totalDue">—</div>
+        <div class="hero-lbl">questions due for revision</div>
+      </div>
+      <div class="hero-breakdown">
+        <span>❌ Wrong: <b id="dueWrong">0</b></span>
+        <span>🔖 Bookmarked: <b id="dueBookmarks">0</b></span>
+      </div>
+      <button class="btn btn-gold" id="startBtn" onclick="startRevision()" disabled>▶ Start Revision Session</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:14px;color:var(--white);margin-bottom:14px;">Queue</h3>
+    <div id="queueContainer"><div class="empty-state"><div class="icon">⏳</div><strong>Loading…</strong></div></div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = '/api';
+  const token = localStorage.getItem('studentToken');
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  let currentQueue = [];
+
+  async function apiCall(endpoint, options = {}) {
+    const defaultOptions = { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, { ...defaultOptions, ...options });
+      if (response.status === 401) {
+        showBanner('Session expired. Redirecting to login...', 'error');
+        setTimeout(() => { localStorage.removeItem('studentToken'); window.location.href = '/student/login.html'; }, 1500);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      showBanner('Network error. Please try again.', 'error');
+      return null;
+    }
+  }
+
+  function showBanner(msg, type) {
+    const banner = document.getElementById('banner');
+    banner.textContent = msg;
+    banner.className = `banner show ${type}`;
+    setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function loadQueue() {
+    const result = await apiCall('/revision/queue?limit=30');
+    const container = document.getElementById('queueContainer');
+    const startBtn = document.getElementById('startBtn');
+
+    if (!result || !result.success) {
+      container.innerHTML = '<div class="empty-state">Could not load revision queue.</div>';
+      return;
+    }
+
+    const d = result.data;
+    currentQueue = d.queue || [];
+
+    document.getElementById('totalDue').textContent = d.totalDue;
+    document.getElementById('dueWrong').textContent = d.dueWrong;
+    document.getElementById('dueBookmarks').textContent = d.dueBookmarks;
+    startBtn.disabled = currentQueue.length === 0;
+
+    if (!currentQueue.length) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">🎉</div><strong>Nothing due right now!</strong><p>Keep practicing and bookmarking — this queue fills up automatically.</p></div>';
+      return;
+    }
+
+    container.innerHTML = currentQueue.map(item => `
+      <div class="rev-item">
+        <div class="rev-left">
+          <div class="rev-text">${escapeHtml(item.text) || '(question)'}</div>
+          <div class="rev-meta">${escapeHtml(item.subject || 'General')}${item.chapter ? ' · ' + escapeHtml(item.chapter) : ''} — ${escapeHtml(item.reason)}</div>
+        </div>
+        <span class="rev-tag ${item.source}">${item.source === 'wrong' ? 'Wrong' : 'Bookmark'}</span>
+      </div>
+    `).join('');
+  }
+
+  function startRevision() {
+    if (!currentQueue.length) return;
+    const questionIds = currentQueue.map(i => i.questionId);
+    sessionStorage.setItem('practiceAutoStart', JSON.stringify({ questionIds }));
+    window.location.href = '/student/practice.html';
+  }
+
+  // ==================== Init ====================
+  loadQueue();
+</script>
+
+</body>
+</html>

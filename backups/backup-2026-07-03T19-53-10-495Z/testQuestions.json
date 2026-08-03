@@ -1,0 +1,34 @@
+[
+  {
+    "_id": "mr2e8ydsy3f8m9hog",
+    "testId": "mr1xnrhhwcewja0za",
+    "questionText": "find the value of x, 2x-1=1",
+    "options": [
+      {
+        "text": "A. 1",
+        "isCorrect": true
+      },
+      {
+        "text": "B. 2",
+        "isCorrect": false
+      },
+      {
+        "text": "C. 3",
+        "isCorrect": false
+      },
+      {
+        "text": "D. 4",
+        "isCorrect": false
+      }
+    ],
+    "correctAnswer": "A. 1",
+    "explanation": "A.",
+    "marks": 1,
+    "type": "mcq",
+    "order": 1,
+    "isActive": true,
+    "createdBy": "mr1u8mhxi2c6x9by0",
+    "createdAt": "2026-07-01T18:13:17.968Z",
+    "updatedAt": "2026-07-01T18:13:17.973Z"
+  }
+]

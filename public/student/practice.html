@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628;
+    --navy-mid: #1E3A6E;
+    --gold: #F5A623;
+    --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18);
+    --white: #F8F9FC;
+    --text: #e2e8f4;
+    --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --surface: rgba(30,58,110,0.35);
+    --success: #22c55e;
+    --danger: #ef4444;
+    --input-bg: rgba(10,22,40,0.7);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(30,58,110,0.5) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+    margin-bottom: 24px; padding: 20px 28px;
+    background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius);
+    backdrop-filter: blur(20px); position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim)); border-radius: 4px 0 0 4px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 44px; height: 44px; background: var(--gold-glow); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  h1 { font-size: 24px; font-weight: 800; line-height: 1.15; margin: 0 0 4px; color: var(--white); }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 22px 24px; margin-bottom: 18px; backdrop-filter: blur(12px);
+  }
+
+  .banner {
+    display: none; padding: 13px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; border: 1px solid transparent;
+  }
+  .banner.show { display: block; }
+  .banner.error { background: rgba(239,68,68,0.08); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+  .banner.success { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--muted); opacity: 0; transform: translateY(8px); animation: fadeInUp 0.4s ease forwards; }
+  @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+  .empty-state strong { display: block; color: var(--white); font-size: 15px; margin-bottom: 4px; }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* ---- Recommendations ---- */
+  .reco-list { display: flex; flex-direction: column; gap: 10px; }
+  .reco-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 12px 14px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+    font-size: 13px;
+  }
+  .reco-item .reco-text { color: var(--text); }
+  .reco-item .reco-text b { color: var(--gold); }
+
+  /* ---- Setup form ---- */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  label { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  select, input[type="number"] {
+    width: 100%; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+    padding: 10px 12px; color: var(--white); font-family: inherit; font-size: 13.5px;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--gold); }
+
+  .toggle-row { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
+  .toggle-chip {
+    display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 20px;
+    border: 1px solid var(--card-border); background: var(--input-bg); cursor: pointer; font-size: 13px; color: var(--text);
+  }
+  .toggle-chip input { accent-color: var(--gold); }
+  .toggle-chip.active { border-color: var(--gold); background: var(--gold-glow); color: var(--gold); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
+    border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--card-bg);
+    color: var(--text); font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim)); color: var(--navy); border: none;
+    box-shadow: 0 3px 12px var(--gold-glow);
+  }
+  .btn-gold:hover { box-shadow: 0 5px 20px rgba(245,166,35,0.35); transform: translateY(-1px); color: var(--navy); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn.bookmarked { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn-group { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+
+  /* ---- Question screen ---- */
+  .progress-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .progress-track { flex: 1; height: 8px; border-radius: 6px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); border-radius: 6px; transition: width 0.3s ease; }
+  .progress-label { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+
+  .stat-strip { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 20px; font-size: 12.5px; color: var(--muted); }
+  .stat-strip b { color: var(--white); font-size: 14px; }
+
+  .q-text { font-size: 17px; line-height: 1.7; color: var(--white); margin-bottom: 20px; }
+  .q-meta { display: flex; gap: 8px; margin-bottom: 14px; }
+  .q-tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--gold-glow); color: var(--gold); font-weight: 600; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+  .option {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    background: var(--input-bg); border: 2px solid var(--card-border); border-radius: var(--radius-sm);
+    cursor: pointer; transition: all 0.15s; font-size: 14px; color: var(--text);
+  }
+  .option:hover { border-color: rgba(245,166,35,0.4); }
+  .option.selected { border-color: var(--gold); background: var(--gold-glow); }
+  .option.correct { border-color: var(--success); background: rgba(34,197,94,0.1); color: #86efac; }
+  .option.wrong { border-color: var(--danger); background: rgba(239,68,68,0.1); color: #fca5a5; }
+  .option.disabled { cursor: default; }
+  .option .opt-label { font-weight: 700; color: var(--muted); min-width: 20px; }
+
+  .feedback-box {
+    padding: 14px 16px; border-radius: var(--radius-sm); font-size: 13.5px; margin-bottom: 18px;
+    border: 1px solid transparent; display: none;
+  }
+  .feedback-box.show { display: block; }
+  .feedback-box.correct { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.25); color: #86efac; }
+  .feedback-box.wrong { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.25); color: #fca5a5; }
+  .feedback-box .explain { color: var(--text); margin-top: 6px; }
+
+  /* ---- Complete screen ---- */
+  .result-hero { text-align: center; padding: 20px 0 10px; }
+  .result-hero .big { font-size: 42px; font-weight: 800; color: var(--gold); }
+  .result-hero .sub { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+  .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 20px 0; }
+  .result-stat { text-align: center; padding: 14px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm); }
+  .result-stat .val { font-size: 20px; font-weight: 700; color: var(--white); }
+  .result-stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .reward-row { display: flex; justify-content: center; gap: 24px; margin: 10px 0 4px; }
+  .reward-chip { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--gold); font-weight: 700; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 16px 12px 60px; }
+    header { padding: 16px 18px; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="header-left">
+      <div class="header-icon">🎯</div>
+      <div>
+        <p class="eyebrow">Student Portal</p>
+        <h1>Practice</h1>
+        <p class="subtitle">Unlimited practice by subject, chapter &amp; difficulty</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <!-- ===== SETUP SCREEN ===== -->
+  <div id="setupView">
+
+    <div class="card" id="recoCard" style="display:none;">
+      <h3 style="font-size:14px;color:var(--white);margin-bottom:12px;">💡 Suggested for you</h3>
+      <div class="reco-list" id="recoList"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:14px;color:var(--white);margin-bottom:16px;">Start a Practice Session</h3>
+
+      <div class="form-grid">
+        <div>
+          <label for="fSubject">Subject</label>
+          <select id="fSubject" onchange="onSubjectChange()">
+            <option value="">Any subject</option>
+          </select>
+        </div>
+        <div>
+          <label for="fChapter">Chapter</label>
+          <select id="fChapter">
+            <option value="">Any chapter</option>
+          </select>
+        </div>
+        <div>
+          <label for="fType">Question Type</label>
+          <select id="fType">
+            <option value="">Any type</option>
+          </select>
+        </div>
+        <div>
+          <label for="fCount">No. of Questions</label>
+          <input type="number" id="fCount" value="10" min="1" max="50">
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <label class="toggle-chip" id="chipBookmarked"><input type="checkbox" id="fBookmarked" onchange="toggleChip('chipBookmarked', this)"> Bookmarked only</label>
+        <label class="toggle-chip" id="chipWrong"><input type="checkbox" id="fWrong" onchange="toggleChip('chipWrong', this)"> Wrong questions only</label>
+        <label class="toggle-chip active" id="chipRandom"><input type="checkbox" id="fRandom" checked onchange="toggleChip('chipRandom', this)"> Shuffle questions</label>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-gold" id="startBtn" onclick="startPractice()">▶ Start Practice</button>
+        <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== QUESTION SCREEN ===== -->
+  <div id="questionView" style="display:none;">
+    <div class="card">
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+        <div class="progress-label" id="progressLabel">0 / 0</div>
+      </div>
+
+      <div class="stat-strip">
+        <span>Correct: <b id="statCorrect">0</b></span>
+        <span>Wrong: <b id="statWrong">0</b></span>
+        <span>Accuracy: <b id="statAccuracy">0%</b></span>
+      </div>
+
+      <div class="q-meta">
+        <span class="q-tag" id="qSubjectTag">—</span>
+        <span class="q-tag" id="qChapterTag" style="display:none;">—</span>
+        <button class="btn btn-sm" id="bookmarkBtn" onclick="toggleBookmark()" style="margin-left:auto;">🔖 Bookmark</button>
+      </div>
+      <div class="q-text" id="qText">Loading question…</div>
+      <div class="options" id="qOptions"></div>
+
+      <div class="feedback-box" id="feedbackBox">
+        <div id="feedbackHeadline"></div>
+        <div class="explain" id="feedbackExplain"></div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-gold" id="submitBtn" onclick="submitCurrentAnswer()" disabled>Submit Answer</button>
+        <button class="btn" id="nextBtn" onclick="goToNextQuestion()" style="display:none;">Next Question →</button>
+        <button class="btn" onclick="exitPractice()">✕ Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COMPLETE SCREEN ===== -->
+  <div id="completeView" style="display:none;">
+    <div class="card">
+      <div class="result-hero">
+        <div class="big" id="finalAccuracy">0%</div>
+        <div class="sub">Session accuracy</div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-stat"><div class="val" id="finalTotal">0</div><div class="lbl">Total</div></div>
+        <div class="result-stat"><div class="val" id="finalCorrect">0</div><div class="lbl">Correct</div></div>
+        <div class="result-stat"><div class="val" id="finalWrong">0</div><div class="lbl">Wrong</div></div>
+        <div class="result-stat"><div class="val" id="finalSkipped">0</div><div class="lbl">Skipped</div></div>
+      </div>
+
+      <div class="reward-row">
+        <div class="reward-chip">⚡ +<span id="finalXP">0</span> XP</div>
+        <div class="reward-chip">🪙 +<span id="finalCoins">0</span> Coins</div>
+      </div>
+
+      <div class="btn-group" style="justify-content:center;">
+        <button class="btn btn-gold" onclick="resetToSetup()">↻ Practice Again</button>
+        <a href="/student/dashboard.html" class="btn">Back to Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = '/api';
+  const token = localStorage.getItem('studentToken');
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  let filtersData = { subjects: [], chaptersBySubject: {}, types: [] };
+  let currentSession = null;   // { sessionId, questions: [...] }
+  let currentIndex = 0;
+  let selectedAnswer = null;
+  let questionStartTime = null;
+  let hasAnsweredCurrent = false;
+
+  async function apiCall(endpoint, options = {}) {
+    const defaultOptions = { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, { ...defaultOptions, ...options });
+      if (response.status === 401) {
+        showBanner('Session expired. Redirecting to login...', 'error');
+        setTimeout(() => { localStorage.removeItem('studentToken'); window.location.href = '/student/login.html'; }, 1500);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      showBanner('Network error. Please try again.', 'error');
+      return null;
+    }
+  }
+
+  function showBanner(msg, type) {
+    const banner = document.getElementById('banner');
+    banner.textContent = msg;
+    banner.className = `banner show ${type}`;
+    setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function toggleChip(chipId, checkbox) {
+    document.getElementById(chipId).classList.toggle('active', checkbox.checked);
+  }
+
+  // ==================== Setup screen ====================
+
+  async function loadFilters() {
+    const result = await apiCall('/practice/filters');
+    if (!result || !result.success) return;
+    filtersData = result.data;
+
+    const subjectSel = document.getElementById('fSubject');
+    filtersData.subjects.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      subjectSel.appendChild(opt);
+    });
+
+    const typeSel = document.getElementById('fType');
+    (filtersData.types || []).forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      typeSel.appendChild(opt);
+    });
+  }
+
+  function onSubjectChange() {
+    const subject = document.getElementById('fSubject').value;
+    const chapterSel = document.getElementById('fChapter');
+    chapterSel.innerHTML = '<option value="">Any chapter</option>';
+    const chapters = filtersData.chaptersBySubject[subject] || [];
+    chapters.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      chapterSel.appendChild(opt);
+    });
+  }
+
+  async function loadRecommendations() {
+    const result = await apiCall('/practice/recommendations');
+    if (!result || !result.success) return;
+    const data = result.data;
+    const list = data.recommendations || [];
+    if (!list.length) return;
+
+    const recoCard = document.getElementById('recoCard');
+    const recoList = document.getElementById('recoList');
+    recoList.innerHTML = list.map(r => `
+      <div class="reco-item">
+        <span class="reco-text">${escapeHtml(r.reason)}</span>
+        ${r.subject ? `<button class="btn" onclick="quickStart(${JSON.stringify(r.subject).replace(/"/g, '&quot;')}, ${JSON.stringify(r.suggestedAction === 'practice_wrong')})">Practice</button>` : ''}
+      </div>
+    `).join('');
+    recoCard.style.display = 'block';
+  }
+
+  function quickStart(subject, wrongOnly) {
+    document.getElementById('fSubject').value = subject;
+    onSubjectChange();
+    document.getElementById('fWrong').checked = !!wrongOnly;
+    toggleChip('chipWrong', document.getElementById('fWrong'));
+    startPractice();
+  }
+
+  async function startPractice() {
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true;
+    btn.textContent = 'Starting…';
+
+    const payload = {
+      subject: document.getElementById('fSubject').value || undefined,
+      chapter: document.getElementById('fChapter').value || undefined,
+      questionType: document.getElementById('fType').value || undefined,
+      count: parseInt(document.getElementById('fCount').value) || 10,
+      random: document.getElementById('fRandom').checked,
+      bookmarked: document.getElementById('fBookmarked').checked,
+      wrong: document.getElementById('fWrong').checked
+    };
+    if (window.__revisionQuestionIds) {
+      payload.questionIds = window.__revisionQuestionIds;
+      payload.count = payload.questionIds.length;
+    }
+
+    const result = await apiCall('/practice/start', { method: 'POST', body: JSON.stringify(payload) });
+    btn.disabled = false;
+    btn.textContent = '▶ Start Practice';
+
+    if (!result || !result.success) {
+      showBanner('Could not start practice session.', 'error');
+      return;
+    }
+
+    if (!result.data.questions || result.data.questions.length === 0) {
+      showBanner('No questions found for these filters. Try widening your filters.', 'error');
+      return;
+    }
+
+    currentSession = result.data;
+    currentIndex = 0;
+    document.getElementById('setupView').style.display = 'none';
+    document.getElementById('completeView').style.display = 'none';
+    document.getElementById('questionView').style.display = 'block';
+    renderQuestion();
+  }
+
+  // ==================== Question screen ====================
+
+  function renderQuestion() {
+    const q = currentSession.questions[currentIndex];
+    selectedAnswer = null;
+    hasAnsweredCurrent = false;
+    questionStartTime = Date.now();
+
+    document.getElementById('progressLabel').textContent = `${currentIndex + 1} / ${currentSession.questions.length}`;
+    document.getElementById('progressFill').style.width = `${(currentIndex / currentSession.questions.length) * 100}%`;
+
+    document.getElementById('qSubjectTag').textContent = q.subject || currentSession.questions[0]?.subject || '—';
+    if (q.chapter) {
+      document.getElementById('qChapterTag').style.display = 'inline-block';
+      document.getElementById('qChapterTag').textContent = q.chapter;
+    } else {
+      document.getElementById('qChapterTag').style.display = 'none';
+    }
+
+    document.getElementById('qText').textContent = q.text || '(Question text unavailable)';
+
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
+    bookmarkBtn.classList.remove('bookmarked');
+    bookmarkBtn.textContent = '🔖 Bookmark';
+    bookmarkBtn.disabled = false;
+
+    const optionsEl = document.getElementById('qOptions');
+    optionsEl.innerHTML = '';
+    (q.options || []).forEach((optText, i) => {
+      const div = document.createElement('div');
+      div.className = 'option';
+      div.dataset.value = optText;
+      div.innerHTML = `<span class="opt-label">${String.fromCharCode(65 + i)}</span><span>${escapeHtml(optText)}</span>`;
+      div.onclick = () => selectOption(div, optText);
+      optionsEl.appendChild(div);
+    });
+
+    document.getElementById('feedbackBox').className = 'feedback-box';
+    document.getElementById('submitBtn').style.display = 'inline-flex';
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('nextBtn').style.display = 'none';
+  }
+
+  async function toggleBookmark() {
+    const q = currentSession.questions[currentIndex];
+    const btn = document.getElementById('bookmarkBtn');
+    btn.disabled = true;
+
+    const result = await apiCall(`/bookmarks/toggle/${q.id}`, { method: 'POST' });
+    btn.disabled = false;
+
+    if (!result || !result.success) {
+      showBanner('Could not update bookmark.', 'error');
+      return;
+    }
+
+    if (result.data.action === 'added') {
+      btn.classList.add('bookmarked');
+      btn.textContent = '🔖 Bookmarked';
+    } else {
+      btn.classList.remove('bookmarked');
+      btn.textContent = '🔖 Bookmark';
+    }
+  }
+
+  function selectOption(el, value) {
+    if (hasAnsweredCurrent) return;
+    document.querySelectorAll('#qOptions .option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedAnswer = value;
+    document.getElementById('submitBtn').disabled = false;
+  }
+
+  async function submitCurrentAnswer() {
+    if (selectedAnswer === null || hasAnsweredCurrent) return;
+    hasAnsweredCurrent = true;
+
+    const q = currentSession.questions[currentIndex];
+    const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
+
+    const result = await apiCall(`/practice/answer/${currentSession.sessionId}`, {
+      method: 'POST',
+      body: JSON.stringify({ questionId: q.id, answer: selectedAnswer, timeTaken })
+    });
+
+    if (!result || !result.success) {
+      showBanner('Could not submit answer. Try again.', 'error');
+      hasAnsweredCurrent = false;
+      return;
+    }
+
+    const { isCorrect, correctAnswer, explanation, stats } = result.data;
+
+    document.querySelectorAll('#qOptions .option').forEach(o => {
+      o.classList.add('disabled');
+      if (o.dataset.value === correctAnswer) o.classList.add('correct');
+      else if (o.dataset.value === selectedAnswer && !isCorrect) o.classList.add('wrong');
+    });
+
+    const fb = document.getElementById('feedbackBox');
+    fb.className = `feedback-box show ${isCorrect ? 'correct' : 'wrong'}`;
+    document.getElementById('feedbackHeadline').textContent = isCorrect ? '✓ Correct!' : `✕ Incorrect — correct answer: ${correctAnswer}`;
+    document.getElementById('feedbackExplain').textContent = explanation || '';
+
+    document.getElementById('statCorrect').textContent = stats.correct;
+    document.getElementById('statWrong').textContent = stats.wrong;
+    document.getElementById('statAccuracy').textContent = `${Math.round(stats.accuracy)}%`;
+
+    document.getElementById('submitBtn').style.display = 'none';
+    document.getElementById('nextBtn').style.display = 'inline-flex';
+    document.getElementById('nextBtn').textContent =
+      currentIndex + 1 < currentSession.questions.length ? 'Next Question →' : 'Finish Session ✓';
+  }
+
+  async function goToNextQuestion() {
+    if (currentIndex + 1 < currentSession.questions.length) {
+      currentIndex++;
+      renderQuestion();
+    } else {
+      await finishPractice();
+    }
+  }
+
+  function exitPractice() {
+    if (!confirm('Exit this practice session? Your progress so far is already saved.')) return;
+    finishPractice();
+  }
+
+  async function finishPractice() {
+    const result = await apiCall(`/practice/complete/${currentSession.sessionId}`, { method: 'POST' });
+    document.getElementById('questionView').style.display = 'none';
+
+    if (!result || !result.success) {
+      showBanner('Session ended, but summary could not be loaded.', 'error');
+      resetToSetup();
+      return;
+    }
+
+    const { stats, xpEarned, coinsEarned } = result.data;
+    document.getElementById('finalAccuracy').textContent = `${Math.round(stats.accuracy || 0)}%`;
+    document.getElementById('finalTotal').textContent = stats.total;
+    document.getElementById('finalCorrect').textContent = stats.correct;
+    document.getElementById('finalWrong').textContent = stats.wrong;
+    document.getElementById('finalSkipped').textContent = stats.skipped;
+    document.getElementById('finalXP').textContent = xpEarned;
+    document.getElementById('finalCoins').textContent = coinsEarned;
+
+    document.getElementById('completeView').style.display = 'block';
+  }
+
+  function resetToSetup() {
+    currentSession = null;
+    document.getElementById('completeView').style.display = 'none';
+    document.getElementById('questionView').style.display = 'none';
+    document.getElementById('setupView').style.display = 'block';
+    loadRecommendations();
+  }
+
+  // ==================== Init ====================
+  loadFilters().then(() => {
+    const auto = sessionStorage.getItem('practiceAutoStart');
+    if (auto) {
+      sessionStorage.removeItem('practiceAutoStart');
+      try {
+        const { wrong, bookmarked, subject, questionIds } = JSON.parse(auto);
+        if (questionIds && questionIds.length) {
+          window.__revisionQuestionIds = questionIds;
+          startPractice();
+          return;
+        }
+        if (subject) document.getElementById('fSubject').value = subject;
+        onSubjectChange();
+        if (wrong) { document.getElementById('fWrong').checked = true; toggleChip('chipWrong', document.getElementById('fWrong')); }
+        if (bookmarked) { document.getElementById('fBookmarked').checked = true; toggleChip('chipBookmarked', document.getElementById('fBookmarked')); }
+        startPractice();
+        return;
+      } catch (e) { /* fall through to normal setup screen */ }
+    }
+  });
+  loadRecommendations();
+</script>
+
+</body>
+</html>

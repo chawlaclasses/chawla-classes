@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Fees — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628; --navy-mid: #1E3A6E; --gold: #F5A623; --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18); --white: #F8F9FC; --text: #e2e8f4; --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04); --card-border: rgba(255,255,255,0.08); --surface: rgba(30,58,110,0.35);
+    --success: #22c55e; --danger: #ef4444; --radius: 16px; --radius-sm: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--navy); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; top: -200px; left: -200px; width: 700px; height: 700px; background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+  body::after { content: ''; position: fixed; bottom: -200px; right: -200px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(30,58,110,0.5) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+
+  .wrap { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding: 20px 28px; background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius); backdrop-filter: blur(20px); position: relative; overflow: hidden; }
+  header::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, var(--gold), var(--gold-dim)); border-radius: 4px 0 0 4px; }
+  .header-icon { width: 44px; height: 44px; background: var(--gold-glow); border: 1px solid rgba(245,166,35,0.25); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  h1 { font-size: 24px; font-weight: 800; color: var(--white); margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 14px 16px; }
+  .stat-card .val { font-size: 20px; font-weight: 800; color: var(--white); }
+  .stat-card .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  .fee-card { background: var(--card-bg); border: 1px solid var(--card-border); border-top: 2.5px solid var(--gold); border-radius: var(--radius-sm); padding: 16px 18px; margin-bottom: 12px; }
+  .fee-card.overdue { border-top-color: var(--danger); }
+  .fee-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .fee-title { font-size: 15px; font-weight: 700; color: var(--white); }
+  .fee-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .fee-amount { font-size: 18px; font-weight: 800; color: var(--gold); margin-top: 8px; }
+  .fee-breakdown { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+  .status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .status-pending { background: rgba(245,166,35,0.15); color: #fcd34d; }
+  .status-overdue { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .status-paid { background: rgba(34,197,94,0.15); color: #86efac; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--card-bg); color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; margin-top: 10px; }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn-group { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+
+  .empty-state { padding: 50px 20px; text-align: center; color: var(--muted); }
+  .empty-state .icon { font-size: 44px; margin-bottom: 10px; display: block; }
+  .empty-state p { margin-top: 6px; }
+  .banner {
+    display: none; padding: 13px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; border: 1px solid transparent;
+  }
+  .banner.show { display: block; }
+  .banner.error { background: rgba(239,68,68,0.08); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+  .banner.success { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="header-icon">💰</div>
+    <div>
+      <p class="eyebrow">Student Portal</p>
+      <h1>My Fees</h1>
+      <p class="subtitle">Installments, dues and payment receipts</p>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="val" id="statPending">—</div><div class="lbl">Pending</div></div>
+    <div class="stat-card"><div class="val" id="statOverdue">—</div><div class="lbl">Overdue</div></div>
+    <div class="stat-card"><div class="val" id="statPaid">—</div><div class="lbl">Paid</div></div>
+  </div>
+
+  <div id="feesList"></div>
+
+  <div class="btn-group">
+    <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+  </div>
+</div>
+
+<script>
+  const API_BASE = '/api/student';
+  const token = localStorage.getItem('studentToken');
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  async function apiCall(endpoint, options = {}) {
+    const defaultOptions = { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, { ...defaultOptions, ...options });
+      if (response.status === 401) {
+        setTimeout(() => { localStorage.removeItem('studentToken'); window.location.href = '/student/login.html'; }, 1200);
+        return null;
+      }
+      return await response.json();
+    } catch (error) { return null; }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function showBanner(msg, type) {
+    const banner = document.getElementById('banner');
+    banner.textContent = msg;
+    banner.className = `banner show ${type}`;
+    setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  async function downloadReceipt(id, btn) {
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Downloading...';
+    try {
+      const res = await fetch(`${API_BASE}/fees/${id}/receipt`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) {
+        showBanner('Could not download receipt. Please try again.', 'error');
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = ''; document.body.appendChild(a); a.click(); a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      showBanner('Could not download receipt. Please check your connection.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  async function loadFees() {
+    const result = await apiCall('/fees');
+    const list = document.getElementById('feesList');
+    if (!result || !result.success) { list.innerHTML = `<div class="card empty-state">Failed to load fees</div>`; return; }
+
+    const fees = result.data || [];
+    const pending = fees.filter(f => f.status === 'Pending' && !f.isOverdue);
+    const overdue = fees.filter(f => f.isOverdue);
+    const paid = fees.filter(f => f.status === 'Paid');
+
+    document.getElementById('statPending').textContent = pending.length;
+    document.getElementById('statOverdue').textContent = overdue.length;
+    document.getElementById('statPaid').textContent = paid.length;
+
+    if (fees.length === 0) {
+      list.innerHTML = `<div class="card empty-state"><span class="icon">💰</span><strong style="display:block;color:var(--white);">No fee records yet</strong><p>Your fee details will appear here once added by the office.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = fees.map(f => {
+      const statusCls = f.status === 'Paid' ? 'status-paid' : (f.isOverdue ? 'status-overdue' : 'status-pending');
+      const statusLabel = f.status === 'Paid' ? 'Paid' : (f.isOverdue ? `Overdue (${f.daysOverdue}d)` : 'Pending');
+      const breakdownParts = [];
+      if (f.discountAmount > 0) breakdownParts.push(`− ₹${f.discountAmount} discount`);
+      if (f.scholarshipAmount > 0) breakdownParts.push(`− ₹${f.scholarshipAmount} scholarship`);
+      if (f.lateFineAmount > 0) breakdownParts.push(`+ ₹${f.lateFineAmount} late fine`);
+
+      return `
+        <div class="fee-card ${f.isOverdue ? 'overdue' : ''}">
+          <div class="fee-head">
+            <div>
+              <div class="fee-title">${escapeHtml(f.title || f.description || 'Fee Payment')}${f.totalInstallments > 1 ? ` <span style="color:var(--muted);font-weight:400;font-size:12px;">(Installment ${f.installmentNumber}/${f.totalInstallments})</span>` : ''}</div>
+              <div class="fee-meta">Due ${new Date(f.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+            </div>
+            <span class="status-badge ${statusCls}">${statusLabel}</span>
+          </div>
+          <div class="fee-amount">₹${Number(f.netPayable).toLocaleString('en-IN')}</div>
+          ${breakdownParts.length > 0 ? `<div class="fee-breakdown">Base ₹${f.amount} ${breakdownParts.join(' ')}</div>` : ''}
+          ${f.status === 'Paid' ? `<button class="btn" onclick="downloadReceipt('${f._id}', this)">📄 Download Receipt</button>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  loadFees();
+</script>
+<script src="/student/js/idle-logout.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "student_1",
+    "username": "rohit123",
+    "password": "$2a$10$u2yYY87QivF1lw2hZefyU.nW59/LDbFdKh1XoWlHASgvktXDHvHIi",
+    "name": "Rohit Kumar",
+    "role": "student",
+    "class": "12",
+    "section": "A",
+    "rollNo": "101",
+    "admissionNo": "CC2025001",
+    "batch": "2025-26",
+    "email": "rohit@example.com",
+    "phone": "9876543210",
+    "level": 12,
+    "xp": 2840,
+    "coins": 1250,
+    "streak": 7,
+    "createdAt": "2026-07-03T19:52:26.604Z",
+    "lastLogin": "2026-07-03T19:52:26.610Z"
+  },
+  {
+    "id": "student_2",
+    "username": "priya123",
+    "password": "$2a$10$MiWzH04CxkFlLlnSBFhk2eQSzA2.CfBYGQI0..dQstdPo0GqoOsIC",
+    "name": "Priya Sharma",
+    "role": "student",
+    "class": "12",
+    "section": "A",
+    "rollNo": "102",
+    "admissionNo": "CC2025002",
+    "batch": "2025-26",
+    "email": "priya@example.com",
+    "phone": "9876543211",
+    "level": 15,
+    "xp": 3800,
+    "coins": 1800,
+    "streak": 12,
+    "createdAt": "2026-07-03T19:52:26.747Z",
+    "lastLogin": "2026-07-03T19:52:26.747Z"
+  }
+]

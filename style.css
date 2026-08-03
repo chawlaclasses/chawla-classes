@@ -1364,7 +1364,7 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
 .drawer-logo-text h4 { color: white; font-size: 14px; font-weight: 800; margin: 0; line-height: 1.3; letter-spacing: 0.5px; }
 .drawer-logo-text p  { color: #f4b400; font-size: 10px; margin: 0; font-weight: 600; letter-spacing: 1px; }
 .drawer-close {
-  width: 34px; height: 34px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   background: rgba(255,255,255,.07);
   border: none; cursor: pointer;
@@ -1690,6 +1690,7 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
 @media (max-width: 992px) {
   .menu-toggle { display: flex; }
   .nav-links, .call-btn { display: none; }
+  .login-buttons .btn-admin { display: none; }
   .hero, .results-section, .contact-section { flex-direction: column; }
   .container { flex-direction: column; }
   .hero-left, .hero-right, .about-left, .about-right,
@@ -1781,8 +1782,29 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   .menu-toggle { display: flex; }
   .nav-links, .call-btn { display: none; }
 
+  /* Mobile Header Polish (UI polish only — no layout/JS changes) */
+  .navbar { padding: 8px 4%; gap: 8px; justify-content: flex-start; min-height: 56px; }
+  .logo-area { order: 1; gap: 8px; }
+  .logo-area img { width: 38px; height: 38px; min-width: 38px; }
+  .logo-area .logo-text { gap: 2px; }
+  .logo-area h2 { font-size: 13px; }
+  .logo-area p  { font-size: 9px; margin-top: 2px; }
+  .login-buttons { order: 2; margin-left: auto; }
+  .login-buttons .btn-admin { display: none; }
+  .menu-toggle {
+    order: 3;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    margin-left: auto;
+    margin-right: 16px;
+    align-items: center;
+    justify-content: center;
+  }
+  .menu-toggle span { width: 28px; }
+
  /* Hero */
-  .hero-new { padding: 120px 5% 50px; }
+  .hero-new { padding: 104px 5% 50px; }
   .hero-content { flex-direction: column; text-align: center; min-height: auto; }
   .hero-left { width: 100%; padding: 0; }
   .hero-left h1 { font-size: 52px; line-height: 1; }
@@ -1824,10 +1846,199 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   .faq-buttons { flex-direction: column; }
   .notice-label { padding: 12px 15px; font-size: 13px; }
   .notice-marquee { font-size: 13px; }
-  .scroll-top { bottom: 185px; right: 15px; width: 44px; height: 44px; font-size: 16px; }
+
+  /* Floating action buttons: smaller + tucked into safe corner so they
+     never sit over the Admission Open / Book Free Demo CTAs or hero text */
+  .whatsapp-btn {
+    width: 52px; height: 52px;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    right: 20px;
+  }
+  .whatsapp-btn i { font-size: 26px; }
+  .call-floating-btn {
+    width: 52px; height: 52px;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    right: 20px;
+  }
+  .call-floating-btn i { font-size: 22px; }
+  .scroll-top { bottom: calc(164px + env(safe-area-inset-bottom, 0px)); right: 20px; width: 44px; height: 44px; font-size: 16px; }
   .classes-overview-grid { grid-template-columns: 1fr; }
   .leadership-grid { grid-template-columns: 1fr; }
   .leader-card img { height: 300px; }
   .leader-content h3 { font-size: 26px; }
   .leader-content h4 { font-size: 18px; }
+}
+/* Login Buttons in Navbar */
+.login-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.login-buttons .btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.login-buttons .btn-primary {
+  background: linear-gradient(135deg, #F5A623, #c8841a);
+  color: #0A1628;
+}
+
+.login-buttons .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(245,166,35,0.3);
+  background: #0A1628;
+  color: #F5A623;
+  border: 1px solid #F5A623;
+}
+
+.login-buttons .btn-admin {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #aaa;
+}
+
+.login-buttons .btn-admin:hover {
+  background: rgba(245,166,35,0.1);
+  border-color: #F5A623;
+  color: #F5A623;
+  transform: translateY(-2px);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .login-buttons {
+    flex-direction: row;
+    width: auto;
+    gap: 8px;
+  }
+
+  .login-buttons .btn {
+    width: auto;
+    justify-content: center;
+  }
+
+  .login-buttons .btn-primary {
+    width: 160px;
+    height: 43px;
+    font-size: 15px;
+    padding: 0 12px;
+  }
+}
+/* ===== LOGIN DROPDOWN (hover + click support) ===== */
+.nav-login-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.nav-login-dropdown > a {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+  padding: 8px 16px !important;
+  color: #0b1f3a !important;
+  font-weight: 700 !important;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #fff8e6, #ffedb8);
+  border: 1px solid rgba(244, 180, 0, 0.55);
+  box-shadow: 0 3px 10px rgba(244, 180, 0, 0.18);
+  transition: background .3s ease, box-shadow .3s ease, transform .25s ease, border-color .3s ease;
+}
+.nav-login-dropdown > a i.fa-user-circle,
+.nav-login-dropdown > a i.fa-user {
+  color: #f4b400;
+}
+.nav-login-dropdown:hover > a,
+.nav-login-dropdown.active > a {
+  background: linear-gradient(135deg, #f4b400, #d99a00);
+  color: #0b1f3a !important;
+  border-color: #f4b400;
+  box-shadow: 0 8px 22px rgba(244, 180, 0, 0.4);
+  transform: translateY(-2px);
+}
+.nav-login-dropdown > a i.fa-chevron-down {
+  font-size: 0.65rem;
+  transition: transform 0.25s ease;
+  margin-left: 2px;
+}
+/* Hover aur active dono ke liye rotate */
+.nav-login-dropdown:hover > a i.fa-chevron-down,
+.nav-login-dropdown.active > a i.fa-chevron-down {
+  transform: rotate(180deg);
+}
+.login-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: #ffffff;
+  min-width: 210px;
+  padding: 0.5rem 0;
+  border-radius: 16px;
+  box-shadow: 0 20px 45px -10px rgba(11, 31, 58, 0.3);
+  border: 1px solid rgba(244, 180, 0, 0.25);
+  border-top: 3px solid #f4b400;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1), visibility 0.2s;
+  z-index: 999;
+}
+/* Hover pe open */
+.nav-login-dropdown:hover .login-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+/* Click pe open (active class se) */
+.nav-login-dropdown.active .login-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.login-dropdown-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.7rem 1.4rem;
+  color: #1e293b;
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+.login-dropdown-menu a i {
+  width: 20px;
+  color: #475569;
+  font-size: 1rem;
+}
+.login-dropdown-menu a:hover {
+  background: #fff8e6;
+  border-left-color: #f4b400;
+  color: #0b1f3a;
+}
+.login-dropdown-menu a:hover i {
+  color: #f4b400;
+}
+/* Login buttons hide karo */
+.login-buttons {
+  display: none !important;
+}
+/* Mobile par dropdown hide - SIRF YEH EK RULE */
+@media screen and (max-width: 1024px) {
+  .nav-login-dropdown {
+    display: none !important;
+  }
 }

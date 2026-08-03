@@ -1,0 +1,393 @@
+/**
+ * utils/validators.js
+ *
+ * FIX: Removed all .isMongoId() calls.
+ *      This project uses custom JSON IDs (not MongoDB ObjectIds),
+ *      so isMongoId() was failing every single validation — meaning
+ *      test start, save-answer, and submit always returned 400.
+ *      Replaced with .notEmpty() which correctly validates JSON IDs.
+ */
+
+"use strict";
+
+const { body } = require("express-validator");
+
+const validators = {
+  // ── Class validators ──────────────────────────────────────────────────────
+  createClass: [
+    body("name")
+      .trim()
+      .notEmpty().withMessage("Class name is required")
+      .isLength({ min: 2, max: 50 }).withMessage("Class name must be 2–50 characters"),
+    body("displayName")
+      .trim()
+      .notEmpty().withMessage("Display name is required")
+      .isLength({ min: 2, max: 50 }).withMessage("Display name must be 2–50 characters"),
+    body("description")
+      .optional().trim()
+      .isLength({ max: 500 }).withMessage("Description cannot exceed 500 characters"),
+  ],
+
+  // ── Subject validators ────────────────────────────────────────────────────
+  createSubject: [
+    body("name")
+      .trim()
+      .notEmpty().withMessage("Subject name is required")
+      .isLength({ min: 2, max: 100 }).withMessage("Subject name must be 2–100 characters"),
+    body("code")
+      .trim()
+      .notEmpty().withMessage("Subject code is required")
+      .isLength({ min: 2, max: 10 }).withMessage("Subject code must be 2–10 characters")
+      // FIX (audit 2026-07): was /^[A-Z0-9]+$/ (uppercase-only), which
+      // would have rejected valid input — the actual route handler
+      // (routes/adminRoutes.js POST /subjects) accepts any case and
+      // normalizes with code.toUpperCase() itself; the admin UI form does
+      // not force uppercase before sending. Made case-insensitive to match
+      // real, currently-working behavior instead of introducing a new
+      // rejection that didn't exist before.
+      .matches(/^[A-Za-z0-9]+$/).withMessage("Subject code must contain only letters and numbers"),
+    body("classId")
+      .notEmpty().withMessage("Class ID is required"),   // ⭐ FIX: was .isMongoId()
+    body("description")
+      .optional().trim()
+      .isLength({ max: 500 }).withMessage("Description cannot exceed 500 characters"),
+  ],
+
+  // ── Series validators ─────────────────────────────────────────────────────
+  createSeries: [
+    body("name")
+      .trim()
+      .notEmpty().withMessage("Series name is required")
+      .isLength({ min: 2, max: 100 }).withMessage("Series name must be 2–100 characters"),
+    body("subjectId")
+      .notEmpty().withMessage("Subject ID is required"),  // ⭐ FIX: was .isMongoId()
+    body("classId")
+      .notEmpty().withMessage("Class ID is required"),    // ⭐ FIX: was .isMongoId()
+    body("type")
+      .optional()
+      .isIn(["chapter-wise", "weekly", "revision", "mock", "sample-paper", "other"])
+      .withMessage("Invalid series type"),
+    body("description")
+      .optional().trim()
+      .isLength({ max: 500 }).withMessage("Description cannot exceed 500 characters"),
+  ],
+
+  // ── Test validators ───────────────────────────────────────────────────────
+  createTest: [
+    body("title")
+      .trim()
+      .notEmpty().withMessage("Test title is required")
+      .isLength({ min: 3, max: 200 }).withMessage("Test title must be 3–200 characters"),
+    body("seriesId")
+      .notEmpty().withMessage("Series ID is required"),   // ⭐ FIX: was .isMongoId()
+    body("subjectId")
+      .notEmpty().withMessage("Subject ID is required"),  // ⭐ FIX: was .isMongoId()
+    body("classId")
+      .notEmpty().withMessage("Class ID is required"),    // ⭐ FIX: was .isMongoId()
+    body("totalMarks")
+      .isInt({ min: 1 }).withMessage("Total marks must be a positive integer"),
+    body("passingMarks")
+      .isInt({ min: 0 }).withMessage("Passing marks must be non-negative")
+      .custom((value, { req }) => {
+        if (value > req.body.totalMarks) throw new Error("Passing marks cannot exceed total marks");
+        return true;
+      }),
+    body("duration")
+      .isInt({ min: 1 }).withMessage("Duration must be a positive integer"),
+    body("negativeMarking").optional().isObject(),
+    body("negativeMarking.enabled").optional().isBoolean(),
+    body("negativeMarking.value").optional().isFloat({ min: 0 }),
+    body("maximumAttempts").optional().isInt({ min: 1 }),
+    body("randomizeQuestions").optional().isBoolean(),
+    body("randomizeOptions").optional().isBoolean(),
+    body("isScheduled").optional().isBoolean(),
+    body("startDate").optional().isISO8601().toDate(),
+    body("endDate")
+      .optional().isISO8601().toDate()
+      .custom((value, { req }) => {
+        if (req.body.startDate && value <= req.body.startDate) {
+          throw new Error("End date must be after start date");
+        }
+        return true;
+      }),
+  ],
+
+  // ── Question validators ───────────────────────────────────────────────────
+  createQuestion: [
+    body("questionText").trim().notEmpty().withMessage("Question text is required"),
+    body("options")
+      .isArray({ min: 2 }).withMessage("At least 2 options required")
+      .custom((options) => {
+        if (!options.some(o => o.isCorrect)) throw new Error("At least one correct option required");
+        return true;
+      }),
+    body("options.*.text").trim().notEmpty().withMessage("Option text is required"),
+    body("options.*.isCorrect").isBoolean().withMessage("isCorrect must be boolean"),
+    body("correctAnswer").trim().notEmpty().withMessage("Correct answer is required"),
+    // FIX (audit 2026-07): was required — the actual route handler
+    // (routes/adminRoutes.js POST /questions) treats marks as optional and
+    // defaults it to 1 (`marks || 1`) when not sent. Matching that instead
+    // of introducing a new rejection for a case the handler already
+    // handles gracefully.
+    body("marks").optional().isFloat({ min: 0 }).withMessage("Marks must be non-negative"),
+    body("type").optional().isIn(["mcq", "true-false", "fill-in-blank"]),
+    body("explanation").optional().trim().isLength({ max: 500 }),
+    // Question Bank subject tagging (2026-07): optional at the validator
+    // level — the route handler itself is what enforces the subject
+    // actually exists (404s if not), matching the existing pattern for
+    // chapter/other lookups rather than duplicating that check here.
+    body("subjectId").optional().trim(),
+  ],
+
+  // ── Student attempt validators ────────────────────────────────────────────
+  startTest: [
+    body("testId").notEmpty().withMessage("Test ID is required"),  // ⭐ FIX: was .isMongoId()
+  ],
+
+  saveAnswer: [
+    body("attemptId").notEmpty().withMessage("Attempt ID is required"),   // ⭐ FIX
+    body("questionId").notEmpty().withMessage("Question ID is required"),  // ⭐ FIX
+    body("selectedOption").optional().trim(),
+    body("timeSpent").optional().isInt({ min: 0 }),
+  ],
+
+  submitTest: [
+    body("attemptId").notEmpty().withMessage("Attempt ID is required"),   // ⭐ FIX
+  ],
+  // ── Update validators (Module 5, audit 2026-07) ──────────────────────────
+  // These mirror the corresponding create* schemas' field constraints, but
+  // with every field made .optional() — because the PUT handlers for these
+  // entities are genuine partial updates (each field falls back to the
+  // existing stored value when omitted, e.g. `name: name || existing.name`
+  // in routes/adminRoutes.js). Reusing the create* schemas as-is here would
+  // have rejected legitimate partial-update requests that only change one
+  // field. Verified against each handler individually before writing these:
+  //   - updateClass:    PUT /classes/:id    — fully partial, nothing required
+  //   - (subjects use createSubject directly — PUT /subjects/:id requires
+  //     name+code+classId just like create, confirmed by reading the handler)
+  //   - updateSeries:   PUT /series/:id     — requires name+subjectId only
+  //     (NOT classId, unlike createSeries — matches the handler's own
+  //     `if (!name || !subjectId)` check)
+  //   - updateTest:     PUT /tests/:id      — fully partial, nothing required
+  //   - updateQuestion: PUT /questions/:id  — fully partial, nothing required
+  updateClass: [
+    body("name").optional().trim()
+      .isLength({ min: 2, max: 50 }).withMessage("Class name must be 2–50 characters"),
+    body("displayName").optional().trim()
+      .isLength({ min: 2, max: 50 }).withMessage("Display name must be 2–50 characters"),
+    body("description").optional().trim()
+      .isLength({ max: 500 }).withMessage("Description cannot exceed 500 characters"),
+    body("isActive").optional().isBoolean(),
+  ],
+
+  updateSeries: [
+    body("name").trim().notEmpty().withMessage("Series name is required")
+      .isLength({ min: 2, max: 100 }).withMessage("Series name must be 2–100 characters"),
+    body("subjectId").notEmpty().withMessage("Subject ID is required"),
+    body("classId").optional(),
+    body("type").optional()
+      .isIn(["chapter-wise", "weekly", "revision", "mock", "sample-paper", "other"])
+      .withMessage("Invalid series type"),
+    body("description").optional().trim()
+      .isLength({ max: 500 }).withMessage("Description cannot exceed 500 characters"),
+    body("isActive").optional().isBoolean(),
+  ],
+
+  updateTest: [
+    body("title").optional().trim()
+      .isLength({ min: 3, max: 200 }).withMessage("Test title must be 3–200 characters"),
+    body("seriesId").optional(),
+    body("subjectId").optional(),
+    body("classId").optional(),
+    body("totalMarks").optional().isInt({ min: 1 }).withMessage("Total marks must be a positive integer"),
+    body("passingMarks").optional().isInt({ min: 0 }).withMessage("Passing marks must be non-negative"),
+    body("duration").optional().isInt({ min: 1 }).withMessage("Duration must be a positive integer"),
+    body("negativeMarking").optional().isObject(),
+    body("negativeMarking.enabled").optional().isBoolean(),
+    body("negativeMarking.value").optional().isFloat({ min: 0 }),
+    body("maximumAttempts").optional().isInt({ min: 1 }),
+    body("randomizeQuestions").optional().isBoolean(),
+    body("randomizeOptions").optional().isBoolean(),
+    body("isActive").optional().isBoolean(),
+    body("isScheduled").optional().isBoolean(),
+    body("startDate").optional().isISO8601().toDate(),
+    body("endDate").optional().isISO8601().toDate(),
+  ],
+
+  updateQuestion: [
+    body("questionText").optional().trim().notEmpty().withMessage("Question text cannot be empty"),
+    body("options").optional()
+      .isArray({ min: 2 }).withMessage("At least 2 options required")
+      .custom((options) => {
+        if (!options.some(o => o.isCorrect)) throw new Error("At least one correct option required");
+        return true;
+      }),
+    body("options.*.text").optional().trim().notEmpty().withMessage("Option text is required"),
+    body("options.*.isCorrect").optional().isBoolean().withMessage("isCorrect must be boolean"),
+    body("correctAnswer").optional().trim().notEmpty().withMessage("Correct answer cannot be empty"),
+    body("marks").optional().isFloat({ min: 0 }).withMessage("Marks must be non-negative"),
+    body("type").optional().isIn(["mcq", "true-false", "fill-in-blank"]),
+    body("difficulty").optional().isIn(["easy", "medium", "hard"]),
+    body("explanation").optional().trim().isLength({ max: 500 }),
+    body("isActive").optional().isBoolean(),
+    body("subjectId").optional().trim(),
+  ],
+
+  // ── Module 7 (audit 2026-07): fees / homework / students / enquiries ────
+  // Same approach as the Module 5 update validators above — every field
+  // .optional() to match each handler's genuine partial-update behavior,
+  // verified by reading routes/adminRoutes.js directly rather than
+  // guessing. Two real (if minor) data-integrity gaps found and closed
+  // along the way:
+  //   - PUT /fees/:id: `updates.amount = parseFloat(amount)` had NO
+  //     fallback (unlike discountAmount/scholarshipAmount, which both do
+  //     `|| 0`), so sending a non-numeric amount would previously have
+  //     silently saved NaN into a fee record. isFloat({min:0}) now rejects
+  //     that before it reaches the handler.
+  //   - PUT /students/:id/profile had no format checking at all on
+  //     parentEmail — now validated as an email if present.
+  // doubts status/priority, fees payment-status, questions status/bulk-
+  // approve, and the reorder endpoint were checked too but already have
+  // their own correct manual enum/business-rule validation — no gap to
+  // fill there, so left as-is to avoid redundant/conflicting checks.
+
+  updateHomework: [
+    body("title").optional().trim().isLength({ min: 2, max: 200 }).withMessage("Title must be 2–200 characters"),
+    body("description").optional().trim().isLength({ max: 2000 }).withMessage("Description cannot exceed 2000 characters"),
+    body("classId").optional(),
+    body("subjectId").optional(),
+    body("dueDate").optional().isISO8601().withMessage("Due date must be a valid date"),
+    body("marks").optional().isFloat({ min: 0 }).withMessage("Marks must be non-negative"),
+  ],
+
+  gradeHomeworkSubmission: [
+    body("marksAwarded").optional().isFloat({ min: 0 }).withMessage("Marks awarded must be non-negative"),
+    body("teacherRemarks").optional().trim().isLength({ max: 1000 }).withMessage("Remarks cannot exceed 1000 characters"),
+  ],
+
+  updateStudentProfile: [
+    body("phone").optional().trim().isLength({ min: 7, max: 15 }).withMessage("Phone must be 7–15 characters"),
+    body("dob").optional().isISO8601().withMessage("Date of birth must be a valid date"),
+    body("rollNumber").optional().trim().isLength({ max: 30 }),
+    body("address").optional().trim().isLength({ max: 500 }),
+    body("parentName").optional().trim().isLength({ max: 100 }),
+    body("parentPhone").optional().trim().isLength({ min: 7, max: 15 }).withMessage("Parent phone must be 7–15 characters"),
+    body("parentEmail").optional({ checkFalsy: true }).trim().isEmail().withMessage("Parent email must be a valid email address"),
+    body("parentOccupation").optional().trim().isLength({ max: 100 }),
+    body("batch").optional().trim().isLength({ max: 50 }),
+  ],
+
+  updateEnquiry: [
+    body("status").optional().trim().isLength({ max: 30 }),
+    body("notes").optional().trim().isLength({ max: 2000 }).withMessage("Notes cannot exceed 2000 characters"),
+  ],
+
+  updateFee: [
+    body("amount").optional().isFloat({ min: 0 }).withMessage("Amount must be a non-negative number"),
+    body("dueDate").optional().isISO8601().withMessage("Due date must be a valid date"),
+    body("title").optional().trim().isLength({ min: 1, max: 200 }),
+    body("discountAmount").optional().isFloat({ min: 0 }).withMessage("Discount amount must be non-negative"),
+    body("discountReason").optional().trim().isLength({ max: 500 }),
+    body("scholarshipAmount").optional().isFloat({ min: 0 }).withMessage("Scholarship amount must be non-negative"),
+    body("scholarshipReason").optional().trim().isLength({ max: 500 }),
+  ],
+
+  applyLateFine: [
+    body("lateFineAmount").optional().isFloat({ min: 0 }).withMessage("Late fine amount must be non-negative"),
+  ],
+
+  markFeePaid: [
+    body("paymentMethod").optional().trim().isLength({ max: 30 }),
+    body("transactionId").optional().trim().isLength({ max: 100 }),
+  ],
+
+  // ── Faculty Recruitment ──────────────────────────────────────────────
+  // Public submission (routes/recruitment.js) — deliberately the strictest
+  // validator in this file since it's the one endpoint anyone on the
+  // internet can call. Fields not listed here (whatsapp, address, college,
+  // university, currentInstitute, expectedSalary, skills, etc.) are
+  // free-text/optional and just get trimmed + length-capped by the route
+  // handler itself rather than rejected outright, since a resume shouldn't
+  // bounce over an optional field.
+  submitFacultyApplication: [
+    body("fullName").trim().notEmpty().withMessage("Full name is required").isLength({ min: 2, max: 100 }),
+    body("phone").trim().notEmpty().withMessage("Mobile number is required").matches(/^[0-9+\-\s()]{10,15}$/).withMessage("Enter a valid mobile number"),
+    body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Enter a valid email").normalizeEmail(),
+    body("gender").optional().trim().isIn(["male", "female", "other"]).withMessage("Invalid gender"),
+    body("dob").optional().isISO8601().withMessage("Date of birth must be a valid date"),
+    body("qualification").trim().notEmpty().withMessage("Highest qualification is required").isLength({ max: 150 }),
+    body("experience").optional().trim().isLength({ max: 50 }),
+    body("positionId").optional().trim().isLength({ max: 60 }),
+    body("preferredSubjects").optional().trim().isLength({ max: 300 }),
+    body("preferredClasses").optional().trim().isLength({ max: 300 }),
+    body("employmentType").optional({ checkFalsy: true }).trim().isIn(["full_time", "part_time", "online", "offline", "hybrid"]).withMessage("Invalid employment type"),
+    body("joiningDate").optional({ checkFalsy: true }).isISO8601().withMessage("Joining date must be a valid date"),
+    body("declaration").custom(v => v === true || v === "true" || v === "on").withMessage("You must accept the declaration to apply"),
+  ],
+
+  // ── Job Positions (admin-managed, feed both the admin dropdown/filter
+  // and the public Careers page's Open Positions list) ──────────────────
+  // ── Public website enquiry form (index.html's "Quick Enquiry") ────────
+  submitPublicEnquiry: [
+    body("name").trim().notEmpty().withMessage("Name is required").isLength({ min: 2, max: 100 }),
+    body("phone").trim().notEmpty().withMessage("Mobile number is required").matches(/^[0-9+\-\s()]{10,15}$/).withMessage("Enter a valid mobile number"),
+    body("email").optional({ checkFalsy: true }).trim().isEmail().withMessage("Enter a valid email").normalizeEmail(),
+    body("interestedClass").optional().trim().isLength({ max: 60 }),
+    body("enquiryType").optional().trim().isLength({ max: 60 }),
+    body("message").optional().trim().isLength({ max: 1000 }),
+  ],
+
+  // ── Public website admission form (index.html's "Admission Form") ─────
+  submitPublicAdmission: [
+    body("studentName").trim().notEmpty().withMessage("Student name is required").isLength({ min: 2, max: 100 }),
+    body("parentName").trim().notEmpty().withMessage("Parent's name is required").isLength({ max: 100 }),
+    body("phone").trim().notEmpty().withMessage("Mobile number is required").matches(/^[0-9+\-\s()]{10,15}$/).withMessage("Enter a valid mobile number"),
+    body("email").optional({ checkFalsy: true }).trim().isEmail().withMessage("Enter a valid email").normalizeEmail(),
+    body("school").optional().trim().isLength({ max: 150 }),
+    body("interestedClass").trim().notEmpty().withMessage("Class is required").isLength({ max: 60 }),
+    body("address").optional().trim().isLength({ max: 500 }),
+  ],
+
+  createPosition: [
+    body("title").trim().notEmpty().withMessage("Position title is required").isLength({ max: 150 }),
+    body("description").optional().trim().isLength({ max: 3000 }),
+    body("qualification").optional().trim().isLength({ max: 200 }),
+    body("experience").optional().trim().isLength({ max: 100 }),
+    body("employmentType").optional().trim().isIn(["full_time", "part_time", "online", "offline", "hybrid"]).withMessage("Invalid employment type"),
+    body("salary").optional().trim().isLength({ max: 100 }),
+    body("status").optional().trim().isIn(["open", "closed"]).withMessage("Status must be open or closed"),
+  ],
+
+  updateApplicationStatus: [
+    body("status").trim().notEmpty().withMessage("Status is required")
+      .isIn(["applied", "screening", "shortlisted", "interview_scheduled", "demo_class", "selected", "offer_sent", "joined", "rejected"])
+      .withMessage("Invalid status"),
+  ],
+
+  addApplicationNote: [
+    body("note").trim().notEmpty().withMessage("Note text is required").isLength({ max: 2000 }),
+  ],
+
+  scheduleInterview: [
+    body("date").notEmpty().withMessage("Interview date is required").isISO8601().withMessage("Date must be valid"),
+    body("time").optional().trim().isLength({ max: 20 }),
+    body("interviewer").optional().trim().isLength({ max: 100 }),
+    body("meetingLink").optional().trim().isLength({ max: 300 }),
+    body("remarks").optional().trim().isLength({ max: 1000 }),
+  ],
+
+  recordDemoEvaluation: [
+    body("topic").optional().trim().isLength({ max: 200 }),
+    body("class").optional().trim().isLength({ max: 50 }),
+    body("duration").optional().trim().isLength({ max: 30 }),
+    body("subjectKnowledge").optional().isFloat({ min: 0, max: 10 }),
+    body("communication").optional().isFloat({ min: 0, max: 10 }),
+    body("confidence").optional().isFloat({ min: 0, max: 10 }),
+    body("classroomHandling").optional().isFloat({ min: 0, max: 10 }),
+    body("studentInteraction").optional().isFloat({ min: 0, max: 10 }),
+    body("boardWork").optional().isFloat({ min: 0, max: 10 }),
+    body("overallRating").optional().isFloat({ min: 0, max: 10 }),
+  ],
+};
+
+module.exports = validators;

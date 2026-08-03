@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Careers | Chawla Classes — Join Our Faculty Team</title>
+<meta name="description" content="Join the faculty at Chawla Classes, Uttam Nagar's trusted coaching institute since 2002. Apply for teaching positions across Classes 1-12, Commerce, Arts, and CUET.">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root { --primary: #0b1f3a; --secondary: #f4b400; --white: #ffffff; --light: #f7f9fc; --text: #333333; --muted: #6b7280; --border: #e5e7eb; --radius: 14px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: var(--text); background: var(--white); line-height: 1.6; }
+    a { text-decoration: none; color: inherit; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Nav — simplified from index.html's navbar (same colors/logo), without
+       duplicating its JS-driven mobile drawer out of context. */
+    header.site-nav { background: var(--primary); padding: 14px 0; }
+    .navrow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .navrow .brand { display: flex; align-items: center; gap: 10px; color: var(--white); font-weight: 800; font-size: 18px; }
+    .navrow .brand span { color: var(--secondary); }
+    .navrow a.back { color: var(--white); font-size: 14px; opacity: 0.85; }
+    .navrow a.back:hover { opacity: 1; }
+
+    .hero { background: linear-gradient(135deg, var(--primary), #14335e); color: var(--white); padding: 70px 0 60px; text-align: center; }
+    .hero h1 { font-size: 34px; font-weight: 800; margin-bottom: 12px; }
+    .hero p { font-size: 16px; opacity: 0.9; max-width: 620px; margin: 0 auto 26px; }
+    .hero .btn-apply { display: inline-flex; align-items: center; gap: 8px; background: var(--secondary); color: var(--primary); font-weight: 700; padding: 13px 28px; border-radius: 999px; font-size: 15px; }
+
+    section { padding: 56px 0; }
+    section.alt { background: var(--light); }
+    .section-title { font-size: 26px; font-weight: 800; color: var(--primary); text-align: center; margin-bottom: 8px; }
+    .section-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr 1fr; } .grid-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+    .card i.top-icon { font-size: 22px; color: var(--primary); background: #fff6db; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+    .card h3 { font-size: 16px; margin-bottom: 6px; color: var(--primary); }
+    .card p { font-size: 13.5px; color: var(--muted); }
+
+    .position-card { display: flex; justify-content: space-between; align-items: center; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+    .position-card h3 { font-size: 15.5px; color: var(--primary); }
+    .position-card span { font-size: 13px; color: var(--muted); }
+    .position-card .apply-link { background: var(--primary); color: var(--white); padding: 9px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+
+    .process-steps { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .process-step { flex: 1; min-width: 130px; text-align: center; }
+    .process-step .num { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: var(--white); display: flex; align-items: center; justify-content: center; font-weight: 700; margin: 0 auto 10px; }
+    .process-step p { font-size: 13px; color: var(--muted); }
+
+    .faq-item { border-bottom: 1px solid var(--border); }
+    .faq-q {
+        width: 100%; text-align: left; background: none; border: none; padding: 16px 4px;
+        font-size: 15px; font-weight: 600; color: var(--primary); cursor: pointer;
+        display: flex; justify-content: space-between; align-items: center; font-family: 'Inter', sans-serif;
+    }
+    .faq-q i { transition: transform 0.2s ease; color: var(--muted); font-size: 13px; }
+    .faq-q.open i { transform: rotate(180deg); }
+    .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.25s ease; font-size: 13.5px; color: var(--muted); padding: 0 4px; }
+    .faq-a.open { max-height: 220px; padding-bottom: 16px; }
+
+    /* Application form */
+    #apply { background: var(--light); }
+    .form-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; max-width: 820px; margin: 0 auto; }
+    .form-section-label { font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.04em; margin: 22px 0 12px; }
+    .form-section-label:first-child { margin-top: 0; }
+    .form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    @media (max-width: 600px) { .form-row2, .form-row3 { grid-template-columns: 1fr; } }
+    .fgroup { margin-bottom: 14px; }
+    .fgroup label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: var(--text); }
+    .fgroup input, .fgroup select, .fgroup textarea {
+        width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px;
+        font-size: 14px; font-family: 'Inter', sans-serif; outline: none; background: #fff;
+    }
+    .fgroup input:focus, .fgroup select:focus, .fgroup textarea:focus { border-color: var(--primary); }
+    .fgroup textarea { min-height: 70px; resize: vertical; }
+    .skills-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    @media (max-width: 560px) { .skills-grid { grid-template-columns: 1fr 1fr; } }
+    .skill-check { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: normal; }
+    .skill-check input { width: auto; }
+    .declaration { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--muted); margin: 18px 0; }
+    .declaration input { width: auto; margin-top: 3px; }
+    .btn-submit { width: 100%; background: var(--primary); color: var(--white); border: none; padding: 15px; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-submit:hover { background: #14335e; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .form-msg { padding: 12px 16px; border-radius: 10px; font-size: 13.5px; margin-bottom: 16px; display: none; }
+    .form-msg.show { display: block; }
+    .form-msg.ok { background: #eafaf0; color: #16a34a; border: 1px solid #c8f0d8; }
+    .form-msg.err { background: #fdeeee; color: #dc2626; border: 1px solid #f8d2d2; }
+    .file-hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+    footer.site-footer { background: var(--primary); color: rgba(255,255,255,0.75); text-align: center; padding: 26px 0; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+    <div class="wrap navrow">
+        <a href="/" class="brand"><i class="fas fa-graduation-cap" style="color:var(--secondary)"></i> CHAWLA <span>CLASSES</span></a>
+        <a href="/" class="back"><i class="fas fa-arrow-left"></i> Back to Home</a>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="wrap">
+        <h1>Join Our Faculty Team</h1>
+        <p>Chawla Classes has been shaping students' futures in Uttam Nagar since 2002. We're always looking for passionate, subject-strong educators to join us.</p>
+        <a href="#apply" class="btn-apply"><i class="fas fa-paper-plane"></i> Apply Now</a>
+    </div>
+</section>
+
+<section>
+    <div class="wrap">
+        <h2 class="section-title">Why Join Chawla Classes</h2>
+        <p class="section-sub">A place where teachers grow alongside their students</p>
+        <div class="grid-3">
+            <div class="card"><i class="fas fa-users top-icon"></i><h3>Small, Focused Batches</h3><p>Real classroom relationships, not lecture halls — teach students you actually get to know.</p></div>
+            <div class="card"><i class="fas fa-chalkboard-teacher top-icon"></i><h3>Modern Teaching Tools</h3><p>Smart boards, AI-assisted question banks, and a digital admin system that handles the paperwork for you.</p></div>
+            <div class="card"><i class="fas fa-chart-line top-icon"></i><h3>Room to Grow</h3><p>A 20+ year institute that promotes from within and backs teachers who want to build something long-term.</p></div>
+        </div>
+    </div>
+</section>
+
+<section class="alt">
+    <div class="wrap">
+        <h2 class="section-title">Current Open Positions</h2>
+        <p class="section-sub">Don't see your subject listed? Apply anyway — we review every application.</p>
+        <div id="positionsList">
+            <div class="position-card"><div><h3>Primary &amp; Middle School Faculty</h3><span>Classes 1–8 · All Subjects · Full-time or Part-time</span></div><a href="#apply" class="apply-link">Apply</a></div>
+            <div class="position-card"><div><h3>Mathematics Faculty</h3><span>Classes 9–12 · Full-time</span></div><a href="#apply" class="apply-link">Apply</a></div>
+            <div class="position-card"><div><h3>Science Faculty (Physics / Chemistry / Biology)</h3><span>Classes 11–12 Science · Full-time</span></div><a href="#apply" class="apply-link">Apply</a></div>
+            <div class="position-card"><div><h3>Science Faculty</h3><span>Classes 9–10 · Full-time or Part-time</span></div><a href="#apply" class="apply-link">Apply</a></div>
+            <div class="position-card"><div><h3>Accountancy &amp; Economics Faculty</h3><span>Classes 11–12 (Commerce) · Full-time</span></div><a href="#apply" class="apply-link">Apply</a></div>
+            <div class="position-card"><div><h3>English &amp; Social Science Faculty</h3><span>Classes 9–10 · Part-time</span></div><a href="#apply" class="apply-link">Apply</a></div>
+            <div class="position-card"><div><h3>Competitive Exam Faculty (After 12th)</h3><span>CUET / JEE / NEET / Other Entrance Prep · Full-time or Part-time</span></div><a href="#apply" class="apply-link">Apply</a></div>
+        </div>
+        <!-- The cards above are a fallback shown until /api/careers/positions
+             responds (or if it's ever empty) — script at the bottom of the
+             page replaces #positionsList's content with live, admin-managed
+             positions when available, so the page never shows a blank
+             section on a slow connection or before any positions exist. -->
+    </div>
+</section>
+
+<section>
+    <div class="wrap">
+        <h2 class="section-title">Benefits</h2>
+        <div class="grid-4">
+            <div class="card"><i class="fas fa-money-bill-wave top-icon"></i><h3>Competitive Pay</h3><p>Based on experience and subject demand.</p></div>
+            <div class="card"><i class="fas fa-clock top-icon"></i><h3>Flexible Formats</h3><p>Full-time, part-time, online, offline, or hybrid.</p></div>
+            <div class="card"><i class="fas fa-book-reader top-icon"></i><h3>Ready-Made Resources</h3><p>Access to our question bank and test series — no starting from scratch.</p></div>
+            <div class="card"><i class="fas fa-heart top-icon"></i><h3>Supportive Team</h3><p>A close-knit staff that's been together for years.</p></div>
+        </div>
+    </div>
+</section>
+
+<section class="alt">
+    <div class="wrap">
+        <h2 class="section-title">Our Recruitment Process</h2>
+        <div class="process-steps">
+            <div class="process-step"><div class="num">1</div><p>Apply Online</p></div>
+            <div class="process-step"><div class="num">2</div><p>Screening</p></div>
+            <div class="process-step"><div class="num">3</div><p>Interview</p></div>
+            <div class="process-step"><div class="num">4</div><p>Demo Class</p></div>
+            <div class="process-step"><div class="num">5</div><p>Offer &amp; Joining</p></div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="wrap">
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <div style="max-width:760px;margin:0 auto;">
+            <div class="faq-item">
+                <button class="faq-q" onclick="toggleFaq(this)">How long does the hiring process take? <i class="fas fa-chevron-down"></i></button>
+                <div class="faq-a">Usually 1–2 weeks from application to offer, depending on scheduling for your interview and demo class.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q" onclick="toggleFaq(this)">Do I need prior teaching experience? <i class="fas fa-chevron-down"></i></button>
+                <div class="faq-a">Not always — for some subjects and classes we consider strong subject knowledge and a good demo class over years of experience. Mention your situation in the form.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q" onclick="toggleFaq(this)">What happens in the demo class? <i class="fas fa-chevron-down"></i></button>
+                <div class="faq-a">You'll teach a short topic to a small group, and our academic team will evaluate your subject knowledge, communication, and classroom handling.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q" onclick="toggleFaq(this)">Can I apply for more than one subject or position? <i class="fas fa-chevron-down"></i></button>
+                <div class="faq-a">Yes — list all your preferred subjects and classes in the form, and mention any specific position you're most interested in.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q" onclick="toggleFaq(this)">Is part-time or online-only teaching available? <i class="fas fa-chevron-down"></i></button>
+                <div class="faq-a">Yes, several of our positions are part-time, online, or hybrid — select your preference under "Availability" in the application form.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q" onclick="toggleFaq(this)">I didn't get selected this time — can I reapply later? <i class="fas fa-chevron-down"></i></button>
+                <div class="faq-a">Absolutely. We keep applications on file and openings come up regularly — feel free to apply again for a new position.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="apply">
+    <div class="wrap">
+        <h2 class="section-title">Faculty Application Form</h2>
+        <p class="section-sub">Fields marked * are required</p>
+
+        <div class="form-card">
+            <div id="formMsg" class="form-msg"></div>
+            <form id="careerForm">
+
+                <div class="form-section-label">Personal Details</div>
+                <div class="form-row2">
+                    <div class="fgroup"><label>Full Name *</label><input type="text" name="fullName" required></div>
+                    <div class="fgroup"><label>Father/Mother Name</label><input type="text" name="parentName"></div>
+                </div>
+                <div class="form-row3">
+                    <div class="fgroup"><label>Gender</label>
+                        <select name="gender"><option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
+                    </div>
+                    <div class="fgroup"><label>Date of Birth</label><input type="date" name="dob"></div>
+                    <div class="fgroup"><label>Photo</label><input type="file" name="photo" accept=".png,.jpg,.jpeg"></div>
+                </div>
+
+                <div class="form-section-label">Contact</div>
+                <div class="form-row2">
+                    <div class="fgroup"><label>Mobile *</label><input type="tel" name="phone" required></div>
+                    <div class="fgroup"><label>WhatsApp Number</label><input type="tel" name="whatsapp"></div>
+                </div>
+                <div class="fgroup"><label>Email *</label><input type="email" name="email" required></div>
+                <div class="fgroup"><label>Address</label><input type="text" name="address"></div>
+                <div class="form-row3">
+                    <div class="fgroup"><label>City</label><input type="text" name="city"></div>
+                    <div class="fgroup"><label>State</label><input type="text" name="state"></div>
+                    <div class="fgroup"><label>PIN Code</label><input type="text" name="pin"></div>
+                </div>
+
+                <div class="form-section-label">Education</div>
+                <div class="form-row2">
+                    <div class="fgroup"><label>Highest Qualification *</label><input type="text" name="qualification" required placeholder="e.g. M.Sc. Mathematics"></div>
+                    <div class="fgroup"><label>College</label><input type="text" name="college"></div>
+                </div>
+                <div class="form-row3">
+                    <div class="fgroup"><label>University</label><input type="text" name="university"></div>
+                    <div class="fgroup"><label>Passing Year</label><input type="text" name="passingYear"></div>
+                    <div class="fgroup"><label>Percentage / CGPA</label><input type="text" name="percentage"></div>
+                </div>
+
+                <div class="form-section-label">Teaching Details</div>
+                <div class="fgroup"><label>Applying For</label>
+                    <select name="positionId" id="positionSelect"><option value="">General Application (no specific position)</option></select>
+                </div>
+                <div class="form-row2">
+                    <div class="fgroup"><label>Experience</label><input type="text" name="experience" placeholder="e.g. 3 years"></div>
+                    <div class="fgroup"><label>Current Institute</label><input type="text" name="currentInstitute"></div>
+                </div>
+                <div class="form-row2">
+                    <div class="fgroup"><label>Preferred Subjects</label><input type="text" name="preferredSubjects" placeholder="e.g. Mathematics, Science"></div>
+                    <div class="fgroup"><label>Preferred Classes</label><input type="text" name="preferredClasses" placeholder="e.g. Class 1-8, Class 9-10, Class 11-12, After 12th"></div>
+                </div>
+                <div class="fgroup"><label>Preferred Boards</label><input type="text" name="preferredBoards" placeholder="e.g. CBSE"></div>
+
+                <div class="form-section-label">Availability</div>
+                <div class="form-row2">
+                    <div class="fgroup"><label>Employment Type</label>
+                        <select name="employmentType">
+                            <option value="">Select</option>
+                            <option value="full_time">Full Time</option>
+                            <option value="part_time">Part Time</option>
+                            <option value="online">Online</option>
+                            <option value="offline">Offline</option>
+                            <option value="hybrid">Hybrid</option>
+                        </select>
+                    </div>
+                    <div class="fgroup"><label>Joining Date</label><input type="date" name="joiningDate"></div>
+                </div>
+                <div class="fgroup"><label>Expected Salary</label><input type="text" name="expectedSalary" placeholder="e.g. ₹25,000/month"></div>
+
+                <div class="form-section-label">Skills</div>
+                <div class="skills-grid">
+                    <label class="skill-check"><input type="checkbox" name="skills" value="Smart Board"> Smart Board</label>
+                    <label class="skill-check"><input type="checkbox" name="skills" value="Online Teaching"> Online Teaching</label>
+                    <label class="skill-check"><input type="checkbox" name="skills" value="Canva"> Canva</label>
+                    <label class="skill-check"><input type="checkbox" name="skills" value="MS Office"> MS Office</label>
+                    <label class="skill-check"><input type="checkbox" name="skills" value="AI Tools"> AI Tools</label>
+                    <label class="skill-check"><input type="checkbox" name="skills" value="PPT"> PPT</label>
+                    <label class="skill-check"><input type="checkbox" name="skills" value="Classroom Management"> Classroom Management</label>
+                </div>
+
+                <div class="form-section-label">Uploads</div>
+                <div class="fgroup"><label>Resume *</label><input type="file" name="resume" accept=".pdf,.doc,.docx" required><div class="file-hint">PDF, DOC or DOCX</div></div>
+                <div class="fgroup"><label>Certificates</label><input type="file" name="certificates" accept=".pdf,.png,.jpg,.jpeg" multiple><div class="file-hint">PDF, PNG or JPG — up to 5 files</div></div>
+                <div class="fgroup"><label>Demo Video (optional)</label><input type="file" name="demoVideo" accept=".mp4,.mov,.webm"><div class="file-hint">MP4, MOV or WEBM, up to 100MB</div></div>
+
+                <label class="declaration">
+                    <input type="checkbox" name="declaration" required>
+                    I declare that the information provided above is true to the best of my knowledge, and I consent to Chawla Classes contacting me regarding this application.
+                </label>
+
+                <button type="submit" class="btn-submit" id="submitBtn"><i class="fas fa-paper-plane"></i> Submit Application</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="wrap">&copy; <span id="yr"></span> Chawla Classes, Uttam Nagar — Since 2002</div>
+</footer>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+function toggleFaq(btn) {
+    const answer = btn.nextElementSibling;
+    const isOpen = answer.classList.contains('open');
+    document.querySelectorAll('.faq-a.open').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.faq-q.open').forEach(el => el.classList.remove('open'));
+    if (!isOpen) { answer.classList.add('open'); btn.classList.add('open'); }
+}
+
+// Load open positions from the admin-managed list. Falls back to the
+// static cards already in the HTML (and leaves the form's dropdown at
+// "General Application") if the API is unreachable or returns none.
+(async function loadOpenPositions() {
+    try {
+        const res = await fetch('/api/careers/positions');
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.data) || data.data.length === 0) return;
+
+        const listEl = document.getElementById('positionsList');
+        listEl.innerHTML = data.data.map(p => `
+            <div class="position-card">
+                <div>
+                    <h3>${escapeHtmlCareers(p.title)}</h3>
+                    <span>${[p.qualification, p.experience, (p.employmentType || '').replace('_', ' ')].filter(Boolean).map(escapeHtmlCareers).join(' · ')}</span>
+                </div>
+                <a href="#apply" class="apply-link" onclick="preselectPosition('${p._id}')">Apply</a>
+            </div>
+        `).join('');
+
+        const select = document.getElementById('positionSelect');
+        data.data.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p._id;
+            opt.textContent = p.title;
+            select.appendChild(opt);
+        });
+    } catch (err) {
+        // Static fallback cards already in the HTML cover this case.
+    }
+})();
+
+function preselectPosition(id) {
+    const select = document.getElementById('positionSelect');
+    if (select) select.value = id;
+}
+
+function escapeHtmlCareers(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+document.getElementById('careerForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('submitBtn');
+    const msg = document.getElementById('formMsg');
+    msg.className = 'form-msg';
+
+    const skillsChecked = Array.from(form.querySelectorAll('input[name="skills"]:checked')).map(el => el.value);
+    const fd = new FormData(form);
+    fd.delete('skills');
+    fd.append('skills', JSON.stringify(skillsChecked));
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+    try {
+        const res = await fetch('/api/careers/apply', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data.message || (data.errors && data.errors[0] && data.errors[0].msg) || 'Something went wrong. Please check the form and try again.');
+        }
+        msg.textContent = data.message || 'Application submitted successfully!';
+        msg.className = 'form-msg ok show';
+        form.reset();
+        window.scrollTo({ top: document.getElementById('formMsg').offsetTop - 100, behavior: 'smooth' });
+    } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'form-msg err show';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+    }
+});
+</script>
+
+</body>
+</html>

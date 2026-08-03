@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Target — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628;
+    --gold: #F5A623;
+    --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18);
+    --white: #F8F9FC;
+    --text: #e2e8f4;
+    --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --surface: rgba(30,58,110,0.35);
+    --success: #22c55e;
+    --input-bg: rgba(10,22,40,0.7);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--navy); color: var(--text); font-family: 'Inter', sans-serif;
+    min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: -200px; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+  .wrap { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+    margin-bottom: 24px; padding: 20px 28px;
+    background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius);
+    backdrop-filter: blur(20px); position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim)); border-radius: 4px 0 0 4px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 44px; height: 44px; background: var(--gold-glow); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  h1 { font-size: 24px; font-weight: 800; line-height: 1.15; margin: 0 0 4px; color: var(--white); }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px;
+    border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--card-bg);
+    color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim)); color: var(--navy); border: none;
+    box-shadow: 0 3px 12px var(--gold-glow);
+  }
+  .btn-gold:hover { box-shadow: 0 5px 20px rgba(245,166,35,0.35); transform: translateY(-1px); color: var(--navy); }
+
+  .banner { display: none; padding: 13px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; border: 1px solid transparent; }
+  .banner.show { display: block; }
+  .banner.error { background: rgba(239,68,68,0.08); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+  .banner.success { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
+
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 24px; margin-bottom: 18px; backdrop-filter: blur(12px);
+  }
+  .card h3 { font-size: 14px; color: var(--white); margin-bottom: 16px; }
+
+  .ring-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: center; }
+  svg.ring { transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 12; }
+  .ring-fill { fill: none; stroke: var(--gold); stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+  .ring-center { text-align: center; }
+  .ring-center .big { font-size: 28px; font-weight: 800; color: var(--white); }
+  .ring-center .small { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .ring-stats { display: flex; flex-direction: column; gap: 10px; }
+  .ring-stat { font-size: 13px; color: var(--text); }
+  .ring-stat b { color: var(--gold); }
+
+  .goal-form { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; margin-top: 18px; }
+  .goal-field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .goal-field input {
+    width: 110px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+    padding: 9px 12px; color: var(--white); font-family: inherit; font-size: 13.5px;
+  }
+
+  .history-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .history-day { flex: 0 0 auto; width: 54px; text-align: center; padding: 10px 6px; border-radius: var(--radius-sm); background: var(--input-bg); border: 1px solid var(--card-border); }
+  .history-day.achieved { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.08); }
+  .history-day .d-date { font-size: 10px; color: var(--muted); }
+  .history-day .d-icon { font-size: 18px; margin: 4px 0; }
+  .history-day .d-count { font-size: 10.5px; color: var(--text); }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 16px 12px 60px; }
+    header { padding: 16px 18px; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="header-left">
+      <div class="header-icon">🎯</div>
+      <div>
+        <p class="eyebrow">Student Portal</p>
+        <h1>Daily Target</h1>
+        <p class="subtitle">Your goal for today</p>
+      </div>
+    </div>
+    <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <div class="card">
+    <h3>Today's Progress</h3>
+    <div class="ring-wrap" id="ringWrap">
+      <div style="position:relative;width:150px;height:150px;flex:0 0 auto;">
+        <svg class="ring" width="150" height="150" viewBox="0 0 150 150">
+          <circle class="ring-track" cx="75" cy="75" r="65"></circle>
+          <circle class="ring-fill" id="ringFill" cx="75" cy="75" r="65" stroke-dasharray="408" stroke-dashoffset="408"></circle>
+        </svg>
+        <div class="ring-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div class="big" id="ringPct">0%</div>
+          <div class="small" id="ringLabel">0 / 0 questions</div>
+        </div>
+      </div>
+      <div class="ring-stats">
+        <div class="ring-stat">🔥 Target streak: <b id="streakVal">0</b> day(s)</div>
+        <div class="ring-stat">⏱ Time practiced today: <b id="minutesVal">0</b> min</div>
+        <div class="ring-stat">🎯 Accuracy today: <b id="accuracyVal">0%</b></div>
+      </div>
+    </div>
+
+    <div class="goal-form">
+      <div class="goal-field">
+        <label for="qGoal">Questions Goal</label>
+        <input type="number" id="qGoal" min="1" max="200">
+      </div>
+      <div class="goal-field">
+        <label for="mGoal">Minutes Goal</label>
+        <input type="number" id="mGoal" min="1" max="300">
+      </div>
+      <button class="btn btn-gold" onclick="saveGoal(this)">Save Goal</button>
+      <a href="/student/practice.html" class="btn">▶ Start Practicing</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Last 14 Days</h3>
+    <div class="history-strip" id="historyStrip">
+      <div style="color:var(--muted);font-size:13px;">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = '/api';
+  const token = localStorage.getItem('studentToken');
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  const RING_CIRCUMFERENCE = 2 * Math.PI * 65;
+
+  async function apiCall(endpoint, options = {}) {
+    const defaultOptions = { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, { ...defaultOptions, ...options });
+      if (response.status === 401) {
+        showBanner('Session expired. Redirecting to login...', 'error');
+        setTimeout(() => { localStorage.removeItem('studentToken'); window.location.href = '/student/login.html'; }, 1500);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      showBanner('Network error. Please try again.', 'error');
+      return null;
+    }
+  }
+
+  function showBanner(msg, type) {
+    const banner = document.getElementById('banner');
+    banner.textContent = msg;
+    banner.className = `banner show ${type}`;
+    setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  async function loadToday() {
+    const result = await apiCall('/daily-targets/today');
+    if (!result || !result.success) { showBanner('Could not load today\'s target.', 'error'); return; }
+    const d = result.data;
+
+    document.getElementById('qGoal').value = d.targetQuestions;
+    document.getElementById('mGoal').value = d.targetMinutes;
+    document.getElementById('streakVal').textContent = d.streak;
+    document.getElementById('minutesVal').textContent = d.progress.minutesSpent;
+    document.getElementById('accuracyVal').textContent = `${d.progress.accuracy}%`;
+    document.getElementById('ringLabel').textContent = `${d.progress.questionsAnswered} / ${d.targetQuestions} questions`;
+
+    const pct = Math.min(100, Math.round((d.progress.questionsAnswered / d.targetQuestions) * 100));
+    document.getElementById('ringPct').textContent = `${pct}%`;
+    const offset = RING_CIRCUMFERENCE - (pct / 100) * RING_CIRCUMFERENCE;
+    document.getElementById('ringFill').style.strokeDashoffset = offset;
+    document.getElementById('ringFill').style.stroke = d.achieved ? '#22c55e' : '#F5A623';
+
+    if (d.achieved) showBanner('🎉 Today\'s target achieved! Great work.', 'success');
+  }
+
+  async function saveGoal(btn) {
+    const targetQuestions = parseInt(document.getElementById('qGoal').value) || 10;
+    const targetMinutes = parseInt(document.getElementById('mGoal').value) || 20;
+
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const result = await apiCall('/daily-targets/today', {
+      method: 'PUT',
+      body: JSON.stringify({ targetQuestions, targetMinutes })
+    });
+
+    btn.disabled = false;
+    btn.textContent = 'Save Goal';
+
+    if (result && result.success) {
+      showBanner('Goal saved.', 'success');
+      loadToday();
+      loadHistory();
+    } else {
+      showBanner('Could not save goal.', 'error');
+    }
+  }
+
+  async function loadHistory() {
+    const result = await apiCall('/daily-targets/history?days=14');
+    const strip = document.getElementById('historyStrip');
+    if (!result || !result.success || !result.data.length) {
+      strip.innerHTML = '<div style="color:var(--muted);font-size:13px;">No history yet.</div>';
+      return;
+    }
+    strip.innerHTML = result.data.map(d => {
+      const dateObj = new Date(d.date + 'T00:00:00');
+      const label = dateObj.toLocaleDateString(undefined, { weekday: 'short' });
+      return `
+        <div class="history-day ${d.achieved ? 'achieved' : ''}">
+          <div class="d-date">${label}</div>
+          <div class="d-icon">${d.achieved ? '✅' : (d.progress.questionsAnswered > 0 ? '🔸' : '⚪')}</div>
+          <div class="d-count">${d.progress.questionsAnswered}/${d.targetQuestions}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ==================== Init ====================
+  loadToday();
+  loadHistory();
+</script>
+
+</body>
+</html>

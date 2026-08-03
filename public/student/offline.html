@@ -1,0 +1,240 @@
+<!-- public/student/offline.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - Chawla Classes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #060e1a;
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .offline-container {
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .offline-icon {
+            font-size: 64px;
+            color: #c9a84c;
+            margin-bottom: 24px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+        
+        p {
+            color: #94a3b8;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #c9a84c;
+            color: #060e1a;
+        }
+        
+        .btn:hover {
+            background: #e8d07a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(201, 168, 76, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            margin-top: 12px;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .feature {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        
+        .feature i {
+            color: #c9a84c;
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .feature .label {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            margin-bottom: 20px;
+        }
+        
+        .status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .notes {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(201, 168, 76, 0.06);
+            border-radius: 8px;
+            border: 1px solid rgba(201, 168, 76, 0.12);
+        }
+        
+        .notes .title {
+            font-weight: 600;
+            color: #c9a84c;
+            font-size: 13px;
+        }
+        
+        .notes .list {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 8px;
+            text-align: left;
+        }
+        
+        .notes .list li {
+            list-style: none;
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .notes .list li i {
+            color: #c9a84c;
+            font-size: 12px;
+            width: 16px;
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 24px;
+            }
+            
+            .offline-icon {
+                font-size: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">
+            <i class="fas fa-wifi-slash"></i>
+        </div>
+        
+        <div class="status">
+            <span class="dot"></span>
+            You're Offline
+        </div>
+        
+        <h1>You're Not Connected</h1>
+        <p>
+            Don't worry! You can still access your downloaded content 
+            and continue learning offline.
+        </p>
+        
+        <button class="btn" onclick="window.location.reload()">
+            <i class="fas fa-sync"></i> Try Reconnecting
+        </button>
+        <br />
+        <button class="btn btn-secondary" onclick="window.location.href='/student/'">
+            <i class="fas fa-home"></i> Go to Dashboard
+        </button>
+        
+        <div class="features">
+            <div class="feature">
+                <i class="fas fa-book-open"></i>
+                <div class="label">Downloaded Notes</div>
+            </div>
+            <div class="feature">
+                <i class="fas fa-check-circle"></i>
+                <div class="label">Offline Tests</div>
+            </div>
+            <div class="feature">
+                <i class="fas fa-star"></i>
+                <div class="label">Bookmarks</div>
+            </div>
+            <div class="feature">
+                <i class="fas fa-chart-bar"></i>
+                <div class="label">Cached Results</div>
+            </div>
+        </div>
+        
+        <div class="notes">
+            <div class="title">📖 Available Offline</div>
+            <ul class="list">
+                <li><i class="fas fa-check-circle"></i> Downloaded study notes</li>
+                <li><i class="fas fa-check-circle"></i> Bookmarked questions</li>
+                <li><i class="fas fa-check-circle"></i> Your recent results</li>
+                <li><i class="fas fa-check-circle"></i> Practice history</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,626 @@
+"use strict";
+
+// ============================================================================
+// PDF PARSER — 8-step question extraction pipeline.
+//
+// NOTE: This module is intentionally NOT refactored in Part 1.
+// The PDF parser will be rewritten separately as its own task.
+// All logic below is preserved verbatim from the original server.js.
+//
+// Pipeline:
+//   parseQuestionsFromText(rawText, meta)
+//       │
+//       ├─ 1. normalizeOCR(rawText)
+//       ├─ 2. removeHeaders(lines)
+//       ├─ 3. removeHindiDuplicates(lines)
+//       ├─ 4. detectQuestionBlocks(lines)
+//       ├─ 4.5 splitInlineOptions(blocks)
+//       ├─ 5. extractOptions(blocks)
+//       ├─ 6. detectTables(blocks)
+//       ├─ 7. deduplicate(blocks)          ← note: was step 8 in original comments
+//       └─ 8. buildQuestionObject(block)
+// ============================================================================
+
+const crypto = require("crypto");
+const logger = require("../utils/logger");
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 1 — normalizeOCR
+// ─────────────────────────────────────────────────────────────────────────────
+function normalizeOCR(rawText) {
+    return rawText
+        // ── Line endings ──────────────────────────────────────────────────
+        .replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+
+        // ── Unicode spaces → regular space ────────────────────────────────
+        .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ")
+        .replace(/\u00AD/g, "")          // soft hyphen
+
+        // ── OCR artifacts: rupee sign ₹ misread as ®, ©, @, ¥ ─────────
+        // Replace common rupee OCR artifacts with ₹ so they don't corrupt text
+        .replace(/[®©@¥]\s*(?=\d)/g, "₹ ")
+        .replace(/[®©]\s*[®©]/g, "")     // "® ®" double artifacts → remove
+
+        // ── CBSE page reference noise ─────────────────────────────────────
+        // "3 67111 Be Page 5 of 24 P.T.O." / "6711/1 Ba Page 15 of 24 PTO"
+        .replace(/\d+\/\d+\s+[A-Z][a-z]?\s+Page\s+\d+\s+of\s+\d+.*?(P\.?T\.?O\.?)?/gi, " ")
+        .replace(/\d+\s+[A-Z][a-z]?[a-z]?\s+Page\s+\d+\s+of\s+\d+.*?(P\.?T\.?O\.?)?/gi, " ")
+
+        // ── Ordinal OCR errors ─────────────────────────────────────────────
+        // "30%" → "30th", "31+" → "31st", "314 March" → "31st March"  
+        // Only when followed by common ordinal contexts
+        .replace(/(\d+)%(?=\s+(September|March|October|January|December|April|August|February|May|June|July|November))/gi, "$1th")
+        .replace(/(\d+)\+(?=\s+(March|April|May|June|July|August|September|October|November|December|January|February))/gi, "$1st")
+        .replace(/\b(31)4\s+(March|April)/gi, "$1st $2")
+
+        // ── Sub-question marker OCR errors ────────────────────────────────
+        // "Gi)" → "(ii)" | "@)" → "(i)" | "Gili)" → "(iii)"
+        .replace(/\bGili\)/g, "(iii)")
+        .replace(/\bGil\)/g, "(iii)")
+        .replace(/\bGi\)/g, "(ii)")
+        .replace(/\bfet\b/g, "")        // common Tesseract noise word
+        .replace(/@\)/g, "(i)")
+        .replace(/@\s/g, "(i) ")
+
+        // ── OCR broken-word repair ────────────────────────────────────────
+        // "ques- tion" → "question" (hyphen at end of word + space before lowercase)
+        .replace(/([A-Za-z])-\s+([a-z])/g, "$1$2")
+
+        // ── Number / letter spacing fixes ─────────────────────────────────
+        .replace(/(\d+)\s*\.\s*([A-Z])/g, "$1. $2")
+        .replace(/(\d+)\s*\)\s*([A-Z])/g, "$1) $2")
+
+        // ── Stray Hindi chars inside English text ─────────────────────────
+        .replace(/(?<=[A-Za-z0-9,;])\s*[\u0900-\u097F]{1,3}\s*(?=[A-Za-z0-9,;(])/g, " ")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/([0-9])([A-Za-z])/g, "$1 $2")
+
+        // ── Collapse multiple spaces (NOT newlines) ───────────────────────
+        .replace(/[ \t]{2,}/g, " ");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 2 — removeHeaders
+// ─────────────────────────────────────────────────────────────────────────────
+const HEADER_PATTERNS = [
+    /^(SECTION|खण्ड)\s*[A-Ea-e]/i,
+    /^(General\s+Instructions|सामान्य\s+निर्देश)/i,
+    /^(Maximum\s+Marks|अधिकतम\s+अंक)/i,
+    /^(Time\s+Allowed|समय)/i,
+    /^(Series|SET|Code)\s*[:\-]?\s*\w/i,
+    /^(This\s+question\s+paper|यह\s+प्रश्न)/i,
+    /^(This\s+section\s+comprises|इस\s+खंड)/i,
+    /^(P\.?T\.?O\.?|TURN\s+OVER|continued)/i,
+    /^(Roll\s+No|Exam\s+Centre|Candidate)/i,
+    /^\[\s*(Space|स्थान)\s*(for|के\s+लिए)/i,
+    /^(Note|नोट)\s*:/i,
+    /^(www\.|http)/i,
+    /^\d+\s*\/\s*\d+$/,                 // bare page fractions "3/8"
+    /^Page\s+\d+/i,
+    /^[-=*_]{3,}$/,
+    /^[।॥]+$/,
+    /^[0-9,\s.]+$/,
+    /^(Equity and Liabilities|Non.?Current Assets|Current Assets|Liabilities|Particulars|Receipts|Payments|Balance Sheet|Capital Fund)/i,
+    // ── CBSE-specific noise ─────────────────────────────────────────────
+    // "67/1/1  261A  Page 1 of 24  P.T.O." style footer lines
+    /^\d+\/\d+\/\d+\s+\d+[A-Z]?\s+Page/i,
+    // "3 67111 Be Page 5 of 24" — mid-page OCR header bleed
+    /^\d+\s+[A-Z]\w*\s+Page\s+\d+\s+of\s+\d+/i,
+    // "Page X of 24" standalone
+    /^Page\s+\d+\s+of\s+\d+/i,
+    // "PART – A" / "PART – B" / "Option – I" / "Option – II" section dividers
+    /^PART\s*[-–—]\s*[A-Bb]/i,
+    /^Option\s*[-–—]\s*(I{1,3}|[12])/i,
+    /^\(Analysis\s+of\s+Financial/i,
+    /^\(Computerised\s+Accounting\)/i,
+    /^\(Accounting\s+for\s+Not/i,
+    // "261A" style exam code lines
+    /^\d{3,}[A-Z]?\s*$/,
+    // "* * *" separator
+    /^[*\s]{3,}$/,
+    // Marks-only lines like "2" or "3" or "5" at end (common in CBSE)
+    /^\s*[235]\s*$/,
+];
+
+function isTableLine(line) {
+    const t = line.trim();
+    if (/[|]/.test(t)) return true;
+    if (/^[\s|+\-=]+$/.test(t)) return true;
+    if ((t.match(/\s{3,}/g) || []).length > 2) return true;
+    return false;
+}
+
+function isHeaderLine(line) {
+    if (!line || line.trim().length < 3) return true;
+    return HEADER_PATTERNS.some(p => p.test(line.trim()));
+}
+
+function removeHeaders(lines) {
+    const result = [];
+    for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) continue;
+        if (/^(OR|or|Or|अथवा)[:\s]*$/.test(line)) { result.push("[OR]"); continue; }
+        if (isTableLine(line)) { result.push(line); continue; }
+        if (isHeaderLine(line)) continue;
+        result.push(line);
+    }
+    return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 3 — removeHindiDuplicates
+// ─────────────────────────────────────────────────────────────────────────────
+const HINDI_RE = /[\u0900-\u097F]/;
+
+function hindiRatio(line) {
+    const hindi = (line.match(/[\u0900-\u097F]/g) || []).length;
+    const total = (line.match(/[A-Za-z\u0900-\u097F]/g) || []).length;
+    return total > 0 ? hindi / total : 0;
+}
+
+function isHindiLine(line) { return hindiRatio(line) > 0.5; }
+
+function cleanHindiFromEnglish(line) {
+    return line
+        .replace(/[\u0900-\u097F]{1,3}\s+/g, " ")
+        .replace(/\s+[\u0900-\u097F]{1,3}/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+}
+
+function removeHindiDuplicates(lines) {
+    const cleaned = lines.map(line => {
+        if (line === "[OR]" || !HINDI_RE.test(line)) return line;
+        return hindiRatio(line) < 0.5 ? cleanHindiFromEnglish(line) : line;
+    });
+    return cleaned.filter(line => line === "[OR]" || !isHindiLine(line));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 4 — detectQuestionBlocks
+// ─────────────────────────────────────────────────────────────────────────────
+// ── Patterns checked against the REST text (after question number stripped) ──
+// Keep TIGHT — don't block valid question bodies that happen to mention
+// accounting terms like "Assets", "Liabilities", "Particulars", etc.
+const NOT_A_QUESTION = [
+    /^\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i,  // dates
+    /^\d+\s+each\s+at/i,                                               // ledger amounts
+    /all\s+questions\s+are\s+compulsory|question\s+paper/i,
+    /^(Marks?|Attempt|Answer)\s*:/i,
+    /^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/,                                  // ISO date
+];
+
+// ── Patterns checked against the FULL LINE only ────────────────────────────
+// These are bare column/section headers — they are NOT questions.
+// Use tight anchored patterns (end-of-string or very short suffix allowed)
+// so "Assets side of..." doesn't get blocked but bare "Assets" does.
+const NOT_A_QUESTION_FULL_LINE = [
+    /^(Dr|Cr)\s*$/i,
+    /^Particulars\s*$/i,
+    /^Balance Sheet\s*$/i,
+    /^Capital Account\s*$/i,
+    /^(Non.?Current Assets|Current Assets)\s*$/i,
+    /^Assets\s*$/i,
+    /^Liabilities\s*$/i,
+];
+
+// Keyword verbs: short rest text is still valid if it starts with one of these.
+// Expanded to cover Accounts/Commerce paper verbs (Define, Calculate, Explain, etc.)
+const KEYWORD_VERB_RE = /^(If|Find|Let|Show|State|Prove|Solve|Evaluate|Hence|Write|Define|Calculate|Explain|Describe|Distinguish|Compare|List|Name|Give|Identify|Mention|Prepare|Journalise|Rectify|Compute|Determine|Differentiate|Discuss|Illustrate)\b/i;
+
+function matchQuestionStart(line) {
+    if (isHindiLine(line)) return null;
+    if (/^[\d,\s.]+$/.test(line)) return null;
+
+    // Full-line guard: bare column/section headers ("Assets", "Liabilities", "Dr")
+    if (NOT_A_QUESTION_FULL_LINE.some(p => p.test(line.trim()))) return null;
+    // Full-line guard: dates, paper instructions, ledger amounts
+    if (NOT_A_QUESTION.some(p => p.test(line))) return null;
+
+    let m;
+
+    m = line.match(/^Q\.?\s*(\d{1,3})[.):]?\s+(.+)/i);
+    if (m) return { num: parseInt(m[1]), sub: null, rest: m[2].trim() };
+
+    m = line.match(/^Q\.?\s*(\d{1,3})[.):]?\s*$/i);
+    if (m) return { num: parseInt(m[1]), sub: null, rest: "" };
+
+    m = line.match(/^Question\s*(\d{1,3})[.):]*\s*(.*)/i);
+    if (m) return { num: parseInt(m[1]), sub: null, rest: (m[2] || "").trim() };
+
+    m = line.match(/^(\d{1,3})\.?\s*\(([a-z])\)\s*(.*)/i);
+    if (m) return { num: parseInt(m[1]), sub: m[2].toLowerCase(), rest: (m[3] || "").trim() };
+
+    m = line.match(/^(\d{1,3})[.):]/);
+    if (m) {
+        const fullMatch = line.match(/^(\d{1,3})[.):]/);
+        const restMatch = line.match(/^(\d{1,3})[.):.]\s+(.+)/);
+        if (restMatch) {
+            const rest = restMatch[2].trim();
+            // Only apply rest-specific checks (NOT accounting keyword patterns)
+            if (NOT_A_QUESTION.some(p => p.test(rest))) return null;
+            if (rest.length < 10 && !KEYWORD_VERB_RE.test(rest)) return null;
+            return { num: parseInt(restMatch[1]), sub: null, rest };
+        }
+    }
+
+    m = line.match(/^(\d{1,3})\s+([A-Z].+)/);
+    if (m) {
+        const rest = m[2].trim();
+        if (rest.length >= 5 || KEYWORD_VERB_RE.test(rest))
+            return { num: parseInt(m[1]), sub: null, rest };
+    }
+
+    return null;
+}
+
+const OPTION_START_RE = /^(?:\([A-Da-d]\)|[A-Da-d][.):])\s*/;
+
+function detectQuestionBlocks(lines) {
+    const blocks  = [];
+    let   current = null;
+
+    for (const line of lines) {
+        if (!line || line.length < 2) continue;
+
+        if (line === "[OR]") {
+            if (current) current.lines.push("[OR]");
+            continue;
+        }
+
+        const qStart = matchQuestionStart(line);
+
+        if (qStart && qStart.num > 0) {
+            if (current) blocks.push(current);
+            current = {
+                num:        qStart.num,
+                sub:        qStart.sub,
+                lines:      qStart.rest ? [qStart.rest] : [],
+                rawOpts:    [],
+                tableLines: []
+            };
+        } else if (current) {
+            if (isTableLine(line)) {
+                current.tableLines.push(line);
+            } else if (OPTION_START_RE.test(line)) {
+                current.rawOpts.push(line);
+            } else {
+                current.lines.push(line);
+            }
+        }
+    }
+
+    if (current) blocks.push(current);
+    return blocks;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 4.5 — splitInlineOptions
+// ─────────────────────────────────────────────────────────────────────────────
+function splitInlineOptions(blocks) {
+    // Handles lines where multiple MCQ options appear together, e.g.:
+    //   "(A) Fixed Assets only (B) Current Assets only (C) Both (D) None"
+    //   "A) Fixed Assets  B) Current Assets  C) Both  D) None"
+    // Strategy: split on a lookahead for any option marker "(A)" or "A)"
+    // that is preceded by whitespace OR appears right after previous option text.
+
+    // Matches the START of an option: "(A)" or "A)" or "A." or "A:"
+    const OPT_MARKER = /(?:\([A-Da-d]\)|(?<!\()[A-Da-d][.):])\s/g;
+
+    function countMarkers(line) {
+        const m = line.match(/(?:\([A-Da-d]\)|(?<!\()[A-Da-d][.):]) /g);
+        return m ? m.length : 0;
+    }
+
+    function splitLine(line) {
+        // Must have at least 2 markers to be worth splitting
+        if (countMarkers(line) < 2) return [line];
+
+        // Split on position just before an option marker (keeping the marker with its text)
+        // Lookahead: optional whitespace then "(A)" or "A)" style marker
+        const parts = line
+            .split(/\s+(?=\([A-Da-d]\)\s|(?<!\()[A-Da-d][.):\s]\s)/)
+            .map(p => p.trim())
+            .filter(Boolean);
+
+        return parts.length >= 2 ? parts : [line];
+    }
+
+    return blocks.map(block => {
+        const newLines   = [];
+        const newRawOpts = [];
+
+        for (const line of block.lines) {
+            const parts = splitLine(line);
+            if (parts.length > 1) {
+                newRawOpts.push(...parts);
+            } else {
+                newLines.push(line);
+            }
+        }
+
+        // Also split any rawOpts that have multiple options crammed on one line
+        for (const line of block.rawOpts) {
+            const parts = splitLine(line);
+            newRawOpts.push(...parts);
+        }
+
+        return { ...block, lines: newLines, rawOpts: newRawOpts };
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 5 — extractOptions
+// ─────────────────────────────────────────────────────────────────────────────
+const CIRCLED_MAP = {
+    'Ⓐ': 'A', 'Ⓑ': 'B', 'Ⓒ': 'C', 'Ⓓ': 'D',
+    'ⓐ': 'a', 'ⓑ': 'b', 'ⓒ': 'c', 'ⓓ': 'd'
+};
+
+function normalizeCircled(line) {
+    return line.replace(/[ⒶⒷⒸⒹⓐⓑⓒⓓ]/g, ch => CIRCLED_MAP[ch] || ch);
+}
+
+const OPTION_RE = /^(?:\(([A-Da-d])\)|([A-Da-d])[.):])\s*(.+)|^([A-Da-d])\s{2,}(.+)/;
+
+function parseOptionLine(rawLine) {
+    const line = normalizeCircled(rawLine.trim());
+    const m    = line.match(OPTION_RE);
+    if (!m) return null;
+
+    let key, val;
+    if (m[4]) {
+        key = m[4].toUpperCase();
+        val = m[5].trim();
+    } else {
+        key = (m[1] || m[2]).toUpperCase();
+        val = m[3].trim();
+    }
+    if (!val) val = "[formula]";
+    return { key, val };
+}
+
+function mergeOptionsLists(primary, secondary) {
+    const result = [...primary];
+    for (const o of secondary) {
+        if (!result.find(x => x.key === o.key)) result.push(o);
+    }
+    return result.sort((a, b) => a.key.charCodeAt(0) - b.key.charCodeAt(0));
+}
+
+function extractOptions(blocks) {
+    return blocks.map(block => {
+        const options      = [];
+        const continuation = [];
+        let   afterOptions = false;
+
+        for (const line of block.rawOpts) {
+            const opt = parseOptionLine(line);
+            if (opt) {
+                options.push(opt);
+                afterOptions = true;
+            } else if (!afterOptions) {
+                continuation.push(line);
+            } else {
+                if (options.length > 0) {
+                    options[options.length - 1].val += " " + line.trim();
+                }
+            }
+        }
+
+        if (block.num === 16) {
+            logger.pdf("=================================");
+            logger.pdf("Q16 LINES:", block.lines);
+            logger.pdf("Q16 RAW OPTS:", block.rawOpts);
+            logger.pdf("Q16 OPTIONS:", options);
+            logger.pdf("=================================");
+        }
+
+        return {
+            ...block,
+            lines:   [...block.lines, ...continuation],
+            options
+        };
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 6 — detectTables
+// ─────────────────────────────────────────────────────────────────────────────
+const TABLE_KEYWORDS_RE = /Balance Sheet|Ledger|Journal|Cash Flow|Trial Balance|Trading Account|Profit & Loss|P&L|Income Statement/i;
+
+function detectTables(blocks) {
+    return blocks.map(block => {
+        const questionText = block.lines.join(" ");
+        const hasTableLines = block.tableLines.length >= 2;
+        const amountCount = (questionText.match(/\d{1,3}(?:,\d{2,3})+(?:\.\d+)?/g) || []).length;
+        const hasRealTable = hasTableLines || (
+            TABLE_KEYWORDS_RE.test(questionText) && amountCount >= 2
+        );
+        return { ...block, hasTable: hasRealTable };
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 7 — buildQuestionObject
+// ─────────────────────────────────────────────────────────────────────────────
+const AR_RE         = /Assertion\s*\(?\s*[A(]|Reason\s*\(?\s*[R(]/i;
+const CASE_STUDY_RE = /Case\s+Study|Passage|Read\s+the\s+following|Following\s+passage|Observe\s+the|Given\s+below\s+is|Study\s+the\s+following/i;
+const OR_IN_TEXT_RE = /\[OR\]/;
+
+function classifyQuestion(questionText, options, hasTable) {
+    const isAR = AR_RE.test(questionText) &&
+                 /Assertion/i.test(questionText) &&
+                 /Reason/i.test(questionText);
+
+    const isValidMCQ    = options.length >= 2 && options.length <= 6 && !hasTable && !isAR;
+    const hasSubQuestions = /\b(i|ii|iii|iv|v)\b|\([a-d]\)/i.test(questionText);
+    const isCaseStudy   = CASE_STUDY_RE.test(questionText) ||
+        (hasTable && questionText.length > 250 && hasSubQuestions && !isAR);
+
+    if (isAR)        return { type: "MCQ",       subtype: "AR" };
+    if (isValidMCQ)  return { type: "MCQ",       subtype: null };
+    if (isCaseStudy) return { type: "CaseStudy", subtype: null };
+    return           { type: "Subjective",        subtype: null };
+}
+
+function guessMarks(type, subtype, questionText) {
+    if (type === "MCQ")       return 1;
+    if (type === "CaseStudy") return 5;
+    if (/explain|describe|discuss|derive|prove|show\s+that|justify|elaborate|analyze|evaluate|calculate|compute|compare|differentiate|distinguish/i.test(questionText)) return 5;
+    if (/state|define|write|name|list|give|find|what|why|how|identify|mention|briefly/i.test(questionText)) return 2;
+    return 3;
+}
+
+// ── Post-parse text cleaner ──────────────────────────────────────────────────
+// Removes OCR noise that survived earlier pipeline stages and would corrupt
+// the final question text stored in the database.
+function cleanQuestionText(text) {
+    return text
+        // CBSE page reference patterns embedded mid-text
+        // "3 67111 Be Page 5 of 24 P.T.O." / "6711/1 Ba Page 15 of 24 PTO"
+        .replace(/\d+\/\d+\/\d+\s+Page\s+\d+[^\n]*/gi, " ")
+        .replace(/\d+\/\d+\s+[A-Z][a-z]\s+Page\s+\d+\s+of\s+\d+[^\n]*/gi, " ")
+        .replace(/\d+\s+[A-Z][a-z]+\s+Page\s+\d+\s+of\s+\d+[^\n]*/gi, " ")
+        .replace(/\bPage\s+\d+\s+of\s+\d+\b[^\n]*/gi, " ")
+        // Standalone P.T.O. / PTO markers
+        .replace(/\bP\.?T\.?O\.?\b/gi, " ")
+        // CBSE exam code leftovers "67/1/1" "261A"
+        .replace(/\b\d{2}\/\d\/\d\b/g, " ")
+        .replace(/\b\d{3,}[A-Z]\b/g, " ")
+        // Marks number at END of question text "...firm. 2" "...account. 5"
+        // Only remove trailing isolated single digit (the marks indicator)
+        .replace(/\s+[235]\s*$/g, "")
+        // "fet" — common Tesseract noise word
+        .replace(/\bfet\b/g, " ")
+        // Rupee OCR artifacts remaining
+        .replace(/[®©¥]\s*/g, "₹ ")
+        .replace(/₹\s*₹/g, "₹")
+        // Multiple spaces
+        .replace(/\s{2,}/g, " ")
+        // Leading OCR bracket-number noise "(2 From" → "From"
+        // Happens when "(a)" is OCR-misread as "(2" at question start
+        .replace(/^\(\d+\s+/, "")
+        .replace(/^\([@®©]\s+/, "(")
+        // Leading double-bracket "((i)" → "(i)"
+        .replace(/^\(\(/, "(")
+        // "313.2021" → "31.3.2021" (date OCR merge: digit run into dot)
+        .replace(/(\d{2})(\d)(\.[0-9]{4})/, "$1.$2$3")
+        // Trailing isolated marks number "...place. 2" → "...place."
+        // Only strip if it's a bare 1-2 digit number at the very end
+        .replace(/\s+\d{1,2}\s*$/, "")
+        .trim();
+}
+
+function buildQuestionObject(block, meta) {
+    const { subject = "General", chapter = "", class: qClass = "10" } = meta;
+    const rawText     = block.lines.join(" ").replace(/\s{2,}/g, " ").trim();
+    const questionText = cleanQuestionText(rawText);
+
+    if (questionText.length < 8) return null;
+    if (/\b(Particulars|Dr|Cr)\b/i.test(questionText) && questionText.length < 200) return null;
+    const digits = (questionText.match(/\d/g) || []).length;
+    if (digits / questionText.length > 0.6) return null;
+
+    const isOR = OR_IN_TEXT_RE.test(questionText);
+    const { type, subtype: rawSubtype } = classifyQuestion(questionText, block.options, block.hasTable);
+    const subtype = isOR ? "OR" : rawSubtype;
+
+    return {
+        id:       crypto.randomUUID(),
+        question: questionText.replace(/\[OR\]/g, "").replace(/\s{2,}/g, " ").trim(),
+        type,
+        subtype:  subtype || undefined,
+        options:  block.options.map(o => `(${o.key}) ${o.val}`),
+        answer:   "",
+        class:    qClass,
+        subject,
+        chapter:  chapter || "",
+        marks:    guessMarks(type, subtype, questionText),
+        hasTable: !!block.hasTable,
+        isOR
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 8 — deduplicate
+// ─────────────────────────────────────────────────────────────────────────────
+function deduplicate(blocks) {
+    const map = new Map();
+
+    for (const block of blocks) {
+        if (!block || block.num === 0) continue;
+        const key = `${block.num}-${block.sub || ""}`;
+
+        if (!map.has(key)) {
+            map.set(key, block);
+            continue;
+        }
+
+        const existing = map.get(key);
+        const exIsEn   = /[A-Za-z]/.test(existing.lines.join(" "));
+        const blIsEn   = /[A-Za-z]/.test(block.lines.join(" "));
+
+        if (!exIsEn && blIsEn) {
+            block.options = mergeOptionsLists(block.options, existing.options);
+            map.set(key, block);
+        } else if (exIsEn && !blIsEn) {
+            existing.options = mergeOptionsLists(existing.options, block.options);
+        } else {
+            existing.options = mergeOptionsLists(existing.options, block.options);
+            const existLen = existing.lines.join(" ").length;
+            const blockLen = block.lines.join(" ").length;
+            if (blockLen > existLen) {
+                block.options = existing.options;
+                map.set(key, block);
+            }
+        }
+    }
+
+    return [...map.entries()]
+        .sort((a, b) => {
+            const [numA, subA] = a[0].split("-");
+            const [numB, subB] = b[0].split("-");
+            const nd = parseInt(numA) - parseInt(numB);
+            if (nd !== 0) return nd;
+            return (subA || "").localeCompare(subB || "");
+        })
+        .map(([, block]) => block);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN — parseQuestionsFromText
+// ─────────────────────────────────────────────────────────────────────────────
+function parseQuestionsFromText(rawText, meta = {}) {
+    const normalized = normalizeOCR(rawText);
+    const rawLines   = normalized.split("\n").map(l => l.trim()).filter(Boolean);
+    const cleanLines = removeHeaders(rawLines);
+    const engLines   = removeHindiDuplicates(cleanLines);
+    const rawBlocks  = detectQuestionBlocks(engLines);
+    const blocksWithSplitOpts = splitInlineOptions(rawBlocks);
+    const blocksWithOpts      = extractOptions(blocksWithSplitOpts);
+    const blocksWithTables    = detectTables(blocksWithOpts);
+    const uniqueBlocks        = deduplicate(blocksWithTables);
+
+    const questions = uniqueBlocks
+        .map(block => buildQuestionObject(block, meta))
+        .filter(Boolean);
+
+    if (logger.pdf) {
+        const counts = questions.reduce((acc, q) => {
+            const k = q.subtype || q.type;
+            acc[k] = (acc[k] || 0) + 1;
+            return acc;
+        }, {});
+        logger.pdf(`[Parser] Done: ${questions.length} questions`, counts);
+        questions.forEach((q, i) => {
+            const prev = q.question.slice(0, 60) + (q.question.length > 60 ? "…" : "");
+            logger.pdf(`  Q${i + 1} [${q.subtype || q.type}] opts:${q.options.length} marks:${q.marks} — ${prev}`);
+        });
+    }
+
+    return questions;
+}
+
+module.exports = { parseQuestionsFromText };

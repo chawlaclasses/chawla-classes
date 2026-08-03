@@ -1,0 +1,14 @@
+[
+  {
+    "_id": "mr1xn0xtz0pv2vo56",
+    "name": "Class Test",
+    "subjectId": "mr1xdegshsiawdrx5",
+    "classId": "mr1xcl1a938nrqtb7",
+    "description": "",
+    "type": "weekly",
+    "isActive": true,
+    "createdBy": "mr1u8mhxi2c6x9by0",
+    "createdAt": "2026-07-01T10:28:20.993Z",
+    "updatedAt": "2026-07-01T10:28:20.993Z"
+  }
+]

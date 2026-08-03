@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wrong Question Notebook — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628;
+    --navy-mid: #1E3A6E;
+    --gold: #F5A623;
+    --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18);
+    --white: #F8F9FC;
+    --text: #e2e8f4;
+    --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --surface: rgba(30,58,110,0.35);
+    --success: #22c55e;
+    --danger: #ef4444;
+    --input-bg: rgba(10,22,40,0.7);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--navy); color: var(--text); font-family: 'Inter', sans-serif;
+    min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: -200px; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+  .wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+    margin-bottom: 24px; padding: 20px 28px;
+    background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius);
+    backdrop-filter: blur(20px); position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim)); border-radius: 4px 0 0 4px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 44px; height: 44px; background: var(--gold-glow); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  h1 { font-size: 24px; font-weight: 800; line-height: 1.15; margin: 0 0 4px; color: var(--white); }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px;
+    border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--card-bg);
+    color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim)); color: var(--navy); border: none;
+    box-shadow: 0 3px 12px var(--gold-glow);
+  }
+  .btn-gold:hover { box-shadow: 0 5px 20px rgba(245,166,35,0.35); transform: translateY(-1px); color: var(--navy); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  .banner { display: none; padding: 13px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; border: 1px solid transparent; }
+  .banner.show { display: block; }
+  .banner.error { background: rgba(239,68,68,0.08); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+  .banner.success { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab {
+    padding: 9px 16px; border-radius: 20px; border: 1px solid var(--card-border); background: var(--input-bg);
+    color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .tab.active { border-color: var(--gold); background: var(--gold-glow); color: var(--gold); }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  .toolbar select {
+    background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+    padding: 9px 12px; color: var(--white); font-family: inherit; font-size: 13px;
+  }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--muted); opacity: 0; transform: translateY(8px); animation: fadeInUp 0.4s ease forwards; }
+  @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state strong { display: block; color: var(--white); font-size: 15px; margin-bottom: 4px; }
+
+  .wq-card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+    padding: 16px 18px; margin-bottom: 12px; backdrop-filter: blur(10px);
+  }
+  .wq-card.improved { opacity: 0.65; }
+  .wq-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .wq-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .wq-tag { font-size: 10.5px; padding: 3px 9px; border-radius: 20px; background: var(--gold-glow); color: var(--gold); font-weight: 600; }
+  .wq-tag.count { background: rgba(239,68,68,0.12); color: #fca5a5; }
+  .wq-tag.done { background: rgba(34,197,94,0.12); color: #86efac; }
+  .wq-text { font-size: 14.5px; line-height: 1.6; color: var(--white); margin-bottom: 8px; }
+  .wq-meta { font-size: 11.5px; color: var(--muted); }
+  .wq-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+  .subject-group { margin-bottom: 22px; }
+  .subject-group h3 { font-size: 13px; color: var(--gold); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 16px 12px 60px; }
+    header { padding: 16px 18px; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="header-left">
+      <div class="header-icon">📓</div>
+      <div>
+        <p class="eyebrow">Student Portal</p>
+        <h1>Wrong Question Notebook</h1>
+        <p class="subtitle">Questions you've gotten wrong — revise them until they stick</p>
+      </div>
+    </div>
+    <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="false" onclick="switchTab('false')">Pending</div>
+    <div class="tab" data-tab="true" onclick="switchTab('true')">Improved</div>
+    <div class="tab" data-tab="all" onclick="switchTab('all')">All</div>
+  </div>
+
+  <div class="toolbar">
+    <select id="subjectFilter" onchange="loadWrongQuestions()">
+      <option value="">All subjects</option>
+    </select>
+    <button class="btn btn-gold" id="practiceAllBtn" onclick="practiceThese()">▶ Practice These</button>
+  </div>
+
+  <div id="listContainer">
+    <div class="empty-state"><div class="icon">⏳</div><strong>Loading…</strong></div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = '/api';
+  const token = localStorage.getItem('studentToken');
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  let currentTab = 'false';
+  let allData = [];
+
+  async function apiCall(endpoint, options = {}) {
+    const defaultOptions = { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, { ...defaultOptions, ...options });
+      if (response.status === 401) {
+        showBanner('Session expired. Redirecting to login...', 'error');
+        setTimeout(() => { localStorage.removeItem('studentToken'); window.location.href = '/student/login.html'; }, 1500);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      showBanner('Network error. Please try again.', 'error');
+      return null;
+    }
+  }
+
+  function showBanner(msg, type) {
+    const banner = document.getElementById('banner');
+    banner.textContent = msg;
+    banner.className = `banner show ${type}`;
+    setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.getElementById('practiceAllBtn').style.display = tab === 'true' ? 'none' : 'inline-flex';
+    loadWrongQuestions();
+  }
+
+  async function loadWrongQuestions() {
+    const container = document.getElementById('listContainer');
+    container.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><strong>Loading…</strong></div>';
+
+    const subject = document.getElementById('subjectFilter').value;
+    const params = new URLSearchParams({ improved: currentTab, limit: 200 });
+    if (subject) params.set('subject', subject);
+
+    const result = await apiCall(`/practice/wrong-questions?${params.toString()}`);
+    if (!result || !result.success) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><strong>Could not load notebook.</strong></div>';
+      return;
+    }
+
+    allData = result.data || [];
+    populateSubjectFilter(allData, subject);
+    renderList(allData);
+  }
+
+  function populateSubjectFilter(data, selected) {
+    const sel = document.getElementById('subjectFilter');
+    const subjects = Array.from(new Set(data.map(w => w.subject).filter(Boolean))).sort();
+    const current = selected || sel.value;
+    sel.innerHTML = '<option value="">All subjects</option>' +
+      subjects.map(s => `<option value="${escapeHtml(s)}" ${s === current ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('');
+  }
+
+  function renderList(data) {
+    const container = document.getElementById('listContainer');
+    if (!data.length) {
+      const msg = currentTab === 'true'
+        ? { icon: '🌱', text: 'No improved questions yet — keep practicing!' }
+        : { icon: '🎉', text: 'Nothing pending — great job!' };
+      container.innerHTML = `<div class="empty-state"><div class="icon">${msg.icon}</div><strong>${msg.text}</strong></div>`;
+      return;
+    }
+
+    // Group by subject
+    const groups = {};
+    data.forEach(w => {
+      const key = w.subject || 'General';
+      (groups[key] = groups[key] || []).push(w);
+    });
+
+    container.innerHTML = Object.entries(groups).map(([subject, items]) => `
+      <div class="subject-group">
+        <h3>${escapeHtml(subject)} (${items.length})</h3>
+        ${items.map(w => `
+          <div class="wq-card ${w.improved ? 'improved' : ''}">
+            <div class="wq-top">
+              <div class="wq-tags">
+                ${w.chapter ? `<span class="wq-tag">${escapeHtml(w.chapter)}</span>` : ''}
+                <span class="wq-tag count">Missed ${w.count}×</span>
+                ${w.improved ? '<span class="wq-tag done">✓ Improved</span>' : ''}
+              </div>
+            </div>
+            <div class="wq-text">${escapeHtml(w.question)}</div>
+            <div class="wq-meta">Last attempted: ${w.lastAttempted ? new Date(w.lastAttempted).toLocaleDateString() : '—'}</div>
+            <div class="wq-actions">
+              ${!w.improved ? `<button class="btn btn-sm" onclick="markImproved('${w.questionId}', this)">✓ Mark as Improved</button>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  async function markImproved(questionId, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    const result = await apiCall(`/practice/wrong-questions/${questionId}/improved`, { method: 'PUT' });
+    if (result && result.success) {
+      showBanner('Marked as improved 🎉', 'success');
+      loadWrongQuestions();
+    } else {
+      showBanner('Could not update. Try again.', 'error');
+      btn.disabled = false;
+      btn.textContent = '✓ Mark as Improved';
+    }
+  }
+
+  function practiceThese() {
+    const subject = document.getElementById('subjectFilter').value;
+    if (!allData.filter(w => !w.improved).length) {
+      showBanner('No pending wrong questions to practice.', 'error');
+      return;
+    }
+    sessionStorage.setItem('practiceAutoStart', JSON.stringify({ wrong: true, subject: subject || undefined }));
+    window.location.href = '/student/practice.html';
+  }
+
+  // ==================== Init ====================
+  loadWrongQuestions();
+</script>
+
+</body>
+</html>

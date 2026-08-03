@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Results — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628;
+    --navy-mid: #1E3A6E;
+    --gold: #F5A623;
+    --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18);
+    --white: #F8F9FC;
+    --text: #e2e8f4;
+    --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --surface: rgba(30,58,110,0.35);
+    --success: #22c55e;
+    --danger: #ef4444;
+    --purple: #8b5cf6;
+    --input-bg: rgba(10,22,40,0.7);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    font-feature-settings: 'tnum' 1;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(30,58,110,0.5) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrap {
+    position: relative; z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding: 20px 28px;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim));
+    border-radius: 4px 0 0 4px;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 44px; height: 44px;
+    background: var(--gold-glow);
+    border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 6px;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin: 0 0 4px;
+    color: var(--white);
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .student-info {
+    font-size: 14px;
+    color: var(--muted);
+    background: var(--card-bg);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--card-border);
+  }
+  .student-info strong { color: var(--white); }
+
+  /* ── STATS ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-top: 2.5px solid var(--gold);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    backdrop-filter: blur(12px);
+    opacity: 0;
+    transform: translateY(8px);
+    animation: rise 0.5s ease forwards;
+  }
+  .stat-card:nth-child(2) { animation-delay: 0.05s; }
+  .stat-card:nth-child(3) { animation-delay: 0.1s; }
+  .stat-card:nth-child(4) { animation-delay: 0.15s; }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+
+  .stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--white);
+  }
+
+  /* ── TABLE ── */
+  .table-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--card-border);
+    background: rgba(30,58,110,0.25);
+  }
+
+  tbody td {
+    padding: 14px 20px;
+    font-size: 13.5px;
+    color: var(--text);
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .score-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .medallion {
+    --pct: 0;
+    --band: var(--success);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: conic-gradient(var(--band) calc(var(--pct) * 1%), rgba(255,255,255,0.06) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .medallion-inner {
+    width: 29px;
+    height: 29px;
+    border-radius: 50%;
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--white);
+  }
+
+  .score-fraction { color: var(--muted); font-size: 13px; }
+  .date-cell { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .status-badge {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-pass { background: rgba(34,197,94,0.15); color: #86efac; }
+  .status-fail { background: rgba(239,68,68,0.15); color: #fca5a5; }
+
+  /* ── EMPTY ── */
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--muted);
+    opacity: 0;
+    transform: translateY(8px);
+    animation: rise 0.5s ease forwards;
+  }
+  .empty-state strong {
+    display: block;
+    color: var(--white);
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+  .skeleton-row td { padding: 14px 20px; }
+  .skeleton-bar {
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 37%, rgba(255,255,255,0.04) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    background: var(--card-bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  /* UX: the Refresh button (loadResults()) already gets JS-disabled while
+     results are loading, but had no corresponding CSS — it looked fully
+     clickable even though clicking did nothing. */
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    color: var(--navy);
+    border: none;
+    box-shadow: 0 3px 12px var(--gold-glow);
+  }
+  .btn-gold:hover { box-shadow: 0 5px 20px rgba(245,166,35,0.35); transform: translateY(-1px); color: var(--navy); }
+
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .banner {
+    display: none;
+    padding: 13px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 18px;
+    border: 1px solid transparent;
+  }
+  .banner.show { display: block; }
+  .banner.error {
+    background: rgba(239,68,68,0.08);
+    color: #fca5a5;
+    border-color: rgba(239,68,68,0.2);
+  }
+  .banner.info {
+    background: var(--gold-glow);
+    color: #fcd34d;
+    border-color: rgba(245,166,35,0.2);
+  }
+
+  footer {
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+  @media (max-width: 768px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    header { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 16px 12px 60px; }
+    header { padding: 16px 18px; }
+    .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-card { padding: 12px 14px; }
+    .stat-value { font-size: 20px; }
+    thead { display: none; }
+    table, tbody, tr, td { display: block; width: 100%; }
+    tbody tr {
+      border-bottom: 1px solid var(--card-border);
+      padding: 14px 16px;
+    }
+    tbody td { border-bottom: none; padding: 4px 0; }
+    .score-cell { margin-bottom: 6px; }
+    .date-cell::before { content: "Date: "; color: var(--white); font-weight: 500; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="header-left">
+      <div class="header-icon">📊</div>
+      <div>
+        <p class="eyebrow">Student Portal</p>
+        <h1>My Results</h1>
+        <p class="subtitle">Track your test performance and progress</p>
+      </div>
+    </div>
+    <div class="student-info">
+      <strong id="studentName">Student</strong> · <span id="studentClass">Class</span>
+    </div>
+  </header>
+
+  <div class="stats" id="statsGrid">
+    <div class="stat-card">
+      <p class="stat-label">Tests Taken</p>
+      <p class="stat-value" id="statTotal">—</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Average Score</p>
+      <p class="stat-value" id="statAvg">—</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Best Score</p>
+      <p class="stat-value" id="statBest">—</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Passed</p>
+      <p class="stat-value" id="statPassed">—</p>
+    </div>
+  </div>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Test</th>
+          <th>Score</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="resultsTable">
+        <tr class="skeleton-row"><td colspan="5"><div class="skeleton-bar" style="width:90%"></div></td></tr>
+        <tr class="skeleton-row"><td colspan="5"><div class="skeleton-bar" style="width:75%"></div></td></tr>
+        <tr class="skeleton-row"><td colspan="5"><div class="skeleton-bar" style="width:85%"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="btn-group">
+    <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+    <button class="btn btn-gold" id="refreshBtn">🔄 Refresh</button>
+  </div>
+
+  <footer id="lastUpdated"></footer>
+
+</div>
+
+<script>
+  // ============================================================
+  // Configuration
+  // ============================================================
+  const API_BASE = '/api/student';
+
+  // ============================================================
+  // Authentication Check
+  // ============================================================
+  const token = localStorage.getItem('studentToken');
+  if (!token) {
+    window.location.href = '/student/login.html';
+  }
+
+  // Get student info
+  const studentName = localStorage.getItem('studentName') || 'Student';
+  document.getElementById('studentName').textContent = studentName;
+  
+  const classData = JSON.parse(localStorage.getItem('userClass') || '{}');
+  document.getElementById('studentClass').textContent = classData.displayName || 'Not Assigned';
+
+  // ============================================================
+  // UI Helpers
+  // ============================================================
+  function showBanner(message, type = 'info') {
+    const banner = document.getElementById("banner");
+    banner.textContent = message;
+    banner.className = "banner show " + type;
+  }
+
+  function hideBanner() {
+    document.getElementById("banner").className = "banner";
+  }
+
+  function bandFor(pct) {
+    if (pct >= 85) return { color: "var(--gold)" };
+    if (pct >= 40) return { color: "var(--success)" };
+    return { color: "var(--danger)" };
+  }
+
+  function formatDate(raw) {
+    if (!raw) return '—';
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw;
+    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  // ============================================================
+  // API Call
+  // ============================================================
+  async function apiCall(endpoint, options = {}) {
+    const defaultOptions = {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...defaultOptions,
+        ...options
+      });
+
+      if (response.status === 401) {
+        showBanner("Session expired. Redirecting to login...", 'error');
+        setTimeout(() => {
+          localStorage.removeItem('studentToken');
+          window.location.href = '/student/login.html';
+        }, 1500);
+        return null;
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('API Error:', error);
+      showBanner("Server error. Please try again.", 'error');
+      return null;
+    }
+  }
+
+  // ============================================================
+  // Render Functions
+  // ============================================================
+  function renderStats(results) {
+    const totalRows = results.length;
+    document.getElementById("statTotal").textContent = totalRows;
+
+    if (totalRows === 0) {
+      document.getElementById("statAvg").textContent = "—";
+      document.getElementById("statBest").textContent = "—";
+      document.getElementById("statPassed").textContent = "—";
+      return;
+    }
+
+    const pcts = results
+      .filter(r => Number(r.totalMarks) > 0)
+      .map(r => (Number(r.marksObtained) / Number(r.totalMarks)) * 100);
+
+    if (pcts.length === 0) {
+      document.getElementById("statAvg").textContent = "—";
+      document.getElementById("statBest").textContent = "—";
+      document.getElementById("statPassed").textContent = "—";
+      return;
+    }
+
+    const avg = pcts.reduce((a, b) => a + b, 0) / pcts.length;
+    const best = Math.max(...pcts);
+    const passed = results.filter(r => r.isPassed).length;
+
+    document.getElementById("statAvg").textContent = avg.toFixed(1) + "%";
+    document.getElementById("statBest").textContent = best.toFixed(0) + "%";
+    document.getElementById("statPassed").textContent = passed + "/" + totalRows;
+  }
+
+  function renderTable(results) {
+    const tbody = document.getElementById("resultsTable");
+    tbody.innerHTML = "";
+
+    if (results.length === 0) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 5;
+      const wrap = document.createElement("div");
+      wrap.className = "empty-state";
+      wrap.innerHTML = `
+        <div class="icon">📝</div>
+        <strong>No results yet</strong>
+        <span>You haven't taken any tests. Start a test from your dashboard!</span>
+      `;
+      cell.appendChild(wrap);
+      row.appendChild(cell);
+      tbody.appendChild(row);
+      return;
+    }
+
+    results.forEach((result, i) => {
+      const score = Number(result.marksObtained) || 0;
+      const total = Number(result.totalMarks) || 0;
+      const pct = total > 0 ? (score / total) * 100 : 0;
+      const band = bandFor(pct);
+
+      const row = document.createElement("tr");
+      row.style.animationDelay = (i * 0.05) + "s";
+
+      // Test Title
+      const testCell = document.createElement("td");
+      testCell.textContent = result.testId?.title || '—';
+      row.appendChild(testCell);
+
+      // Score with medallion
+      const scoreCell = document.createElement("td");
+      const scoreWrap = document.createElement("div");
+      scoreWrap.className = "score-cell";
+
+      const medallion = document.createElement("div");
+      medallion.className = "medallion";
+      medallion.style.setProperty("--pct", pct.toFixed(0));
+      medallion.style.setProperty("--band", band.color);
+      const inner = document.createElement("div");
+      inner.className = "medallion-inner";
+      inner.textContent = pct.toFixed(0) + "%";
+      medallion.appendChild(inner);
+
+      const fraction = document.createElement("span");
+      fraction.className = "score-fraction";
+      fraction.textContent = score + " / " + total;
+
+      scoreWrap.appendChild(medallion);
+      scoreWrap.appendChild(fraction);
+      scoreCell.appendChild(scoreWrap);
+      row.appendChild(scoreCell);
+
+      // Total (already shown in score cell, but keep for structure)
+      const totalCell = document.createElement("td");
+      totalCell.textContent = total;
+      row.appendChild(totalCell);
+
+      // Status
+      const statusCell = document.createElement("td");
+      const statusSpan = document.createElement("span");
+      statusSpan.className = `status-badge ${result.isPassed ? 'status-pass' : 'status-fail'}`;
+      statusSpan.textContent = result.isPassed ? '✅ Passed' : '❌ Failed';
+      statusCell.appendChild(statusSpan);
+      row.appendChild(statusCell);
+
+      // Date
+      const dateCell = document.createElement("td");
+      dateCell.className = "date-cell";
+      dateCell.textContent = formatDate(result.createdAt || result.date);
+      row.appendChild(dateCell);
+
+      tbody.appendChild(row);
+    });
+  }
+
+  // ============================================================
+  // Load Results
+  // ============================================================
+  async function loadResults() {
+    hideBanner();
+    const btn = document.getElementById("refreshBtn");
+    btn.disabled = true;
+    btn.textContent = '⏳ Loading...';
+
+    try {
+      // Get student's results
+      const result = await apiCall('/results');
+      
+      if (result && result.success) {
+        const results = result.data || [];
+        
+        // Sort by date (newest first)
+        results.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+        
+        renderStats(results);
+        renderTable(results);
+        document.getElementById("lastUpdated").textContent = "Last updated: " + new Date().toLocaleString();
+        
+        if (results.length === 0) {
+          showBanner("You haven't taken any tests yet. Start one from your dashboard!", "info");
+        }
+      } else {
+        showBanner(result?.message || "Failed to load results", "error");
+      }
+    } catch (err) {
+      console.error('Error loading results:', err);
+      showBanner("Error loading results. Please try again.", 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔄 Refresh';
+    }
+  }
+
+  // ============================================================
+  // Event Listeners
+  // ============================================================
+  document.getElementById("refreshBtn").addEventListener("click", loadResults);
+
+  // ============================================================
+  // Initial Load
+  // ============================================================
+  loadResults();
+</script>
+<script src="/student/js/idle-logout.js"></script>
+</body>
+</html>

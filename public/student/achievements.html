@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Achievements — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628;
+    --gold: #F5A623;
+    --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18);
+    --white: #F8F9FC;
+    --text: #e2e8f4;
+    --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --surface: rgba(30,58,110,0.35);
+    --input-bg: rgba(10,22,40,0.7);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--navy); color: var(--text); font-family: 'Inter', sans-serif;
+    min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: -200px; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+  .wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+    margin-bottom: 24px; padding: 20px 28px;
+    background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius);
+    backdrop-filter: blur(20px); position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim)); border-radius: 4px 0 0 4px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 44px; height: 44px; background: var(--gold-glow); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  h1 { font-size: 24px; font-weight: 800; line-height: 1.15; margin: 0 0 4px; color: var(--white); }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px;
+    border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--card-bg);
+    color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim)); color: var(--navy); border: none;
+    box-shadow: 0 3px 12px var(--gold-glow);
+  }
+  .btn-gold:hover { box-shadow: 0 5px 20px rgba(245,166,35,0.35); transform: translateY(-1px); color: var(--navy); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .banner { display: none; padding: 13px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; border: 1px solid transparent; }
+  .banner.show { display: block; }
+  .banner.error { background: rgba(239,68,68,0.08); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+  .banner.success { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
+
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 22px 24px; margin-bottom: 18px; backdrop-filter: blur(12px);
+  }
+  .card h3 { font-size: 14px; color: var(--white); margin-bottom: 16px; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .summary-stat { text-align: center; padding: 14px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm); }
+  .summary-stat .val { font-size: 22px; font-weight: 800; color: var(--gold); }
+  .summary-stat .lbl { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .xp-bar-wrap { margin-top: 4px; }
+  .xp-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .xp-track { height: 10px; border-radius: 6px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .xp-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); border-radius: 6px; transition: width 0.4s ease; }
+
+  .daily-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .daily-info { font-size: 13px; color: var(--text); }
+  .daily-info b { color: var(--gold); }
+
+  .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+  .badge {
+    text-align: center; padding: 16px 10px; background: var(--input-bg); border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm); transition: all 0.2s;
+  }
+  .badge.locked { opacity: 0.35; filter: grayscale(1); }
+  .badge.unlocked { border-color: rgba(245,166,35,0.3); background: var(--gold-glow); }
+  .badge .b-icon { font-size: 30px; margin-bottom: 8px; }
+  .badge .b-title { font-size: 12px; font-weight: 700; color: var(--white); margin-bottom: 3px; }
+  .badge .b-desc { font-size: 10.5px; color: var(--muted); line-height: 1.4; }
+  .badge .b-date { font-size: 10px; color: var(--gold); margin-top: 6px; }
+
+  .lb-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 6px; background: var(--input-bg); border: 1px solid var(--card-border); }
+  .lb-row.me { border-color: var(--gold); background: var(--gold-glow); }
+  .lb-rank { width: 26px; font-weight: 800; color: var(--muted); text-align: center; }
+  .lb-row:nth-child(1) .lb-rank { color: #FFD700; }
+  .lb-row:nth-child(2) .lb-rank { color: #C0C0C0; }
+  .lb-row:nth-child(3) .lb-rank { color: #CD7F32; }
+  .lb-name { flex: 1; color: var(--white); font-weight: 600; }
+  .lb-xp { color: var(--gold); font-weight: 700; font-size: 12.5px; }
+
+  .empty-state { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 13px; opacity: 0; transform: translateY(8px); animation: fadeInUp 0.4s ease forwards; }
+  @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 16px 12px 60px; }
+    header { padding: 16px 18px; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="header-left">
+      <div class="header-icon">🏆</div>
+      <div>
+        <p class="eyebrow">Student Portal</p>
+        <h1>Achievements</h1>
+        <p class="subtitle">Your progress, badges &amp; class ranking</p>
+      </div>
+    </div>
+    <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <div class="card">
+    <div class="summary-grid" id="summaryGrid">
+      <div class="summary-stat"><div class="val">—</div><div class="lbl">Level</div></div>
+      <div class="summary-stat"><div class="val">—</div><div class="lbl">XP</div></div>
+      <div class="summary-stat"><div class="val">—</div><div class="lbl">Coins</div></div>
+      <div class="summary-stat"><div class="val">—</div><div class="lbl">Streak</div></div>
+      <div class="summary-stat"><div class="val">—</div><div class="lbl">Class Rank</div></div>
+    </div>
+    <div class="xp-bar-wrap" id="xpBarWrap" style="display:none;">
+      <div class="xp-bar-label"><span id="xpBarLabel"></span><span id="xpBarNext"></span></div>
+      <div class="xp-track"><div class="xp-fill" id="xpBarFill" style="width:0%;"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🎁 Daily Check-in</h3>
+    <div class="daily-row">
+      <div class="daily-info" id="dailyInfo">Loading…</div>
+      <button class="btn btn-gold" id="claimBtn" onclick="claimDaily()" disabled>Claim</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🏅 Badges</h3>
+    <div class="badge-grid" id="badgeGrid">
+      <div class="empty-state">Loading…</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📊 Class Leaderboard</h3>
+    <div id="leaderboardContainer">
+      <div class="empty-state">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = '/api';
+  const token = localStorage.getItem('studentToken');
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  async function apiCall(endpoint, options = {}) {
+    const defaultOptions = { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, { ...defaultOptions, ...options });
+      if (response.status === 401) {
+        showBanner('Session expired. Redirecting to login...', 'error');
+        setTimeout(() => { localStorage.removeItem('studentToken'); window.location.href = '/student/login.html'; }, 1500);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      showBanner('Network error. Please try again.', 'error');
+      return null;
+    }
+  }
+
+  function showBanner(msg, type) {
+    const banner = document.getElementById('banner');
+    banner.textContent = msg;
+    banner.className = `banner show ${type}`;
+    setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function loadSummary() {
+    const result = await apiCall('/achievements/summary');
+    if (!result || !result.success) return;
+    const d = result.data;
+
+    const stats = [
+      { val: d.level?.level ?? '—', lbl: d.level?.title || 'Level' },
+      { val: d.xp ?? 0, lbl: 'XP' },
+      { val: d.coins ?? 0, lbl: 'Coins' },
+      { val: `${d.streak ?? 0}\u{1F525}`, lbl: 'Streak' },
+      { val: d.rank ? `#${d.rank}` : '—', lbl: 'Class Rank' }
+    ];
+    document.getElementById('summaryGrid').innerHTML = stats.map(s => `
+      <div class="summary-stat"><div class="val">${escapeHtml(String(s.val))}</div><div class="lbl">${escapeHtml(s.lbl)}</div></div>
+    `).join('');
+
+    if (d.nextLevel) {
+      const span = d.nextLevel.xpRequired - (d.level?.xpRequired || 0);
+      const progressed = (d.xp || 0) - (d.level?.xpRequired || 0);
+      const pct = Math.max(0, Math.min(100, Math.round((progressed / span) * 100)));
+      document.getElementById('xpBarWrap').style.display = 'block';
+      document.getElementById('xpBarLabel').textContent = `${d.level?.title || ''} (Lvl ${d.level?.level})`;
+      document.getElementById('xpBarNext').textContent = `${d.nextLevel.xpRequired - (d.xp || 0)} XP to Level ${d.nextLevel.level}`;
+      document.getElementById('xpBarFill').style.width = `${pct}%`;
+    }
+  }
+
+  async function loadDaily() {
+    const result = await apiCall('/achievements/daily-reward');
+    const btn = document.getElementById('claimBtn');
+    const info = document.getElementById('dailyInfo');
+    if (!result || !result.success) {
+      info.textContent = "Could not load today's reward.";
+      return;
+    }
+    const d = result.data;
+    if (d.claimed) {
+      info.innerHTML = `✓ Already claimed today — <b>+${d.reward.xp} XP, +${d.reward.coins} coins</b>`;
+      btn.disabled = true;
+      btn.textContent = 'Claimed';
+    } else {
+      info.innerHTML = `Today's reward: <b>+${d.reward.xp} XP, +${d.reward.coins} coins</b> (based on your streak)`;
+      btn.disabled = false;
+      btn.textContent = 'Claim';
+    }
+  }
+
+  async function claimDaily() {
+    const btn = document.getElementById('claimBtn');
+    btn.disabled = true;
+    btn.textContent = 'Claiming…';
+    const result = await apiCall('/achievements/daily-reward/claim', { method: 'POST' });
+    if (result && result.success) {
+      showBanner(`Claimed! +${result.data.xp} XP, +${result.data.coins} coins 🎉`, 'success');
+      loadDaily();
+      loadSummary();
+    } else {
+      showBanner(result?.message || 'Could not claim reward.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Claim';
+    }
+  }
+
+  async function loadCatalog() {
+    const result = await apiCall('/achievements/catalog');
+    const grid = document.getElementById('badgeGrid');
+    if (!result || !result.success) {
+      grid.innerHTML = '<div class="empty-state">Could not load badges.</div>';
+      return;
+    }
+    const catalog = result.data || [];
+    grid.innerHTML = catalog.map(b => `
+      <div class="badge ${b.unlocked ? 'unlocked' : 'locked'}">
+        <div class="b-icon">${b.icon}</div>
+        <div class="b-title">${escapeHtml(b.title)}</div>
+        <div class="b-desc">${escapeHtml(b.description)}</div>
+        ${b.unlocked && b.earnedAt ? `<div class="b-date">Earned ${new Date(b.earnedAt).toLocaleDateString()}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  async function loadLeaderboard() {
+    const result = await apiCall('/achievements/leaderboard');
+    const container = document.getElementById('leaderboardContainer');
+    if (!result || !result.success) {
+      container.innerHTML = '<div class="empty-state">Could not load leaderboard.</div>';
+      return;
+    }
+    const board = result.data || [];
+    if (!board.length) {
+      container.innerHTML = '<div class="empty-state">No ranked students yet.</div>';
+      return;
+    }
+    const myName = localStorage.getItem('studentName');
+    container.innerHTML = board.slice(0, 20).map(row => `
+      <div class="lb-row ${myName && row.name === myName ? 'me' : ''}">
+        <div class="lb-rank">${row.rank <= 3 ? ['\u{1F947}','\u{1F948}','\u{1F949}'][row.rank - 1] : row.rank}</div>
+        <div class="lb-name">${escapeHtml(row.name)}</div>
+        <div class="lb-xp">${row.xp} XP · Lvl ${row.level?.level ?? 1}</div>
+      </div>
+    `).join('');
+  }
+
+  // ==================== Init ====================
+  loadSummary();
+  loadDaily();
+  loadCatalog();
+  loadLeaderboard();
+</script>
+
+</body>
+</html>

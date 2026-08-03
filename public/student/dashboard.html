@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Chawla Classes</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #060e1a;
+            color: #f1f5f9;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .header {
+            background: #132044;
+            padding: 24px 32px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header h1 { color: #c9a84c; font-size: 24px; }
+        .welcome { font-size: 22px; margin-top: 4px; }
+        .welcome span { color: #c9a84c; }
+        .sub-text { color: #94a3b8; font-size: 14px; }
+        .user-info { text-align: right; }
+        .user-info .name { color: white; font-weight: 600; }
+        .user-info .role { color: #94a3b8; font-size: 13px; }
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.2); }
+
+        .notif-bell-wrap { position: relative; display: inline-block; }
+        .notif-bell-btn {
+            background: rgba(245,166,35,0.1); color: #F5A623; border: 1px solid rgba(245,166,35,0.25);
+            padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
+            margin-top: 8px; margin-right: 8px; position: relative;
+        }
+        .notif-bell-btn:hover { background: rgba(245,166,35,0.2); }
+        .notif-bell-badge {
+            position: absolute; top: -6px; right: -6px; background: #ef4444; color: white;
+            font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 999px;
+            display: flex; align-items: center; justify-content: center; padding: 0 3px;
+        }
+        .notif-dropdown {
+            position: absolute; top: 100%; right: 0; width: 320px; max-width: 85vw; margin-top: 8px;
+            background: #132044; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 200; display: none; text-align: left;
+        }
+        .notif-dropdown.show { display: block; }
+        .notif-dropdown-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .notif-dropdown-head h4 { color: white; font-size: 14px; margin: 0; }
+        .notif-mark-all { background: none; border: none; color: #F5A623; font-size: 11px; font-weight: 600; cursor: pointer; }
+        .notif-list { max-height: 360px; overflow-y: auto; }
+        .notif-item { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+        .notif-item:hover { background: rgba(255,255,255,0.03); }
+        .notif-item.unread { background: rgba(245,166,35,0.06); }
+        .notif-item-title { color: white; font-size: 13px; font-weight: 600; }
+        .notif-item-msg { color: #94a3b8; font-size: 12px; margin-top: 3px; line-height: 1.4; }
+        .notif-item-time { color: #64748b; font-size: 10.5px; margin-top: 4px; }
+        .notif-empty { padding: 24px 16px; text-align: center; color: #64748b; font-size: 13px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #132044;
+            padding: 20px 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            border-color: rgba(201, 168, 76, 0.2);
+            transform: translateY(-2px);
+        }
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #c9a84c;
+        }
+        .stat-card .label { color: #94a3b8; font-size: 13px; margin-top: 4px; }
+        .stat-card .icon { font-size: 20px; margin-bottom: 8px; }
+
+        /* Section row: two widgets side by side on desktop, stacked on mobile */
+        .section-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+        }
+        .widget {
+            background: #132044;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .widget h3 {
+            color: #cbd5e1;
+            margin-bottom: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .widget h3 i { color: #c9a84c; margin-right: 8px; }
+        .widget h3 .widget-link { font-size: 12px; font-weight: 600; color: #F5A623; text-decoration: none; }
+
+        .test-item, .homework-item {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-item:last-child, .homework-item:last-child { border-bottom: none; }
+        .test-item .name, .homework-item .name { color: white; font-weight: 500; }
+        .test-item .date, .homework-item .date { color: #94a3b8; font-size: 13px; }
+        .test-item .status {
+            font-size: 11px;
+            padding: 2px 12px;
+            border-radius: 20px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #3b82f6;
+            white-space: nowrap;
+        }
+        .hw-badge { font-size: 11px; padding: 2px 12px; border-radius: 20px; white-space: nowrap; font-weight: 600; }
+        .hw-badge.pending { background: rgba(59,130,246,0.12); color: #3b82f6; }
+        .hw-badge.overdue { background: rgba(239,68,68,0.12); color: #ef4444; }
+        .hw-badge.submitted { background: rgba(34,197,94,0.12); color: #22c55e; }
+        .hw-badge.graded { background: rgba(201,168,76,0.15); color: #c9a84c; }
+
+        .quick-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .quick-stat:last-child { border-bottom: none; }
+        .quick-stat .label { color: #94a3b8; }
+        .quick-stat .value { font-weight: 600; color: #c9a84c; }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+        .spinner {
+            border: 3px solid rgba(201,168,76,0.1);
+            border-top: 3px solid #c9a84c;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ---- Skeleton loaders ---- */
+        .skeleton-line, .skeleton-block {
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 37%, rgba(255,255,255,0.05) 63%);
+            background-size: 400% 100%;
+            animation: skeleton-shimmer 1.4s ease infinite;
+            border-radius: 6px;
+        }
+        .skeleton-line { height: 14px; margin-bottom: 10px; }
+        .skeleton-line.w-60 { width: 60%; }
+        .skeleton-line.w-40 { width: 40%; }
+        .skeleton-line.w-80 { width: 80%; }
+        .skeleton-block { height: 56px; margin-bottom: 10px; }
+        @keyframes skeleton-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+        /* ---- Empty states ---- */
+        .empty-state {
+            text-align: center; padding: 28px 12px; color: #8492aa;
+            animation: fadeInUp 0.4s ease;
+        }
+        .empty-state .empty-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.6; }
+        .empty-state p { font-size: 13px; }
+
+        /* ---- Today's Goal ---- */
+        .goal-card { display: flex; align-items: center; gap: 18px; }
+        .goal-ring {
+            width: 76px; height: 76px; border-radius: 50%; flex-shrink: 0;
+            background: conic-gradient(#c9a84c calc(var(--pct,0) * 1%), rgba(255,255,255,0.07) 0);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .goal-ring-inner {
+            width: 58px; height: 58px; border-radius: 50%; background: #132044;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .goal-ring-inner .n { font-size: 16px; font-weight: 700; color: #c9a84c; line-height: 1; }
+        .goal-ring-inner .u { font-size: 9px; color: #94a3b8; }
+        .goal-details p { color: #cbd5e1; font-size: 13px; margin-bottom: 4px; }
+        .goal-details .goal-sub { color: #7a90b8; font-size: 12px; }
+
+        /* ---- Continue Learning ---- */
+        .rec-card {
+            padding: 14px 16px; border-radius: 10px; background: rgba(245,166,35,0.06);
+            border: 1px solid rgba(245,166,35,0.15); margin-bottom: 10px;
+        }
+        .rec-card:last-child { margin-bottom: 0; }
+        .rec-card .rec-title { color: white; font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+        .rec-card .rec-desc { color: #94a3b8; font-size: 12.5px; line-height: 1.4; }
+        .rec-priority { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: 20px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .rec-priority.high { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .rec-priority.medium { background: rgba(245,166,35,0.15); color: #F5A623; }
+        .rec-priority.low { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .cta-btn {
+            display: inline-block; margin-top: 10px; padding: 8px 18px;
+            background: linear-gradient(135deg,#F5A623,#c8841a); color: #0A1628;
+            border-radius: 10px; font-weight: 700; font-size: 12.5px; text-decoration: none;
+        }
+
+        /* ---- Latest Result ---- */
+        .result-card { display: flex; align-items: center; gap: 20px; }
+        .result-score { font-size: 40px; font-weight: 800; color: #c9a84c; line-height: 1; }
+        .result-score.fail { color: #ef4444; }
+        .result-meta .rname { color: white; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .result-meta .rdate { color: #94a3b8; font-size: 12.5px; }
+        .result-pass-badge { display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700; padding: 2px 12px; border-radius: 20px; }
+        .result-pass-badge.pass { background: rgba(34,197,94,0.12); color: #22c55e; }
+        .result-pass-badge.fail { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+        /* ---- Weekly Progress (CSS-only mini bar chart) ---- */
+        .progress-bars { display: flex; align-items: flex-end; gap: 8px; height: 110px; margin-top: 8px; }
+        .progress-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+        .progress-bar-fill {
+            width: 100%; max-width: 26px; border-radius: 6px 6px 0 0;
+            background: linear-gradient(180deg, #c9a84c, #8a7233);
+            transition: height 0.4s ease;
+        }
+        .progress-bar-label { font-size: 10px; color: #64748b; margin-top: 6px; text-align: center; }
+        .progress-bar-pct { font-size: 10px; color: #c9a84c; font-weight: 700; margin-bottom: 4px; }
+
+        /* ---- Attendance ---- */
+        .attendance-card { display: flex; align-items: center; gap: 18px; }
+        .attendance-ring {
+            width: 88px; height: 88px; border-radius: 50%; flex-shrink: 0;
+            background: conic-gradient(#22c55e calc(var(--pct,0) * 1%), rgba(255,255,255,0.07) 0);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .attendance-ring.low { background: conic-gradient(#ef4444 calc(var(--pct,0) * 1%), rgba(255,255,255,0.07) 0); }
+        .attendance-ring.mid { background: conic-gradient(#F5A623 calc(var(--pct,0) * 1%), rgba(255,255,255,0.07) 0); }
+        .attendance-ring-inner {
+            width: 68px; height: 68px; border-radius: 50%; background: #132044;
+            display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: white;
+        }
+        .attendance-details p { color: #94a3b8; font-size: 12.5px; margin-bottom: 4px; }
+        .attendance-details .streak { color: #F5A623; font-weight: 600; }
+
+        /* ---- Achievements ---- */
+        .achievements-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .achievement-badge {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px; padding: 12px; text-align: center;
+        }
+        .achievement-badge .a-icon { font-size: 20px; margin-bottom: 6px; }
+        .achievement-badge .a-value { font-size: 15px; font-weight: 700; color: #c9a84c; }
+        .achievement-badge .a-label { font-size: 10.5px; color: #94a3b8; margin-top: 2px; }
+
+        /* ---- Quick Actions ---- */
+        .quick-actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+        .quick-action-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            padding: 16px 10px; border-radius: 12px; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06); text-decoration: none; color: #cbd5e1;
+            font-size: 12.5px; font-weight: 600; transition: all 0.2s ease; cursor: pointer;
+        }
+        .quick-action-btn:hover { border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.06); transform: translateY(-2px); }
+        .quick-action-btn i { font-size: 20px; color: #F5A623; }
+
+        @media (max-width: 900px) {
+            .section-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .header { flex-direction: column; text-align: center; }
+            .user-info { text-align: center; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .goal-card, .attendance-card, .result-card { flex-direction: column; text-align: center; }
+            .achievements-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 420px) {
+            body { padding: 12px; }
+            .header { padding: 18px 20px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .achievements-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🏫 Chawla Classes</h1>
+                <div class="welcome"><span id="greeting">Welcome</span>, <span id="studentName">Student</span> 👋</div>
+                <div class="sub-text" id="studentInfo">Loading...</div>
+            </div>
+            <div class="user-info">
+                <div class="name" id="userName">Student</div>
+                <div class="role" id="userRole">Student</div>
+                <div class="notif-bell-wrap">
+                    <button class="notif-bell-btn" onclick="toggleNotifDropdown()">
+                        🔔 <span id="notifBadge" class="notif-bell-badge" style="display:none;">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dropdown-head">
+                            <h4>Notifications</h4>
+                            <button class="notif-mark-all" onclick="markAllNotifsRead()">Mark all read</button>
+                        </div>
+                        <div class="notif-list" id="notifList"><div class="notif-empty">Loading…</div></div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+
+        <!-- Stats overview -->
+        <div id="statsContainer" class="stats-grid">
+            <div class="loading"><div class="spinner"></div>Loading stats...</div>
+        </div>
+
+        <!-- Today's Goal + Continue Learning -->
+        <div class="section-row">
+            <div class="widget">
+                <h3><i class="fas fa-bullseye"></i> Today's Goal</h3>
+                <div id="goalContainer">
+                    <div class="skeleton-block"></div>
+                    <div class="skeleton-line w-60"></div>
+                </div>
+            </div>
+            <div class="widget">
+                <h3><i class="fas fa-play-circle"></i> Continue Learning</h3>
+                <div id="continueContainer">
+                    <div class="skeleton-line w-80"></div>
+                    <div class="skeleton-line w-60"></div>
+                    <div class="skeleton-line w-40"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Tests + Pending Homework -->
+        <div class="section-row">
+            <div class="widget">
+                <h3><span><i class="fas fa-calendar-alt"></i> Upcoming Tests</span></h3>
+                <div id="testsContainer">
+                    <div class="loading"><div class="spinner"></div>Loading...</div>
+                </div>
+            </div>
+            <div class="widget">
+                <h3><span><i class="fas fa-book-open"></i> Pending Homework</span><a class="widget-link" href="/student/homework.html">View all →</a></h3>
+                <div id="homeworkContainer">
+                    <div class="skeleton-line w-80"></div>
+                    <div class="skeleton-line w-60"></div>
+                    <div class="skeleton-line w-40"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latest Result + Weekly Progress -->
+        <div class="section-row">
+            <div class="widget">
+                <h3><span><i class="fas fa-trophy"></i> Latest Result</span><a class="widget-link" href="/student/results.html">View all →</a></h3>
+                <div id="resultContainer">
+                    <div class="skeleton-block"></div>
+                </div>
+            </div>
+            <div class="widget">
+                <h3><i class="fas fa-chart-line"></i> Weekly Progress</h3>
+                <div id="progressContainer">
+                    <div class="skeleton-line w-80"></div>
+                    <div class="skeleton-block"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance + Achievements -->
+        <div class="section-row">
+            <div class="widget">
+                <h3><i class="fas fa-user-check"></i> Attendance Summary</h3>
+                <div id="attendanceContainer">
+                    <div class="skeleton-block"></div>
+                </div>
+            </div>
+            <div class="widget">
+                <h3><i class="fas fa-medal"></i> Achievements <a href="/student/achievements.html" style="float:right;font-size:11px;color:#c9a84c;text-decoration:none;font-weight:600;">View All →</a></h3>
+                <div id="achievementsContainer">
+                    <div class="skeleton-line w-60"></div>
+                    <div class="skeleton-block"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Target + Revision Due (Study Flow) -->
+        <div class="section-row">
+            <div class="widget">
+                <h3><i class="fas fa-crosshairs"></i> Daily Target <a href="/student/daily-target.html" style="float:right;font-size:11px;color:#c9a84c;text-decoration:none;font-weight:600;">Open →</a></h3>
+                <div id="dailyTargetContainer">
+                    <div class="skeleton-line w-60"></div>
+                    <div class="skeleton-block"></div>
+                </div>
+            </div>
+            <div class="widget">
+                <h3><i class="fas fa-redo"></i> Revision Due <a href="/student/revision.html" style="float:right;font-size:11px;color:#c9a84c;text-decoration:none;font-weight:600;">Open →</a></h3>
+                <div id="revisionDueContainer">
+                    <div class="skeleton-line w-60"></div>
+                    <div class="skeleton-block"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="widget" style="margin-bottom:24px;">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+            <div class="quick-actions-grid">
+                <a class="quick-action-btn" href="/student/homework.html"><i class="fas fa-book-open"></i> Homework</a>
+                <a class="quick-action-btn" href="/student/practice.html"><i class="fas fa-bullseye"></i> Practice</a>
+                <a class="quick-action-btn" href="/student/wrong-notebook.html"><i class="fas fa-book"></i> Wrong Notebook</a>
+                <a class="quick-action-btn" href="/student/bookmarks.html"><i class="fas fa-bookmark"></i> Bookmarks</a>
+                <a class="quick-action-btn" href="/student/achievements.html"><i class="fas fa-trophy"></i> Achievements</a>
+                <a class="quick-action-btn" href="/student/progress.html"><i class="fas fa-chart-line"></i> Progress</a>
+                <a class="quick-action-btn" href="/student/daily-target.html"><i class="fas fa-crosshairs"></i> Daily Target</a>
+                <a class="quick-action-btn" href="/student/revision.html"><i class="fas fa-redo"></i> Revision</a>
+                <a class="quick-action-btn" href="/student/report.html"><i class="fas fa-file-alt"></i> My Report</a>
+                <a class="quick-action-btn" href="/student/doubts.html"><i class="fas fa-comment-dots"></i> Ask a Doubt</a>
+                <a class="quick-action-btn" href="/student/results.html"><i class="fas fa-chart-bar"></i> My Results</a>
+                <a class="quick-action-btn" href="/student/fees.html"><i class="fas fa-rupee-sign"></i> My Fees</a>
+                <a class="quick-action-btn" href="/student/security.html"><i class="fas fa-lock"></i> Login Activity</a>
+                <a class="quick-action-btn" id="quickTestBtn" href="/student/test.html"><i class="fas fa-pen"></i> Take a Test</a>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        // FIX: login.html stores the JWT under 'studentToken' (and name/class
+        // under 'studentName'/'userClass') — this page was reading 'token'
+        // and 'user', keys that are never set anywhere, so it always sent
+        // "Authorization: Bearer null" and the API correctly rejected it as
+        // an invalid token, even right after a successful login.
+        const token = localStorage.getItem('studentToken');
+        const user = {
+            name: localStorage.getItem('studentName') || 'Student',
+            class: JSON.parse(localStorage.getItem('userClass') || '{}').displayName || 'N/A'
+        };
+
+        if (!token) {
+            window.location.href = '/student/login.html';
+        }
+
+        document.getElementById('studentName').textContent = user.name || 'Student';
+        document.getElementById('userName').textContent = user.name || 'Student';
+        document.getElementById('studentInfo').textContent = user.class || 'N/A';
+
+        // Time-of-day greeting — small "modern dashboard" touch, no API needed.
+        (function setGreeting() {
+            const h = new Date().getHours();
+            const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+            document.getElementById('greeting').textContent = g;
+        })();
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch(`${API_URL}/student/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                // FIX (auth audit 2026-07): dashboard.html — the first page a
+                // student lands on — was the one student page NOT checking
+                // for an expired/invalid token here (doubts.html, fees.html,
+                // homework.html, results.html, security.html and test.html
+                // all already redirect to login on 401). Without this, an
+                // expired token just showed a generic error instead of
+                // prompting re-login.
+                if (response.status === 401) {
+                    localStorage.removeItem('studentToken');
+                    localStorage.removeItem('studentName');
+                    localStorage.removeItem('studentEmail');
+                    localStorage.removeItem('userClass');
+                    sessionStorage.setItem('cc_logoutReason', 'Your session has expired. Please log in again.');
+                    window.location.href = '/student/login.html';
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const { stats, upcomingTests, recentActivity } = result.data;
+                    renderStats(stats);
+                    renderTests(upcomingTests);
+                    renderAttendance(stats);
+                    renderAchievements(stats);
+                    renderLatestResult(recentActivity);
+                    renderWeeklyProgress(recentActivity);
+                    if (upcomingTests && upcomingTests.length > 0) {
+                        // "Take a Test" quick action — link straight to the next
+                        // available test (test.html needs ?id= to know which test
+                        // to start) and surface the count.
+                        const quickBtn = document.getElementById('quickTestBtn');
+                        quickBtn.href = `/student/test.html?id=${encodeURIComponent(upcomingTests[0]._id)}`;
+                        quickBtn.innerHTML =
+                            `<i class="fas fa-pen"></i> Take a Test (${upcomingTests.length})`;
+                    }
+                } else {
+                    showError(result.message || 'Failed to load');
+                }
+            } catch (error) {
+                showError('Server error. Please try again.');
+            }
+        }
+
+        function renderStats(stats) {
+            const container = document.getElementById('statsContainer');
+            const items = [
+                { icon: 'fa-book', label: 'Total Tests', value: stats.totalTests || 0 },
+                { icon: 'fa-check-circle', label: 'Completed', value: stats.completedTests || 0, color: '#22c55e' },
+                { icon: 'fa-clock', label: 'Pending', value: (stats.totalTests || 0) - (stats.completedTests || 0), color: '#fb923c' },
+                { icon: 'fa-chart-line', label: 'Avg Score', value: (stats.avgScore || 0) + '%', color: '#3b82f6' },
+                { icon: 'fa-trophy', label: 'Best Score', value: (stats.bestScore || 0) + '%', color: '#c9a84c' },
+                { icon: 'fa-star', label: 'Rank', value: stats.rank ? '#' + stats.rank : 'N/A', color: '#a855f7' }
+            ];
+
+            container.innerHTML = items.map(item => `
+                <div class="stat-card">
+                    <div class="icon" style="color: ${item.color || '#c9a84c'}"><i class="fas ${item.icon}"></i></div>
+                    <div class="number">${item.value}</div>
+                    <div class="label">${item.label}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderTests(tests) {
+            const container = document.getElementById('testsContainer');
+            if (!tests || tests.length === 0) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>No upcoming tests right now. Check back later!</p></div>`;
+                return;
+            }
+            container.innerHTML = tests.map(test => `
+                <a class="test-item" href="/student/test.html?id=${encodeURIComponent(test._id)}" style="text-decoration:none;color:inherit;">
+                    <div><div class="name">${escapeHtml(test.name)}</div><div class="date">${escapeHtml(test.date)} • ${escapeHtml(test.time)}</div></div>
+                    <span class="status">Upcoming</span>
+                </a>
+            `).join('');
+        }
+
+        // ── Pending Homework ─────────────────────────────────────────────
+        // Reuses GET /api/student/homework (existing endpoint, unchanged) —
+        // filters to what's actually pending/overdue and shows the soonest
+        // few, instead of the old static "Open Homework" link card.
+        async function loadHomework() {
+            const container = document.getElementById('homeworkContainer');
+            try {
+                const res = await fetch(`${API_URL}/student/homework`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const result = await res.json();
+                if (!result.success) throw new Error(result.message || 'Failed to load homework');
+
+                const pending = (result.data || [])
+                    .filter(hw => hw.submissionStatus === 'pending' || hw.submissionStatus === 'overdue')
+                    .slice(0, 5);
+
+                if (pending.length === 0) {
+                    container.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>All caught up — no pending homework!</p></div>`;
+                    return;
+                }
+
+                container.innerHTML = pending.map(hw => `
+                    <div class="homework-item">
+                        <div><div class="name">${escapeHtml(hw.title || 'Homework')}</div><div class="date">Due ${new Date(hw.dueDate).toLocaleDateString()}</div></div>
+                        <span class="hw-badge ${hw.submissionStatus}">${hw.submissionStatus === 'overdue' ? 'Overdue' : 'Pending'}</span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state"><p>Couldn't load homework right now.</p></div>`;
+            }
+        }
+
+        // ── Latest Result ────────────────────────────────────────────────
+        // Reuses recentActivity already returned by /api/student/dashboard —
+        // no extra API call needed.
+        function renderLatestResult(recentActivity) {
+            const container = document.getElementById('resultContainer');
+            if (!recentActivity || recentActivity.length === 0) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🏆</div><p>No test results yet. Take your first test to see it here!</p></div>`;
+                return;
+            }
+            const r = recentActivity[0];
+            container.innerHTML = `
+                <div class="result-card">
+                    <div class="result-score ${r.isPassed ? '' : 'fail'}">${Math.round(r.percentage)}%</div>
+                    <div class="result-meta">
+                        <div class="rname">${escapeHtml(r.testName)}</div>
+                        <div class="rdate">${new Date(r.date).toLocaleDateString()}</div>
+                        <span class="result-pass-badge ${r.isPassed ? 'pass' : 'fail'}">${r.isPassed ? 'Passed' : 'Failed'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ── Weekly Progress (CSS-only bar chart, no charting library) ────
+        // Reuses recentActivity (up to last 5 tests) already returned by
+        // /api/student/dashboard — deliberately not adding a new chart.js
+        // dependency to the student panel for a single sparkline.
+        function renderWeeklyProgress(recentActivity) {
+            const container = document.getElementById('progressContainer');
+            if (!recentActivity || recentActivity.length === 0) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">📈</div><p>Your score trend will appear here after a few tests.</p></div>`;
+                return;
+            }
+            // oldest → newest, left to right
+            const items = [...recentActivity].reverse();
+            container.innerHTML = `
+                <div class="progress-bars">
+                    ${items.map(r => `
+                        <div class="progress-bar-col">
+                            <div class="progress-bar-pct">${Math.round(r.percentage)}%</div>
+                            <div class="progress-bar-fill" style="height:${Math.max(4, Math.round(r.percentage))}%;"></div>
+                            <div class="progress-bar-label">${new Date(r.date).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // ── Attendance Summary ───────────────────────────────────────────
+        // Reuses stats.attendance already returned by /api/student/dashboard.
+        function renderAttendance(stats) {
+            const container = document.getElementById('attendanceContainer');
+            const pct = stats.attendance;
+            if (pct === null || pct === undefined) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🗓️</div><p>No attendance records yet.</p></div>`;
+                return;
+            }
+            const ringClass = pct >= 75 ? '' : pct >= 60 ? 'mid' : 'low';
+            container.innerHTML = `
+                <div class="attendance-card">
+                    <div class="attendance-ring ${ringClass}" style="--pct:${pct}">
+                        <div class="attendance-ring-inner">${pct}%</div>
+                    </div>
+                    <div class="attendance-details">
+                        <p>${pct >= 75 ? 'Great attendance — keep it up!' : 'Your attendance is below 75%. Try to attend more classes.'}</p>
+                        <p class="streak">🔥 ${stats.streak || 0}-day study streak</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ── Achievements ──────────────────────────────────────────────────
+        // Reuses the gamification fields already in stats (level, xp, coins,
+        // rank, bestScore) — no separate achievements/leaderboard endpoint
+        // exists on the backend, so this summarizes what's already tracked
+        // rather than calling something that isn't there.
+        function renderAchievements(stats) {
+            const container = document.getElementById('achievementsContainer');
+            const badges = [
+                { icon: '🏅', value: `Lvl ${stats.level || 1}`, label: stats.levelTitle || 'Beginner' },
+                { icon: '⭐', value: stats.xp || 0, label: 'XP Earned' },
+                { icon: '💰', value: stats.coins || 0, label: 'Coins' },
+                { icon: '🏆', value: (stats.bestScore || 0) + '%', label: 'Best Score' }
+            ];
+            container.innerHTML = `<div class="achievements-grid">${badges.map(b => `
+                <div class="achievement-badge">
+                    <div class="a-icon">${b.icon}</div>
+                    <div class="a-value">${b.value}</div>
+                    <div class="a-label">${escapeHtml(String(b.label))}</div>
+                </div>
+            `).join('')}</div>`;
+        }
+
+        function showError(message) {
+            document.getElementById('statsContainer').innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:40px;background:#132044;border-radius:12px;">
+                    <p style="color:#ef4444;">${escapeHtml(message)}</p>
+                    <button onclick="location.reload()" style="margin-top:12px;padding:8px 24px;background:#c9a84c;color:#060e1a;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Retry</button>
+                </div>
+            `;
+        }
+
+        async function logout() {
+            // Best-effort — end the session server-side too, so it stops
+            // showing as "active" under Login Activity immediately.
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('studentToken')}` }
+                });
+            } catch (_) { /* offline / server down — still log out locally */ }
+
+            localStorage.removeItem('studentToken');
+            localStorage.removeItem('studentName');
+            localStorage.removeItem('studentEmail');
+            localStorage.removeItem('userClass');
+            window.location.href = '/student/login.html';
+        }
+
+        // ── Notifications (Push / in-app) ────────────────────────────────
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function timeAgo(iso) {
+            const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+            if (mins < 1) return 'just now';
+            if (mins < 60) return `${mins}m ago`;
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return `${hrs}h ago`;
+            return `${Math.floor(hrs / 24)}d ago`;
+        }
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch(`${API_URL}/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const result = await response.json();
+                if (!result.success) return;
+
+                const notifications = result.data || [];
+                const unreadCount = notifications.filter(n => !n.read).length;
+                const badge = document.getElementById('notifBadge');
+                badge.textContent = unreadCount;
+                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+
+                const list = document.getElementById('notifList');
+                list.innerHTML = notifications.length === 0
+                    ? `<div class="notif-empty">No notifications yet.</div>`
+                    : notifications.map(n => `
+                        <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markNotifRead('${n.id}')">
+                            <div class="notif-item-title">${escapeHtml(n.title)}</div>
+                            <div class="notif-item-msg">${escapeHtml(n.message)}</div>
+                            <div class="notif-item-time">${timeAgo(n.createdAt)}</div>
+                        </div>
+                    `).join('');
+            } catch (error) { /* silent — bell just stays at last known state */ }
+        }
+
+        function toggleNotifDropdown() {
+            const dropdown = document.getElementById('notifDropdown');
+            dropdown.classList.toggle('show');
+            if (dropdown.classList.contains('show')) loadNotifications();
+        }
+
+        document.addEventListener('click', (e) => {
+            const wrap = document.querySelector('.notif-bell-wrap');
+            if (wrap && !wrap.contains(e.target)) document.getElementById('notifDropdown').classList.remove('show');
+        });
+
+        async function markNotifRead(id) {
+            try {
+                await fetch(`${API_URL}/notifications/${id}/read`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                loadNotifications();
+            } catch (error) { /* ignore */ }
+        }
+
+        async function markAllNotifsRead() {
+            try {
+                await fetch(`${API_URL}/notifications/mark-all-read`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                loadNotifications();
+            } catch (error) { /* ignore */ }
+        }
+
+        // ── Today's Goal + Continue Learning ─────────────────────────────
+        // FIX: these were calling /api/ai/... which 404'd (that path is the
+        // admin-only AI tools, not student-facing). The real handlers were
+        // already written in controllers/student/aiController.js but never
+        // had routes — now mounted at /api/student/ai/... in studentRoutes.js.
+        async function loadGoalAndSuggestions() {
+            const goalEl = document.getElementById('goalContainer');
+            const contEl = document.getElementById('continueContainer');
+            try {
+                const [goalRes, suggRes, weakRes, predictRes] = await Promise.all([
+                    fetch(`${API_URL}/student/ai/daily-goal`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).catch(() => null),
+                    fetch(`${API_URL}/student/ai/suggestions`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).catch(() => null),
+                    fetch(`${API_URL}/student/ai/weak-topic-recommendations`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).catch(() => null),
+                    fetch(`${API_URL}/student/ai/predict-performance`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).catch(() => null),
+                ]);
+
+                // Today's Goal
+                if (goalRes && goalRes.success && goalRes.data) {
+                    const g = goalRes.data;
+                    goalEl.innerHTML = `
+                        <div class="goal-card">
+                            <div class="goal-ring" style="--pct:100">
+                                <div class="goal-ring-inner"><div class="n">${g.questions}</div><div class="u">questions</div></div>
+                            </div>
+                            <div class="goal-details">
+                                <p>Aim for <strong>${g.questions} questions</strong> in <strong>${escapeHtml(g.subject)}</strong> today.</p>
+                                <p class="goal-sub">~${escapeHtml(g.time)} of focused practice</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    goalEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🎯</div><p>Goal unavailable right now — check back later.</p></div>`;
+                }
+
+                // Continue Learning — top recommendation + suggested next test
+                let contHtml = '';
+                if (suggRes && suggRes.success && suggRes.data) {
+                    const recs = suggRes.data.recommendations || [];
+                    if (recs.length > 0) {
+                        const top = recs[0];
+                        contHtml += `
+                            <div class="rec-card">
+                                <span class="rec-priority ${top.priority || 'medium'}">${escapeHtml(top.priority || 'medium')} priority</span>
+                                <div class="rec-title">${escapeHtml(top.title)}</div>
+                                <div class="rec-desc">${escapeHtml(top.description)}</div>
+                            </div>
+                        `;
+                    }
+                    const nextTest = suggRes.data.nextTest;
+                    if (nextTest && nextTest._id) {
+                        contHtml += `<a class="cta-btn" href="/student/test.html?id=${encodeURIComponent(nextTest._id)}">Start Suggested Test →</a>`;
+                    }
+                }
+                if (predictRes && predictRes.success && predictRes.data && predictRes.data.hasEnoughData) {
+                    const p = predictRes.data;
+                    const riskColor = p.riskLevel === 'high' ? '#ef4444' : p.riskLevel === 'medium' ? '#F5A623' : '#22c55e';
+                    contHtml += `<p style="font-size:12.5px;color:#7a90b8;margin-top:10px;">Predicted next score: <strong style="color:${riskColor};">${p.predictedNextScore}/100</strong> <span style="font-size:11px;">(${p.confidence}% confidence)</span></p>`;
+                }
+                if (weakRes && weakRes.success && weakRes.data && weakRes.data.topics && weakRes.data.topics.length > 0) {
+                    const top = weakRes.data.topics[0];
+                    contHtml += `<p style="font-size:12.5px;color:#7a90b8;margin-top:6px;">🎯 Focus area: <strong style="color:white;">${escapeHtml(top.subject)}</strong> (${top.accuracy}% accuracy)</p>`;
+                }
+                contEl.innerHTML = contHtml || `<div class="empty-state"><div class="empty-icon">🚀</div><p>Take a few more tests to unlock personalized recommendations.</p></div>`;
+            } catch (error) {
+                goalEl.innerHTML = `<div class="empty-state"><p>Goal unavailable right now.</p></div>`;
+                contEl.innerHTML = `<div class="empty-state"><p>Recommendations unavailable right now.</p></div>`;
+            }
+        }
+
+        // ── Daily Target + Revision Due (Study Flow) ─────────────────────
+        async function loadStudyFlow() {
+            const targetEl = document.getElementById('dailyTargetContainer');
+            const revisionEl = document.getElementById('revisionDueContainer');
+
+            try {
+                const targetRes = await fetch(`${API_URL}/daily-targets/today`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json());
+                if (targetRes && targetRes.success) {
+                    const d = targetRes.data;
+                    const pct = Math.min(100, Math.round((d.progress.questionsAnswered / d.targetQuestions) * 100));
+                    targetEl.innerHTML = `
+                        <p style="font-size:13px;color:#e2e8f4;margin-bottom:8px;">
+                            <strong style="color:#F5A623;">${d.progress.questionsAnswered} / ${d.targetQuestions}</strong> questions today
+                            ${d.achieved ? ' 🎉' : ''}
+                        </p>
+                        <div style="height:8px;border-radius:6px;background:rgba(255,255,255,0.08);overflow:hidden;">
+                            <div style="height:100%;width:${pct}%;border-radius:6px;background:linear-gradient(90deg,#c8841a,#F5A623);"></div>
+                        </div>
+                        <p style="font-size:11.5px;color:#7a90b8;margin-top:8px;">🔥 ${d.streak} day streak</p>
+                    `;
+                } else {
+                    targetEl.innerHTML = `<div class="empty-state"><p>Target unavailable right now.</p></div>`;
+                }
+            } catch (error) {
+                targetEl.innerHTML = `<div class="empty-state"><p>Target unavailable right now.</p></div>`;
+            }
+
+            try {
+                const revRes = await fetch(`${API_URL}/revision/queue?limit=1`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json());
+                if (revRes && revRes.success) {
+                    const d = revRes.data;
+                    revisionEl.innerHTML = d.totalDue > 0
+                        ? `
+                            <p style="font-size:13px;color:#e2e8f4;margin-bottom:10px;">
+                                <strong style="color:#F5A623;font-size:20px;">${d.totalDue}</strong> question(s) due for revision
+                            </p>
+                            <p style="font-size:11.5px;color:#7a90b8;margin-bottom:12px;">❌ ${d.dueWrong} wrong · 🔖 ${d.dueBookmarks} bookmarked</p>
+                            <a class="cta-btn" href="/student/revision.html">Start Revision →</a>
+                        `
+                        : `<div class="empty-state"><div class="empty-icon">🎉</div><p>Nothing due — you're all caught up!</p></div>`;
+                } else {
+                    revisionEl.innerHTML = `<div class="empty-state"><p>Revision queue unavailable right now.</p></div>`;
+                }
+            } catch (error) {
+                revisionEl.innerHTML = `<div class="empty-state"><p>Revision queue unavailable right now.</p></div>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+        document.addEventListener('DOMContentLoaded', loadHomework);
+        document.addEventListener('DOMContentLoaded', loadGoalAndSuggestions);
+        document.addEventListener('DOMContentLoaded', loadNotifications);
+        document.addEventListener('DOMContentLoaded', loadStudyFlow);
+        setInterval(loadNotifications, 45000);
+    </script>
+<script src="/student/js/idle-logout.js"></script>
+</body>
+</html>

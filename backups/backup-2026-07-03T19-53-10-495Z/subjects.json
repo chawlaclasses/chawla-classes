@@ -1,0 +1,32 @@
+[
+  {
+    "id": "sub_1",
+    "name": "Mathematics",
+    "code": "MATH",
+    "color": "#c9a84c"
+  },
+  {
+    "id": "sub_2",
+    "name": "Physics",
+    "code": "PHY",
+    "color": "#3b82f6"
+  },
+  {
+    "id": "sub_3",
+    "name": "Chemistry",
+    "code": "CHEM",
+    "color": "#a855f7"
+  },
+  {
+    "id": "sub_4",
+    "name": "Biology",
+    "code": "BIO",
+    "color": "#22c55e"
+  },
+  {
+    "id": "sub_5",
+    "name": "English",
+    "code": "ENG",
+    "color": "#fb923c"
+  }
+]

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Chawla Classes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0A1628;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-container {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: fadeInUp 0.5s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .login-container .logo {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .logo-mark {
+            display: inline-block;
+            width: 72px;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 16px;
+            background: #fff;
+            padding: 6px;
+            border: 1px solid rgba(245,166,35,0.3);
+            box-shadow: 0 8px 24px rgba(245,166,35,0.12);
+        }
+        .logo-fallback {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            background: linear-gradient(135deg, rgba(245,166,35,0.18), rgba(200,132,26,0.08));
+            padding: 0;
+        }
+        .login-container h2 {
+            color: #F5A623;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .login-container .subtitle {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            color: #ccc;
+            margin-bottom: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #F5A623;
+            background: rgba(255,255,255,0.08);
+        }
+        .form-group input::placeholder {
+            color: #666;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #F5A623, #c8841a);
+            color: #0A1628;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(245,166,35,0.3);
+        }
+        .btn-login:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .message {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 14px;
+            min-height: 24px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .message.error {
+            color: #fca5a5;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.2);
+            padding: 10px 14px;
+        }
+        .message.success {
+            color: #86efac;
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.2);
+            padding: 10px 14px;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #8492aa;
+        }
+        .footer a {
+            color: #8492aa;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            color: #F5A623;
+        }
+        .debug-toggle {
+            cursor: pointer;
+            color: #8492aa;
+            font-size: 12px;
+        }
+        .debug-toggle:hover {
+            color: #aab6c9;
+        }
+        .debug-info {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            font-size: 12px;
+            color: #8492aa;
+            display: none;
+            overflow-x: auto;
+        }
+        .debug-info.show {
+            display: block;
+        }
+        .debug-info pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #888;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <div class="logo"><img src="/images/logo.png" alt="Chawla Classes" class="logo-mark" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo-mark logo-fallback'}))"></div>
+    <h2>Chawla Classes</h2>
+    <div class="subtitle">Admin Dashboard Login</div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="admin@chawlaclasses.com" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter password" required>
+        </div>
+        
+        <button type="submit" class="btn-login" id="loginBtn">Login</button>
+    </form>
+    
+    <div id="message" class="message"></div>
+
+    
+    <div class="footer">
+        <span class="debug-toggle" onclick="toggleDebug()">🔍 Show Debug Info</span>
+    </div>
+    
+    <div class="debug-info" id="debugInfo">
+        <strong style="color:#888;">Debug Response:</strong>
+        <pre id="debugContent">No debug data yet</pre>
+    </div>
+</div>
+
+<script>
+// If the previous session ended via auto-logout (inactivity timeout),
+// show why — set in dashboard.html's logout(reason) before the redirect.
+(function () {
+    const reason = sessionStorage.getItem('cc_logoutReason');
+    if (reason) {
+        sessionStorage.removeItem('cc_logoutReason');
+        document.addEventListener('DOMContentLoaded', () => {
+            const messageEl = document.getElementById('message');
+            if (messageEl) {
+                messageEl.className = 'message error';
+                messageEl.textContent = reason;
+            }
+        });
+    }
+})();
+
+function toggleDebug() {
+    const debug = document.getElementById('debugInfo');
+    debug.classList.toggle('show');
+}
+
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const messageEl = document.getElementById('message');
+    const loginBtn = document.getElementById('loginBtn');
+    const debugContent = document.getElementById('debugContent');
+    
+    // Clear previous messages
+    messageEl.className = 'message';
+    messageEl.textContent = '';
+    debugContent.textContent = 'Loading...';
+    
+    if (!email || !password) {
+        messageEl.className = 'message error';
+        messageEl.textContent = 'Please enter both email and password';
+        return;
+    }
+    
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Logging in...';
+    
+    try {
+        const response = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        // Show debug info
+        debugContent.textContent = JSON.stringify(data, null, 2);
+        
+        if (data.success && data.data && data.data.token) {
+
+    localStorage.setItem("adminToken", data.data.token);
+    localStorage.setItem("adminName", data.data.user?.name || "Administrator");
+    localStorage.setItem("adminRole", data.data.user?.role || "admin");
+    localStorage.setItem("adminEmail", data.data.user?.email || "");
+
+    messageEl.className = "message success";
+    messageEl.textContent = "✅ Login successful! Verifying session...";
+
+    try {
+
+        const verify = await fetch("/api/auth/verify", {
+            headers: {
+                Authorization: `Bearer ${data.data.token}`
+            }
+        });
+
+        const verifyData = await verify.json();
+
+        if (!verify.ok || !verifyData.success) {
+            throw new Error("Session verification failed");
+        }
+
+        setTimeout(() => {
+            window.location.replace("/admin/dashboard.html");
+        }, 600);
+
+    } catch (e) {
+
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminName");
+
+        messageEl.className = "message error";
+        messageEl.textContent = "❌ Session verification failed.";
+
+    }
+
+} else {
+
+    messageEl.className = "message error";
+    messageEl.textContent = "❌ " + (data.message || "Login failed");
+
+} 
+
+    } catch (error) {
+        messageEl.className = 'message error';
+        messageEl.textContent = '❌ Error: ' + error.message;
+        debugContent.textContent = error.stack || error.message;
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Login';
+    }
+}
+
+// Auto-login if already authenticated
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+        window.location.href = '/admin/dashboard.html';
+    }
+});
+// ============================================================
+// Session Verification (Every 5 Minutes)
+// ============================================================
+setInterval(async () => {
+
+    const token = localStorage.getItem("adminToken");
+
+    if (!token) return;
+
+    try {
+
+        const res = await fetch("/api/auth/verify", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+
+            localStorage.removeItem("adminToken");
+            localStorage.removeItem("adminName");
+
+            alert("Your session has expired. Please login again.");
+
+            window.location.replace("/admin/login.html");
+
+        }
+
+    } catch (err) {
+
+        console.error("Session Check:", err);
+
+    }
+
+}, 300000); // 5 Minutes
+</script>
+
+</body>
+</html>

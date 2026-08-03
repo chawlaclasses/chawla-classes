@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ask a Doubt — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628;
+    --navy-mid: #1E3A6E;
+    --gold: #F5A623;
+    --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18);
+    --white: #F8F9FC;
+    --text: #e2e8f4;
+    --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --surface: rgba(30,58,110,0.35);
+    --success: #22c55e;
+    --danger: #ef4444;
+    --input-bg: rgba(10,22,40,0.7);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--navy); color: var(--text); font-family: 'Inter', sans-serif;
+    min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: -200px; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: ''; position: fixed; bottom: -200px; right: -200px; width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(30,58,110,0.5) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding: 20px 28px;
+    background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius);
+    backdrop-filter: blur(20px); position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim)); border-radius: 4px 0 0 4px;
+  }
+  .header-icon {
+    width: 44px; height: 44px; background: var(--gold-glow); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  h1 { font-size: 24px; font-weight: 800; color: var(--white); margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab-btn {
+    padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--card-border);
+    background: var(--card-bg); color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .tab-btn.active { background: var(--gold-glow); color: var(--gold); border-color: rgba(245,166,35,0.3); }
+
+  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(12px); }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  textarea, input[type="file"] {
+    width: 100%; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+    padding: 10px 12px; color: var(--text); font-family: inherit; font-size: 13.5px;
+  }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .voice-recorder { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .record-btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: var(--radius-sm);
+    border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text);
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .record-btn.recording { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+  .record-btn.recording .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  audio { max-width: 260px; height: 34px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
+    border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--card-bg);
+    color: var(--text); font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim)); color: var(--navy); border: none;
+    box-shadow: 0 3px 12px var(--gold-glow);
+  }
+  .btn-gold:hover { color: var(--navy); box-shadow: 0 5px 20px rgba(245,166,35,0.35); transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+  .btn-group { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+
+  .doubt-card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-top: 2.5px solid var(--gold);
+    border-radius: var(--radius-sm); padding: 16px 18px; margin-bottom: 12px; cursor: pointer;
+  }
+  .doubt-card-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .doubt-q { font-size: 13.5px; color: var(--text); margin-top: 6px; }
+  .doubt-meta { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+
+  .status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .status-open { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .status-in_progress { background: rgba(245,166,35,0.15); color: #fcd34d; }
+  .status-resolved { background: rgba(34,197,94,0.15); color: #86efac; }
+  .status-closed { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+  .reply-bubble { background: var(--surface); border: 1px solid var(--card-border); border-radius: 8px; padding: 10px 14px; margin-top: 10px; }
+  .reply-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .banner { display: none; padding: 13px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; border: 1px solid transparent; }
+  .banner.show { display: block; }
+  .banner.error { background: rgba(239,68,68,0.08); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+  .banner.success { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.2); }
+
+  .empty-state { padding: 50px 20px; text-align: center; color: var(--muted); }
+  .empty-state .icon { font-size: 44px; margin-bottom: 10px; display: block; }
+  .empty-state p { margin-top: 6px; }
+
+  .doubt-detail-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
+    z-index: 50; padding: 20px;
+  }
+  .doubt-detail-overlay.show { display: flex; }
+  .doubt-detail-box {
+    background: var(--navy-mid); border: 1px solid var(--card-border); border-radius: var(--radius);
+    max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 22px;
+  }
+  .doubt-detail-close { float: right; background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+  .doubt-detail-box img { max-width: 100%; border-radius: 8px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="header-icon">💬</div>
+    <div>
+      <p class="eyebrow">Student Portal</p>
+      <h1>Ask a Doubt</h1>
+      <p class="subtitle">Stuck on something? Ask your teacher directly.</p>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabAskBtn" onclick="switchTab('ask')">Ask a Doubt</button>
+    <button class="tab-btn" id="tabListBtn" onclick="switchTab('list')">My Doubts</button>
+  </div>
+
+  <div id="askView" class="card">
+    <div class="form-group">
+      <label>What's your doubt? *</label>
+      <textarea id="doubtText" placeholder="Describe what you're stuck on…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Attach an Image (optional)</label>
+      <input type="file" id="doubtImage" accept=".png,.jpg,.jpeg">
+    </div>
+    <div class="form-group">
+      <label>Voice Note (optional)</label>
+      <div class="voice-recorder">
+        <button type="button" class="record-btn" id="recordBtn" onclick="toggleRecording()">
+          <span class="dot" style="display:none;"></span> <span id="recordBtnLabel">🎤 Record Voice Note</span>
+        </button>
+        <span id="recordTimer" style="font-size:12px;color:var(--muted);"></span>
+        <audio id="voicePreview" controls style="display:none;"></audio>
+        <button type="button" class="btn" id="discardVoiceBtn" style="display:none;" onclick="discardRecording()">✕ Discard</button>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-gold" onclick="submitDoubt()" id="submitDoubtBtn">Submit Doubt</button>
+    </div>
+  </div>
+
+  <div id="listView" style="display:none;"></div>
+
+  <div class="btn-group">
+    <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+  </div>
+
+</div>
+
+<div class="doubt-detail-overlay" id="detailOverlay" onclick="if(event.target===this) closeDoubtDetail()">
+  <div class="doubt-detail-box" id="detailBox"></div>
+</div>
+
+<script>
+  const API_BASE = '/api/student';
+  const token = localStorage.getItem('studentToken');
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  async function apiCall(endpoint, options = {}) {
+    const defaultOptions = { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, { ...defaultOptions, ...options });
+      if (response.status === 401) {
+        showBanner('Session expired. Redirecting to login...', 'error');
+        setTimeout(() => { localStorage.removeItem('studentToken'); window.location.href = '/student/login.html'; }, 1500);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      showBanner('Network error. Please try again.', 'error');
+      return null;
+    }
+  }
+
+  function showBanner(msg, type) {
+    const banner = document.getElementById('banner');
+    banner.textContent = msg;
+    banner.className = `banner show ${type}`;
+    setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function switchTab(tab) {
+    document.getElementById('tabAskBtn').classList.toggle('active', tab === 'ask');
+    document.getElementById('tabListBtn').classList.toggle('active', tab === 'list');
+    document.getElementById('askView').style.display = tab === 'ask' ? 'block' : 'none';
+    document.getElementById('listView').style.display = tab === 'list' ? 'block' : 'none';
+    if (tab === 'list') loadMyDoubts();
+  }
+
+  // ── Voice recording ─────────────────────────────────────────────────────
+
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let recordedBlob = null;
+  let recordTimerInterval = null;
+  let recordSeconds = 0;
+
+  async function toggleRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(recordedBlob);
+        const preview = document.getElementById('voicePreview');
+        preview.src = url;
+        preview.style.display = 'inline-block';
+        document.getElementById('discardVoiceBtn').style.display = 'inline-flex';
+        stream.getTracks().forEach(t => t.stop());
+        clearInterval(recordTimerInterval);
+        document.getElementById('recordTimer').textContent = '';
+        setRecordButtonState(false);
+      };
+      mediaRecorder.start();
+      recordSeconds = 0;
+      recordTimerInterval = setInterval(() => {
+        recordSeconds += 1;
+        const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+        const s = String(recordSeconds % 60).padStart(2, '0');
+        document.getElementById('recordTimer').textContent = `${m}:${s}`;
+      }, 1000);
+      setRecordButtonState(true);
+    } catch (err) {
+      showBanner('Could not access microphone. Check browser permissions.', 'error');
+    }
+  }
+
+  function setRecordButtonState(recording) {
+    const btn = document.getElementById('recordBtn');
+    const label = document.getElementById('recordBtnLabel');
+    const dot = btn.querySelector('.dot');
+    btn.classList.toggle('recording', recording);
+    dot.style.display = recording ? 'inline-block' : 'none';
+    label.textContent = recording ? 'Stop Recording' : '🎤 Record Voice Note';
+  }
+
+  function discardRecording() {
+    recordedBlob = null;
+    document.getElementById('voicePreview').style.display = 'none';
+    document.getElementById('discardVoiceBtn').style.display = 'none';
+  }
+
+  // ── Ask a doubt ──────────────────────────────────────────────────────────
+
+  async function submitDoubt() {
+    const questionText = document.getElementById('doubtText').value.trim();
+    if (!questionText) { showBanner('Please describe your doubt first', 'error'); return; }
+
+    const btn = document.getElementById('submitDoubtBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    const formData = new FormData();
+    formData.append('questionText', questionText);
+    const imageFile = document.getElementById('doubtImage').files[0];
+    if (imageFile) formData.append('image', imageFile);
+    if (recordedBlob) formData.append('voiceNote', recordedBlob, 'voice-note.webm');
+
+    try {
+      const result = await apiCall('/doubts', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+      if (!result || !result.success) { showBanner(result?.message || 'Failed to submit doubt', 'error'); return; }
+      showBanner('Your doubt has been submitted!', 'success');
+      document.getElementById('doubtText').value = '';
+      document.getElementById('doubtImage').value = '';
+      discardRecording();
+      switchTab('list');
+    } catch (error) {
+      showBanner('Failed to submit doubt. Please check your connection and try again.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Submit Doubt';
+    }
+  }
+
+  // ── My doubts list + detail ─────────────────────────────────────────────
+
+  async function loadMyDoubts() {
+    const result = await apiCall('/doubts');
+    const view = document.getElementById('listView');
+    if (!result || !result.success) { view.innerHTML = `<div class="card empty-state">Failed to load</div>`; return; }
+
+    const doubts = result.data || [];
+    if (doubts.length === 0) {
+      view.innerHTML = `<div class="card empty-state"><span class="icon">💬</span><strong style="display:block;color:var(--white);">No doubts yet</strong><p>Ask your first doubt from the other tab.</p></div>`;
+      return;
+    }
+
+    const statusLabel = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
+    view.innerHTML = doubts.map(d => `
+      <div class="doubt-card" onclick="openDoubtDetail('${d._id}')">
+        <div class="doubt-card-head">
+          <span class="status-badge status-${d.status}">${statusLabel[d.status]}</span>
+        </div>
+        <div class="doubt-q">${escapeHtml(d.questionText.slice(0, 140))}${d.questionText.length > 140 ? '…' : ''}</div>
+        <div class="doubt-meta">
+          ${d.imageFilename ? '📷 Image ' : ''}${d.voiceNoteFilename ? '🎤 Voice note ' : ''} · ${new Date(d.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function openDoubtDetail(id) {
+    const result = await apiCall(`/doubts/${id}`);
+    if (!result || !result.success) { showBanner('Failed to load doubt', 'error'); return; }
+    const { doubt, replies } = result.data;
+    const statusLabel = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
+
+    document.getElementById('detailBox').innerHTML = `
+      <button class="doubt-detail-close" onclick="closeDoubtDetail()">×</button>
+      <span class="status-badge status-${doubt.status}">${statusLabel[doubt.status]}</span>
+      <p style="margin-top:12px;color:var(--text);">${escapeHtml(doubt.questionText)}</p>
+      ${doubt.imageFilename ? `<img src="${API_BASE}/doubts/${doubt._id}/image" alt="Doubt image">` : ''}
+      ${doubt.voiceNoteFilename ? `<audio controls src="${API_BASE}/doubts/${doubt._id}/voice" style="display:block;margin-top:10px;width:100%;"></audio>` : ''}
+      <h4 style="margin-top:18px;color:var(--white);font-size:14px;">Replies from your teacher</h4>
+      ${replies.length === 0
+        ? `<p style="color:var(--muted);font-size:13px;margin-top:8px;">No replies yet — check back soon.</p>`
+        : replies.map(r => `
+          <div class="reply-bubble">
+            <div>${escapeHtml(r.message)}</div>
+            <div class="reply-meta">${escapeHtml(r.repliedByName || 'Teacher')} · ${new Date(r.createdAt).toLocaleString('en-IN')}</div>
+          </div>
+        `).join('')
+      }
+    `;
+    document.getElementById('detailOverlay').classList.add('show');
+  }
+
+  function closeDoubtDetail() {
+    document.getElementById('detailOverlay').classList.remove('show');
+  }
+</script>
+<script src="/student/js/idle-logout.js"></script>
+</body>
+</html>

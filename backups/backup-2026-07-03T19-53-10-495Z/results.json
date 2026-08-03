@@ -1,0 +1,89 @@
+[
+  {
+    "email": "rhtchawla90@gmai.com",
+    "score": 2,
+    "date": "6/14/2026, 11:44:29 PM"
+  },
+  {
+    "email": null,
+    "score": 2,
+    "date": "6/14/2026, 11:51:36 PM"
+  },
+  {
+    "email": null,
+    "score": 2,
+    "date": "6/14/2026, 11:52:13 PM"
+  },
+  {
+    "email": null,
+    "score": 3,
+    "date": "6/15/2026, 12:13:48 AM"
+  },
+  {
+    "email": null,
+    "score": 3,
+    "date": "6/15/2026, 12:25:46 AM"
+  },
+  {
+    "email": null,
+    "score": 3,
+    "date": "6/15/2026, 12:31:38 AM"
+  },
+  {
+    "email": "rhtchawla@gmail.com",
+    "score": 1,
+    "total": 1,
+    "date": "6/15/2026, 3:44:27 PM"
+  },
+  {
+    "email": "rhtchawla@gmail.com",
+    "score": 1,
+    "total": 1,
+    "date": "6/15/2026, 3:44:50 PM"
+  },
+  {
+    "email": "rhtchawla@gmail.com",
+    "score": 1,
+    "total": 1,
+    "date": "6/15/2026, 3:47:33 PM"
+  },
+  {
+    "email": "rhtchawla@gmail.com",
+    "score": 1,
+    "total": 1,
+    "date": "6/15/2026, 5:32:37 PM"
+  },
+  {
+    "email": "rhtchawla@gmail.com",
+    "score": 1,
+    "total": 1,
+    "date": "6/15/2026, 5:57:54 PM"
+  },
+  {
+    "_id": "mr34esqhu4scdgcca",
+    "studentId": "mr2753l58rg6neitx",
+    "testId": "mr1xnrhhwcewja0za",
+    "attemptId": "mr34ehxagjtncenir",
+    "totalMarks": 25,
+    "marksObtained": 1,
+    "percentage": 4,
+    "isPassed": false,
+    "timeTaken": 14,
+    "correctAnswers": 1,
+    "incorrectAnswers": 0,
+    "unansweredQuestions": 0,
+    "questionWiseAnalysis": [
+      {
+        "questionId": "mr2e8ydsy3f8m9hog",
+        "isCorrect": true,
+        "selectedOption": "A. 1",
+        "correctAnswer": "A. 1",
+        "marksObtained": 1,
+        "timeSpent": 0
+      }
+    ],
+    "isDownloaded": false,
+    "createdAt": "2026-07-02T06:25:40.601Z",
+    "updatedAt": "2026-07-02T06:25:40.601Z"
+  }
+]

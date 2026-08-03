@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Activity — Chawla Classes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1628;
+    --navy-mid: #1E3A6E;
+    --gold: #F5A623;
+    --gold-dim: #c8841a;
+    --gold-glow: rgba(245,166,35,0.18);
+    --white: #F8F9FC;
+    --text: #e2e8f4;
+    --muted: #7a90b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --surface: rgba(30,58,110,0.35);
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f97316;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--navy); color: var(--text); font-family: 'Inter', sans-serif;
+    min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: -200px; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(245,166,35,0.06) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: ''; position: fixed; bottom: -200px; right: -200px; width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(30,58,110,0.5) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding: 20px 28px;
+    background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius);
+    backdrop-filter: blur(20px); position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim)); border-radius: 4px 0 0 4px;
+  }
+  .header-icon {
+    width: 44px; height: 44px; background: var(--gold-glow); border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+  h1 { font-size: 24px; font-weight: 800; color: var(--white); margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(12px); margin-bottom: 16px; }
+
+  .banner { display: none; padding: 13px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 18px; border: 1px solid transparent; }
+  .banner.show { display: block; }
+  .banner.error { background: rgba(239,68,68,0.08); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+  .banner.warn { background: rgba(249,115,22,0.08); color: #fdba74; border-color: rgba(249,115,22,0.2); }
+
+  .login-row {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    padding: 14px 4px; border-bottom: 1px solid var(--card-border);
+  }
+  .login-row:last-child { border-bottom: none; }
+  .login-left { display: flex; gap: 12px; align-items: flex-start; }
+  .login-icon { font-size: 18px; margin-top: 2px; }
+  .login-device { font-size: 13.5px; color: var(--text); font-weight: 600; }
+  .login-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .login-reason { font-size: 11.5px; color: var(--warning); margin-top: 3px; }
+  .login-when { font-size: 12px; color: var(--muted); white-space: nowrap; text-align: right; }
+
+  .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+  .status-success { background: rgba(34,197,94,0.15); color: #86efac; }
+  .status-failed { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .status-locked { background: rgba(249,115,22,0.15); color: #fdba74; }
+
+  .empty-state { padding: 50px 20px; text-align: center; color: var(--muted); }
+  .empty-state .icon { font-size: 44px; margin-bottom: 10px; display: block; }
+  .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
+    border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--card-bg);
+    color: var(--text); font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .btn-danger-outline { border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+  .btn-danger-outline:hover { border-color: #ef4444; color: #fca5a5; background: rgba(239,68,68,0.1); }
+
+  .session-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 14px 4px; border-bottom: 1px solid var(--card-border);
+  }
+  .session-row:last-child { border-bottom: none; }
+  .session-device { font-size: 13.5px; color: var(--text); font-weight: 600; }
+  .session-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .session-current-tag { color: var(--success); font-size: 11px; font-weight: 700; margin-left: 8px; }
+  .session-end-btn {
+    padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.08);
+    color: #fca5a5; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap;
+  }
+  .session-end-btn:hover { background: rgba(239,68,68,0.18); }
+  .session-end-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="header-icon">🔒</div>
+    <div>
+      <p class="eyebrow">Student Portal</p>
+      <h1>Login Activity</h1>
+      <p class="subtitle">Recent sign-ins to your account, with the device used. If something here looks unfamiliar, change your password and tell your teacher.</p>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite"></div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <h2 style="font-size:16px;color:var(--white);">🖥️ Active Sessions</h2>
+      <button class="session-end-btn" id="revokeOthersBtn" onclick="revokeOtherSessions()" style="display:none;">Log Out All Other Devices</button>
+    </div>
+    <p style="color:var(--muted);font-size:12.5px;margin-bottom:10px;">Devices currently logged into your account.</p>
+    <div id="sessionsListContainer"><div class="loading">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:16px;color:var(--white);margin-bottom:6px;">🕘 Login History</h2>
+    <div id="loginListContainer"><div class="loading">Loading…</div></div>
+  </div>
+
+  <a href="/student/dashboard.html" class="btn">‹ Back to Dashboard</a>
+
+</div>
+
+<script>
+  const API_BASE = '/api/student';
+  const token = localStorage.getItem('studentToken');
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  async function apiCall(endpoint, options = {}, useAuthBase = false) {
+    const defaultOptions = { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+    const base = useAuthBase ? '/api/auth' : API_BASE;
+    try {
+      const response = await fetch(`${base}${endpoint}`, { ...defaultOptions, ...options });
+      if (response.status === 401) {
+        showBanner('Session expired. Redirecting to login...', 'error');
+        setTimeout(() => { localStorage.removeItem('studentToken'); window.location.href = '/student/login.html'; }, 1500);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      showBanner('Network error. Please try again.', 'error');
+      return null;
+    }
+  }
+
+  function showBanner(msg, type) {
+    const banner = document.getElementById('banner');
+    banner.textContent = msg;
+    banner.className = `banner show ${type}`;
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  const statusIcons = { success: '✅', failed: '⚠️', locked: '🚫' };
+
+  function renderLoginList(logs) {
+    const container = document.getElementById('loginListContainer');
+    if (!logs || logs.length === 0) {
+      container.innerHTML = `<div class="empty-state"><span class="icon">🔒</span><strong>No login activity yet</strong></div>`;
+      return;
+    }
+
+    const failedRecent = logs.slice(0, 5).some(l => l.status !== 'success');
+    if (failedRecent) {
+      showBanner('There are recent failed or blocked login attempts below — if none of these were you, change your password.', 'warn');
+    }
+
+    container.innerHTML = logs.map(l => `
+      <div class="login-row">
+        <div class="login-left">
+          <span class="login-icon">${statusIcons[l.status] || '•'}</span>
+          <div>
+            <div class="login-device">${escapeHtml(l.device || 'Unknown device')}</div>
+            <div class="login-meta">IP: ${escapeHtml(l.ip || 'unknown')} · <span class="status-badge status-${escapeHtml(l.status)}">${escapeHtml(l.status)}</span></div>
+            ${l.reason ? `<div class="login-reason">${escapeHtml(l.reason)}</div>` : ''}
+          </div>
+        </div>
+        <div class="login-when">${new Date(l.createdAt).toLocaleString()}</div>
+      </div>
+    `).join('');
+  }
+
+  async function loadLoginHistory() {
+    const response = await apiCall('/login-history');
+    if (!response) return;
+    if (!response.success) {
+      showBanner(response.message || 'Failed to load login activity', 'error');
+      return;
+    }
+    renderLoginList(response.data || []);
+  }
+
+  function renderSessions(sessions) {
+    const container = document.getElementById('sessionsListContainer');
+    if (!sessions || sessions.length === 0) {
+      container.innerHTML = `<div class="empty-state"><span class="icon">🖥️</span><strong>No active sessions</strong></div>`;
+      return;
+    }
+    document.getElementById('revokeOthersBtn').style.display = sessions.length > 1 ? 'inline-block' : 'none';
+    container.innerHTML = sessions.map(s => `
+      <div class="session-row">
+        <div>
+          <div class="session-device">${escapeHtml(s.device || 'Unknown device')}${s.current ? '<span class="session-current-tag">this device</span>' : ''}</div>
+          <div class="session-meta">IP: ${escapeHtml(s.ip || 'unknown')} · Last active: ${new Date(s.lastSeenAt || s.createdAt).toLocaleString()}</div>
+        </div>
+        ${s.current ? '' : `<button class="session-end-btn" onclick="endSession('${s._id}', this)">End</button>`}
+      </div>
+    `).join('');
+  }
+
+  async function loadSessions() {
+    const response = await apiCall('/sessions', {}, true);
+    if (!response || !response.success) return;
+    renderSessions(response.data || []);
+  }
+
+  async function endSession(sessionId, btn) {
+    if (!confirm('End this session? That device will be logged out.')) return;
+    btn.disabled = true;
+    btn.textContent = 'Ending...';
+    const response = await apiCall(`/sessions/${sessionId}`, { method: 'DELETE' }, true);
+    if (response && response.success) {
+      showBanner('Session ended.', 'warn');
+      loadSessions();
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'End';
+    }
+  }
+
+  async function revokeOtherSessions() {
+    if (!confirm('Log out every other device? Only this device will stay signed in.')) return;
+    const btn = document.getElementById('revokeOthersBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Logging out other devices...';
+    try {
+      const response = await apiCall('/sessions/revoke-others', { method: 'POST' }, true);
+      if (response && response.success) {
+        showBanner(response.message, 'warn');
+        loadSessions();
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  loadLoginHistory();
+  loadSessions();
+</script>
+
+<script src="/student/js/idle-logout.js"></script>
+</body>
+</html>

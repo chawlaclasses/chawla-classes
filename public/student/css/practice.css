@@ -1,0 +1,167 @@
+/* public/student/css/practice.css */
+.practice-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+}
+
+.practice-question {
+    background: var(--navy);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 32px;
+}
+
+.practice-question .question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.practice-question .question-number {
+    font-weight: 600;
+    color: var(--gold);
+}
+
+.practice-question .question-difficulty {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.practice-question .question-difficulty.easy {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+}
+
+.practice-question .question-difficulty.medium {
+    background: rgba(251, 146, 60, 0.12);
+    color: #fb923c;
+}
+
+.practice-question .question-difficulty.hard {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
+.practice-question .question-text {
+    font-size: 18px;
+    line-height: 1.8;
+    margin-bottom: 24px;
+    color: var(--white);
+}
+
+.practice-question .options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.practice-question .options .option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--glass-bg);
+    border: 2px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.practice-question .options .option:hover {
+    background: rgba(201, 168, 76, 0.05);
+    border-color: var(--glass-border);
+}
+
+.practice-question .options .option.selected {
+    border-color: var(--gold);
+    background: rgba(201, 168, 76, 0.05);
+}
+
+.practice-question .options .option.correct {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.practice-question .options .option.wrong {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.practice-question .options .option .option-label {
+    font-weight: 600;
+    color: var(--gray-400);
+}
+
+.practice-question .options .option .option-text {
+    color: var(--gray-300);
+}
+
+.practice-question .question-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    justify-content: flex-end;
+}
+
+.practice-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.practice-sidebar .progress-card {
+    background: var(--navy);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 20px;
+}
+
+.practice-sidebar .progress-card .stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.practice-sidebar .progress-card .stat:last-child {
+    border-bottom: none;
+}
+
+.practice-sidebar .progress-card .stat .label {
+    color: var(--gray-400);
+    font-size: 13px;
+}
+
+.practice-sidebar .progress-card .stat .value {
+    font-weight: 600;
+    color: var(--white);
+}
+
+/* Filters */
+.practice-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.practice-filters select,
+.practice-filters input {
+    background: var(--navy);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--white);
+    font-family: inherit;
+    font-size: 14px;
+    transition: var(--transition);
+}
+
+.practice-filters select:focus,
+.practice-filters input:focus {
+    border-color: var(--gold);
+    outline: none;
+}
