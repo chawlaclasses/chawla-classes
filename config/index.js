@@ -45,6 +45,13 @@ const FACULTY_APPLICATIONS_DIR = path.join(ROOT_DIR, "faculty-applications");
 // ─── Admin credentials ───────────────────────────────────────────────────────
 const ADMIN_USERNAME     = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD_RAW = process.env.ADMIN_PASSWORD || "admin123";
+// FIX (login self-heal): the actual admin login (/api/admin/login) matches
+// against an *email* in the 'users' collection — ADMIN_USERNAME was never
+// used to look that record up, which is how the ADMIN_USERNAME/ADMIN_PASSWORD
+// env vars ended up completely disconnected from real login (see
+// services/auth.js#ensureAdminAccount). ADMIN_EMAIL closes that gap; default
+// matches the email this app has always seeded/documented as the admin login.
+const ADMIN_EMAIL        = process.env.ADMIN_EMAIL || "admin@chawlaclasses.com";
 
 // ─── JWT ─────────────────────────────────────────────────────────────────────
 const JWT_EXPIRY = process.env.JWT_EXPIRY || "24h";
@@ -113,6 +120,7 @@ module.exports = {
   // Admin
   ADMIN_USERNAME,
   ADMIN_PASSWORD_RAW,
+  ADMIN_EMAIL,
 
   // Auth
   JWT_EXPIRY,
