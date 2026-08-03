@@ -119,7 +119,7 @@ for (const dir of [DATA_DIR, NOTES_DIR, UPLOADS_DIR, HOMEWORK_DIR, HOMEWORK_SUBM
 
 function createApp() {
   const app = express();
-
+app.set('trust proxy', 1);
   if (process.env.TRUST_PROXY !== undefined) {
     const val = process.env.TRUST_PROXY;
     app.set("trust proxy", val === "0" ? 0 : Number(val) || val);
