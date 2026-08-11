@@ -1,3 +1,4 @@
+require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const db = require('../services/jsonDb');
 
@@ -36,4 +37,10 @@ async function createStudent() {
     console.log('\n⚠️ Note: This student is not assigned to any class yet.');
 }
 
-createStudent().catch(console.error);
+// FIX (jsonDb -> MongoDB migration): see scripts/create-admin.js for why
+// db.connect() must be awaited before this runs, and db.close() at the end
+// so the script actually exits.
+db.connect()
+  .then(createStudent)
+  .catch(console.error)
+  .finally(() => db.close());

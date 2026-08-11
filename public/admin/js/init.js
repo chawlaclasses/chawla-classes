@@ -24,3 +24,4 @@ loadDashboard();
 refreshEnquiryBadge();
 refreshDoubtsBadge();
 if (typeof refreshAiQueueBadge === 'function') refreshAiQueueBadge();
+if (typeof refreshReviewsBadge === 'function') refreshReviewsBadge();

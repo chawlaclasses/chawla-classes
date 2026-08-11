@@ -146,6 +146,8 @@ var sectionLoaders = {
     'staff': function() { return window.loadStaff && window.loadStaff(); },
     'admissions': function() { return window.loadAdmissions && window.loadAdmissions(); },
     'recruitment': function() { return window.loadRecruitment && window.loadRecruitment(); },
+    'marketing': function() { return window.loadMarketing && window.loadMarketing(); },
+    'reviews': function() { return window.loadReviews && window.loadReviews(); },
     'students': function() { return window.loadStudents && window.loadStudents(); },
     'active-sessions': function() { return window.loadActiveSessions && window.loadActiveSessions(); },
     'login-history': function() { return window.loadLoginHistory && window.loadLoginHistory(); },

@@ -16,24 +16,25 @@ const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { validate } = require('../../middleware/validation');
 const validators = require('../../utils/validators');
-const { cleanupFile } = require('../../utils/helpers');
 const { uploadHomeworkAttachment, homeworkMimeGuard, HOMEWORK_SUBMISSIONS_DIR } = require('../../middleware/upload');
 const { HOMEWORK_DIR } = require('../../config');
+const r2Service = require('../../services/r2Service');
 const { isClassAllowedForUser, isSubjectAllowedForUser } = require('../../config/permissions');
 
 // For the one file-upload route with body validation (PUT /:id): the
 // shared `validate` middleware alone isn't enough — by the time it runs,
-// multer has already written the uploaded file to disk. If validation
-// then rejects the request, the file would be orphaned (never referenced
-// by any DB record, never cleaned up). This mirrors the cleanup pattern
-// used elsewhere in this file (`if (req.file) cleanupFile(req.file.path)`)
-// so a rejected request leaves no orphaned file behind. Only used here —
-// single-use, so it lives in this file rather than the shared _helpers.
-function validateAndCleanupFile(req, res, next) {
+// the attachment has already been uploaded to R2 by homeworkMimeGuard. If
+// validation then rejects the request, the R2 object would be orphaned
+// (never referenced by any DB record, never cleaned up). This mirrors the
+// cleanup pattern used elsewhere in this file
+// (`if (req.file) r2Service.deleteObject(req.file.r2Key)`) so a rejected
+// request leaves no orphaned object behind. Only used here — single-use,
+// so it lives in this file rather than the shared _helpers.
+async function validateAndCleanupFile(req, res, next) {
   const { validationResult } = require('express-validator');
   const errors = validationResult(req);
   if (errors.isEmpty()) return next();
-  if (req.file) cleanupFile(req.file.path);
+  if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
   return res.status(400).json({
     success: false,
     message: 'Validation failed',
@@ -71,22 +72,22 @@ router.get('/', requirePermission('homework:view'), (req, res) => {
 });
 
 // Create homework, with an optional PDF/image attachment
-router.post('/', requirePermission('homework:create'), uploadHomeworkAttachment.single('attachment'), homeworkMimeGuard, (req, res) => {
+router.post('/', requirePermission('homework:create'), uploadHomeworkAttachment.single('attachment'), homeworkMimeGuard, async (req, res) => {
   try {
     const { title, description, classId, subjectId, dueDate, marks } = req.body;
 
     if (!title || !classId || !subjectId || !dueDate || !marks) {
-      if (req.file) cleanupFile(req.file.path);
+      if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
       return res.status(400).json({ success: false, message: 'title, classId, subjectId, dueDate and marks are required' });
     }
 
     const classData = db.findById('classes', classId);
     if (!classData) {
-      if (req.file) cleanupFile(req.file.path);
+      if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
       return res.status(404).json({ success: false, message: 'Class not found' });
     }
     if (!isClassAllowedForUser(req.userData, classId) || !isSubjectAllowedForUser(req.userData, subjectId)) {
-      if (req.file) cleanupFile(req.file.path);
+      if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
       return res.status(403).json({ success: false, message: "You're not assigned to this class/subject." });
     }
 
@@ -97,7 +98,8 @@ router.post('/', requirePermission('homework:create'), uploadHomeworkAttachment.
       subjectId,
       dueDate,
       marks: Number(marks),
-      attachmentFilename: req.file ? req.file.filename : null,
+      attachmentKey: req.file ? req.file.r2Key : null,
+      attachmentUrl: req.file ? req.file.r2Url : null,
       attachmentOriginalName: req.file ? req.file.originalname : null,
       isPublished: false,
       isActive: true,
@@ -108,28 +110,28 @@ router.post('/', requirePermission('homework:create'), uploadHomeworkAttachment.
 
     res.status(201).json({ success: true, data: newHomework, message: 'Homework created successfully' });
   } catch (error) {
-    if (req.file) cleanupFile(req.file.path);
+    if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
     logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
     res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
 // Edit homework metadata, optionally replacing the attachment
-router.put('/:id', requirePermission('homework:edit'), uploadHomeworkAttachment.single('attachment'), homeworkMimeGuard, validators.updateHomework, validateAndCleanupFile, (req, res) => {
+router.put('/:id', requirePermission('homework:edit'), uploadHomeworkAttachment.single('attachment'), homeworkMimeGuard, validators.updateHomework, validateAndCleanupFile, async (req, res) => {
   try {
     const homework = db.findById('homework', req.params.id);
     if (!homework) {
-      if (req.file) cleanupFile(req.file.path);
+      if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
       return res.status(404).json({ success: false, message: 'Homework not found' });
     }
     if (!isClassAllowedForUser(req.userData, homework.classId) || !isSubjectAllowedForUser(req.userData, homework.subjectId)) {
-      if (req.file) cleanupFile(req.file.path);
+      if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
       return res.status(403).json({ success: false, message: "You're not assigned to this class/subject." });
     }
 
     const { title, description, classId, subjectId, dueDate, marks } = req.body;
     if ((classId && !isClassAllowedForUser(req.userData, classId)) || (subjectId && !isSubjectAllowedForUser(req.userData, subjectId))) {
-      if (req.file) cleanupFile(req.file.path);
+      if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
       return res.status(403).json({ success: false, message: "You're not assigned to that class/subject." });
     }
     const updates = {};
@@ -141,11 +143,16 @@ router.put('/:id', requirePermission('homework:edit'), uploadHomeworkAttachment.
     if (marks) updates.marks = Number(marks);
 
     if (req.file) {
-      if (homework.attachmentFilename) {
-        cleanupFile(path.join(HOMEWORK_DIR, homework.attachmentFilename));
+      if (homework.attachmentKey) {
+        await r2Service.deleteObject(homework.attachmentKey);
+      } else if (homework.attachmentFilename) {
+        // Legacy local file from before the R2 migration
+        try { require('fs').unlinkSync(path.join(HOMEWORK_DIR, homework.attachmentFilename)); } catch (_) {}
       }
-      updates.attachmentFilename = req.file.filename;
+      updates.attachmentKey = req.file.r2Key;
+      updates.attachmentUrl = req.file.r2Url;
       updates.attachmentOriginalName = req.file.originalname;
+      updates.attachmentFilename = null; // clear the legacy field once replaced
     }
 
     const updated = db.findByIdAndUpdate('homework', req.params.id, updates);
@@ -153,7 +160,7 @@ router.put('/:id', requirePermission('homework:edit'), uploadHomeworkAttachment.
 
     res.json({ success: true, data: updated, message: 'Homework updated successfully' });
   } catch (error) {
-    if (req.file) cleanupFile(req.file.path);
+    if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
     logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
     res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
@@ -249,7 +256,7 @@ router.get('/:id/submissions', requirePermission('homework:view'), (req, res) =>
 });
 
 // Download a student's submitted file
-router.get('/submissions/:submissionId/download', requirePermission('homework:view'), (req, res) => {
+router.get('/submissions/:submissionId/download', requirePermission('homework:view'), async (req, res) => {
   try {
     const submission = db.findById('homeworkSubmissions', req.params.submissionId);
     if (!submission) {
@@ -259,6 +266,10 @@ router.get('/submissions/:submissionId/download', requirePermission('homework:vi
     if (homework && (!isClassAllowedForUser(req.userData, homework.classId) || !isSubjectAllowedForUser(req.userData, homework.subjectId))) {
       return res.status(403).json({ success: false, message: "You're not assigned to this class/subject." });
     }
+    if (submission.key) {
+      return r2Service.streamToResponse(submission.key, res, { downloadName: submission.originalName });
+    }
+    // Legacy record (pre-migration) — no key on file
     const filePath = path.join(HOMEWORK_SUBMISSIONS_DIR, submission.filename);
     res.download(filePath, submission.originalName);
   } catch (error) {

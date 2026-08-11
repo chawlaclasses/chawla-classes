@@ -213,6 +213,32 @@ async function validateFileContent(filePath, allowedMimes) {
   }
 }
 
+/**
+ * Same magic-byte MIME validation as validateFileContent(), for uploads
+ * that live in memory (multer memoryStorage(), used for everything now
+ * headed to Cloudflare R2 — see middleware/upload.js) instead of on disk.
+ * Kept as a separate function rather than changing validateFileContent()'s
+ * signature, since controllers/pdfController.js and the other
+ * still-disk-based uploaders (uploadNote, uploadPdf) keep calling the
+ * original path-based version unchanged.
+ */
+async function validateBufferContent(buffer, allowedMimes) {
+  try {
+    const ft = await getFileType();
+    if (!ft || !ft.fromBuffer) return true;
+
+    const HEADER_BYTES = 4096;
+    const header = buffer.subarray(0, HEADER_BYTES);
+
+    const type = await ft.fromBuffer(header);
+    if (type && !allowedMimes.includes(type.mime)) return false;
+
+    return true;
+  } catch (_) {
+    return true;
+  }
+}
+
 // ── Exports ──────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -226,6 +252,7 @@ module.exports = {
   isGarbled,
   hasMathSymbols,
   validateFileContent,
+  validateBufferContent,
   GREEK_UNICODE,
   MATH_UNICODE,
   MATH_PATTERNS,

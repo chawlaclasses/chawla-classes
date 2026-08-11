@@ -3,24 +3,44 @@
  *
  * Multer storage and filter configurations.
  *
- * Exports two configured multer instances:
- *   uploadNote — for study-material uploads (notes/)
- *   uploadPdf  — for PDF question-bank imports (uploads/)
+ * FIX (local storage -> Cloudflare R2 migration): the five uploaders whose
+ * files are actually persisted long-term and read back later —
+ * uploadStudentDocument, uploadHomeworkAttachment, uploadHomeworkSubmission,
+ * uploadDoubtAttachment, uploadFacultyApplication — now use
+ * multer.memoryStorage() instead of disk storage. Their MIME-guard
+ * middleware (mimeGuard / doubtMimeGuard / facultyApplicationMimeGuard)
+ * now does validation + image optimization on the in-memory buffer and
+ * then uploads it straight to R2, attaching the result to
+ * req.file.r2Key / req.file.r2Url (or per-field on req.files for the
+ * multi-file uploaders) for the route handler to store in Mongo.
  *
- * Security layers applied:
+ * uploadNote (NOTES_DIR) is unused dead code (not mounted on any route as
+ * of this migration) and uploadPdf (UPLOADS_DIR) is transient scratch
+ * storage for question-bank PDF/TXT text extraction — the file is deleted
+ * via cleanupFile() within the same request and never persisted or served
+ * back. Both are left on local disk unchanged; moving them to R2 would add
+ * network latency for zero benefit.
+ *
+ * Security layers applied (unchanged from before):
  *   1. Extension whitelist (fast reject)
- *   2. Filename sanitisation (path traversal prevention)
- *   3. Magic-byte MIME validation post-upload via validateFileContent()
+ *   2. Filename sanitisation (path traversal prevention) — now done in
+ *      services/r2Service.js#generateKey() for the R2-backed uploaders
+ *   3. Magic-byte MIME validation post-upload via validateFileContent() /
+ *      validateBufferContent()
  */
 
 "use strict";
 
 const path   = require("path");
-const fsp    = require("fs/promises");
+const fs     = require("fs");
 const multer = require("multer");
 const sharp  = require("sharp");
-const { NOTES_DIR, UPLOADS_DIR, MAX_FILE_SIZE, MAX_PDF_SIZE, HOMEWORK_DIR, HOMEWORK_SUBMISSIONS_DIR, DOUBTS_DIR, FACULTY_APPLICATIONS_DIR } = require("../config");
-const { validateFileContent, cleanupFile } = require("../utils/helpers");
+const {
+  NOTES_DIR, UPLOADS_DIR, MAX_FILE_SIZE, MAX_PDF_SIZE,
+  HOMEWORK_SUBMISSIONS_DIR, DOUBTS_DIR, FACULTY_APPLICATIONS_DIR,
+} = require("../config");
+const { validateBufferContent } = require("../utils/helpers");
+const r2Service = require("../services/r2Service");
 const logger = require("../utils/logger");
 
 // ── Allowed extensions ────────────────────────────────────────────────────────
@@ -68,20 +88,14 @@ const ALLOWED_DEMO_VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".webm"]);
 const ALLOWED_DEMO_VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
 const MAX_DEMO_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB — a short teaching clip, not a full lecture
 
-// ── Storage factory ───────────────────────────────────────────────────────────
+// ── Disk storage factory (still used by uploadNote / uploadPdf only) ──────────
 
 function diskStorage(destDir) {
   return multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, destDir),
     filename:    (_req, file, cb) => {
-      // FIX: path.basename alone doesn't neutralise Windows-style paths on Linux
-      //      (e.g. "..\..\etc\passwd" → basename gives "passwd" on Linux anyway,
-      //      but path.win32.basename handles cross-platform attacks explicitly).
-      //      After basename extraction, strip any remaining non-safe characters.
       const base = path.win32.basename(file.originalname); // strips Windows paths
       const safe = path.basename(base).replace(/[^a-zA-Z0-9._-]/g, "_");
-
-      // Extra guard: if sanitisation produced an empty name, use a fallback
       const name = safe || "upload";
       cb(null, `${Date.now()}-${name}`);
     },
@@ -89,27 +103,20 @@ function diskStorage(destDir) {
 }
 
 // ── Image optimization ─────────────────────────────────────────────────────
-// PERF: uploaded photos (student docs, homework photos, doubt photos) were
-// stored and served at whatever resolution/quality the phone camera or
-// scanner produced them at — often several MB, far larger than needed for
-// on-screen viewing. `sharp` was already a package.json dependency but was
-// never actually used anywhere. This resizes down to a sensible max
-// dimension and re-encodes at good-enough quality, in place, keeping the
-// exact same file path/name/format — so nothing downstream (DB records,
-// download routes, <img> tags) needs to change; the same URL just now
-// serves a smaller file. Runs AFTER mimeGuard's magic-byte validation, so
-// only files already confirmed to be real images are touched, and it never
-// runs on PDFs/docs/audio.
+// PERF: same reasoning/behaviour as before — resize down to a sensible max
+// dimension and re-encode at good-enough quality — but now operating on an
+// in-memory Buffer instead of a file path, since the R2-backed uploaders
+// never touch local disk. Runs AFTER mimeGuard's magic-byte validation, so
+// only buffers already confirmed to be real images are touched.
 const OPTIMIZABLE_IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg"]);
 const MAX_IMAGE_DIMENSION = 1920; // px, long edge — plenty for full-screen viewing/printing
 
-async function optimizeImageFile(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  if (!OPTIMIZABLE_IMAGE_EXTENSIONS.has(ext)) return; // not an image we handle — leave untouched
+async function optimizeImageBuffer(buffer, originalname) {
+  const ext = path.extname(originalname || "").toLowerCase();
+  if (!OPTIMIZABLE_IMAGE_EXTENSIONS.has(ext)) return buffer; // not an image we handle — leave untouched
 
-  const tmpPath = `${filePath}.opt.tmp`;
   try {
-    const pipeline = sharp(filePath)
+    const pipeline = sharp(buffer)
       .rotate() // apply EXIF orientation before resizing, then strip it (avoids sideways photos)
       .resize({
         width: MAX_IMAGE_DIMENSION,
@@ -124,57 +131,99 @@ async function optimizeImageFile(filePath) {
       pipeline.jpeg({ quality: 82, mozjpeg: true });
     }
 
-    await pipeline.toFile(tmpPath);
+    const optimized = await pipeline.toBuffer();
 
     // Only keep the optimized version if it's actually smaller — a handful
     // of already-small/simple images can come out larger after re-encoding,
     // and "optimization" should never make a file bigger.
-    const [origStat, newStat] = await Promise.all([fsp.stat(filePath), fsp.stat(tmpPath)]);
-    if (newStat.size < origStat.size) {
-      await fsp.rename(tmpPath, filePath);
-    } else {
-      await fsp.unlink(tmpPath);
-    }
+    return optimized.length < buffer.length ? optimized : buffer;
   } catch (error) {
     // Never fail the upload because optimization failed — the original,
-    // already-validated file is still perfectly usable as-is.
-    logger.warn(`⚠️ Image optimization skipped for ${filePath}: ${error.message}`);
-    try { await fsp.unlink(tmpPath); } catch (_) { /* tmp file was never created — ignore */ }
+    // already-validated buffer is still perfectly usable as-is.
+    logger.warn(`⚠️ Image optimization skipped for ${originalname}: ${error.message}`);
+    return buffer;
   }
 }
 
-// ── MIME validation wrapper ───────────────────────────────────────────────────
+// Content-Type map for the R2 PutObject call — mirrors ALLOWED_*_MIMES.
+const EXT_CONTENT_TYPE = {
+  ".pdf": "application/pdf",
+  ".doc": "application/msword",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webm": "audio/webm",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".m4a": "audio/mp4",
+  ".ogg": "audio/ogg",
+  ".mp4": "video/mp4",
+  ".mov": "video/quicktime",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+};
+function contentTypeFor(originalname) {
+  return EXT_CONTENT_TYPE[path.extname(originalname || "").toLowerCase()] || "application/octet-stream";
+}
 
+// ── R2 upload helper — validate buffer, optimize if image, push to R2 ─────────
+// Shared by every R2-backed guard below. Attaches r2Key/r2Url onto the
+// multer file object so route handlers can read req.file.r2Key (single
+// upload) or req.files.<field>[0].r2Key (multi-field upload) the same way
+// they used to read req.file.filename.
+async function uploadFileToR2(file, folder) {
+  const optimizedBuffer = await optimizeImageBuffer(file.buffer, file.originalname);
+  const key = r2Service.generateKey(folder, file.originalname);
+  const { url } = await r2Service.uploadBuffer({
+    buffer: optimizedBuffer,
+    key,
+    contentType: file.mimetype || contentTypeFor(file.originalname),
+  });
+  file.r2Key = key;
+  file.r2Url = url; // non-null only for folders the bucket serves publicly
+  file.filename = path.basename(key); // kept for any code/log still reading .filename for display
+}
+
+// ── MIME validation + R2 upload wrapper (single-file uploaders) ───────────────
 /**
- * Returns an Express middleware that validates uploaded file MIME type
- * via magic bytes AFTER multer has written it to disk.
- *
- * FIX: Extension-only checks can be bypassed by renaming files.
- *      Magic-byte validation (via validateFileContent from helpers) confirms
- *      the actual file content matches expected types.
+ * Returns an Express middleware that:
+ *   1. validates the in-memory buffer's real content via magic bytes
+ *   2. optimizes it if it's an image
+ *   3. uploads it to R2 under `folder`
+ *   4. attaches req.file.r2Key / req.file.r2Url
  *
  * @param {string[]} allowedMimes
+ * @param {string} folder  R2 key prefix, e.g. "student-documents"
  */
-function mimeGuard(allowedMimes) {
+function mimeGuard(allowedMimes, folder) {
   return async (req, res, next) => {
     const file = req.file;
     if (!file) return next(); // no file uploaded — let route handle it
 
-    const isValid = await validateFileContent(file.path, allowedMimes);
-    if (!isValid) {
-      cleanupFile(file.path); // delete the rejected file
-      return res.status(400).json({
-        success: false,
-        message: "File content does not match its extension. Upload rejected.",
-      });
-    }
+    try {
+      const isValid = await validateBufferContent(file.buffer, allowedMimes);
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: "File content does not match its extension. Upload rejected.",
+        });
+      }
 
-    await optimizeImageFile(file.path); // no-op for non-image files (PDFs, docs, etc.)
-    next();
+      await uploadFileToR2(file, folder);
+      next();
+    } catch (err) {
+      logger.error(`R2 upload failed (${folder}): ${err.message}`);
+      res.status(502).json({ success: false, message: "File storage upload failed. Please try again." });
+    }
   };
 }
 
-// ── uploadNote ────────────────────────────────────────────────────────────────
+// ── uploadNote — for study-material uploads. NOT MOUNTED on any route as ──────
+// of this migration (routes/notes.js's POST /upload is a stub and isn't
+// even wired into app.js). Left on local disk unchanged; revisit if this
+// is ever actually wired up.
+if (!fs.existsSync(NOTES_DIR)) fs.mkdirSync(NOTES_DIR, { recursive: true });
 
 const uploadNote = multer({
   storage: diskStorage(NOTES_DIR),
@@ -182,22 +231,24 @@ const uploadNote = multer({
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (!ALLOWED_NOTE_EXTENSIONS.has(ext)) {
-      // Pass error object to reject with reason; multer surfaces this via
-      // the error handler. Do NOT pass false as second arg when using Error.
       return cb(new Error(`Unsupported file type: ${ext}`));
     }
     cb(null, true);
   },
 });
 
-// ── ⭐ uploadPdf — Allow PDF and TXT files ──────────────────────────────────
+// ── uploadPdf — question-bank PDF/TXT import. Scratch storage only; the ───────
+// uploaded file is parsed for text and deleted (cleanupFile) within the
+// same request in controllers/pdfController.js. Left on local disk —
+// moving a file to R2 just to delete it a few seconds later adds latency
+// for no benefit.
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const uploadPdf = multer({
   storage: diskStorage(UPLOADS_DIR),
   limits:  { fileSize: MAX_PDF_SIZE },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    // ⭐ Allow both .pdf and .txt files
     if (ext === ".pdf" || ext === ".txt") {
       return cb(null, true);
     }
@@ -205,20 +256,23 @@ const uploadPdf = multer({
   },
 });
 
-// ── uploadStudentDocument ──────────────────────────────────────────────────────
-// FIX: student documents (ID proofs, certificates) must NOT live in NOTES_DIR
-// or UPLOADS_DIR — both are mounted with express.static and served to anyone
-// with the URL, no auth required. STUDENT_DOCS_DIR is a private directory
-// that is never registered with express.static; files are only readable
-// through an authenticated download route (see routes/adminRoutes.js).
-const fs = require("fs");
+// ── uploadStudentDocument — private, R2-backed ─────────────────────────────────
+// FIX: student documents (ID proofs, certificates) go to R2 under
+// "student-documents/" and are ONLY ever readable through the
+// authenticated download route (routes/admin/student-profile.js), which
+// streams the object through the server — the R2 bucket itself is never
+// made public, so this preserves the exact same access guarantee the old
+// "never registered with express.static" local directory provided.
+//
+// STUDENT_DOCS_DIR itself is kept (pointing at the same local path it
+// always did) purely so download routes can still fall back to reading a
+// PRE-MIGRATION record's file straight off local/persistent disk if it has
+// no `key` field yet (see the migration-guidance section for details) —
+// no new file is ever written here after this migration.
 const STUDENT_DOCS_DIR = path.join(NOTES_DIR, "..", "student-documents");
-if (!fs.existsSync(STUDENT_DOCS_DIR)) {
-  fs.mkdirSync(STUDENT_DOCS_DIR, { recursive: true });
-}
 
 const uploadStudentDocument = multer({
-  storage: diskStorage(STUDENT_DOCS_DIR),
+  storage: multer.memoryStorage(),
   limits:  { fileSize: MAX_FILE_SIZE },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -229,14 +283,13 @@ const uploadStudentDocument = multer({
   },
 });
 
-// ── uploadHomeworkAttachment — admin-attached homework material (public) ──────
-
-if (!fs.existsSync(HOMEWORK_DIR)) {
-  fs.mkdirSync(HOMEWORK_DIR, { recursive: true });
-}
+// ── uploadHomeworkAttachment — admin-attached homework material (PUBLIC) ──────
+// Goes to R2 under "homework-attachments/" with a public URL (this
+// category was already served with no auth via /homework-files, so no
+// access-control change here — just where the bytes live).
 
 const uploadHomeworkAttachment = multer({
-  storage: diskStorage(HOMEWORK_DIR),
+  storage: multer.memoryStorage(),
   limits:  { fileSize: MAX_FILE_SIZE },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -248,13 +301,12 @@ const uploadHomeworkAttachment = multer({
 });
 
 // ── uploadHomeworkSubmission — student-submitted answers (private) ────────────
-
-if (!fs.existsSync(HOMEWORK_SUBMISSIONS_DIR)) {
-  fs.mkdirSync(HOMEWORK_SUBMISSIONS_DIR, { recursive: true });
-}
+// Goes to R2 under "homework-submissions/"; only ever read back through
+// the authenticated download routes in routes/admin/homework.js and
+// routes/studentRoutes.js.
 
 const uploadHomeworkSubmission = multer({
-  storage: diskStorage(HOMEWORK_SUBMISSIONS_DIR),
+  storage: multer.memoryStorage(),
   limits:  { fileSize: MAX_FILE_SIZE },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -266,13 +318,10 @@ const uploadHomeworkSubmission = multer({
 });
 
 // ── uploadDoubtAttachment — student doubt image + voice note (private) ────────
-
-if (!fs.existsSync(DOUBTS_DIR)) {
-  fs.mkdirSync(DOUBTS_DIR, { recursive: true });
-}
+// Goes to R2 under "doubts/images/" and "doubts/voice-notes/".
 
 const uploadDoubtAttachment = multer({
-  storage: diskStorage(DOUBTS_DIR),
+  storage: multer.memoryStorage(),
   limits:  { fileSize: MAX_FILE_SIZE },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -291,62 +340,53 @@ const uploadDoubtAttachment = multer({
   },
 });
 
-// ── MIME guard middleware for each uploader ───────────────────────────────────
+// ── MIME guard middleware for each single-file uploader ───────────────────────
+// NOTE: notesMimeGuard/pdfMimeGuard do not exist here — confirmed by
+// repo-wide search that neither was ever imported by any route (uploadNote
+// isn't mounted at all; controllers/pdfController.js does its own inline
+// validation on uploadPdf's output). mimeGuard() below is buffer-based and
+// is only wired to the memoryStorage() uploaders.
 
-const notesMimeGuard = mimeGuard(ALLOWED_NOTE_MIMES);
-// ⭐ Allow PDF and TXT MIME types
-const pdfMimeGuard   = mimeGuard(["application/pdf", "text/plain"]);
-const homeworkMimeGuard = mimeGuard(ALLOWED_HOMEWORK_MIMES);
+const homeworkAttachmentMimeGuard = mimeGuard(ALLOWED_HOMEWORK_MIMES, "homework-attachments");
+const homeworkSubmissionMimeGuard = mimeGuard(ALLOWED_HOMEWORK_MIMES, "homework-submissions");
+const studentDocumentMimeGuard = mimeGuard(ALLOWED_NOTE_MIMES, "student-documents");
 
 // Doubts can arrive with an image, a voice note, both, or (rarely) neither if
-// the request only carries text — mimeGuard() (above) only looks at
-// req.file/a single upload, so this checks each field of req.files against
-// its own allowed MIME list using the same magic-byte validateFileContent().
+// the request only carries text — mimeGuard() (above) only looks at a
+// single req.file, so this checks each field of req.files against its own
+// allowed MIME list, optimizes if it's an image, and uploads each to its
+// own R2 folder.
 async function doubtMimeGuard(req, res, next) {
   const files = req.files || {};
   try {
     for (const file of files.image || []) {
-      const ok = await validateFileContent(file.path, ALLOWED_DOUBT_IMAGE_MIMES);
+      const ok = await validateBufferContent(file.buffer, ALLOWED_DOUBT_IMAGE_MIMES);
       if (!ok) {
-        cleanupUploadedFields(files);
         return res.status(400).json({ success: false, message: "Doubt image content does not match its extension. Upload rejected." });
       }
-      await optimizeImageFile(file.path);
+      await uploadFileToR2(file, "doubts/images");
     }
     for (const file of files.voiceNote || []) {
-      const ok = await validateFileContent(file.path, ALLOWED_DOUBT_VOICE_MIMES);
+      const ok = await validateBufferContent(file.buffer, ALLOWED_DOUBT_VOICE_MIMES);
       if (!ok) {
-        cleanupUploadedFields(files);
         return res.status(400).json({ success: false, message: "Voice note content does not match its extension. Upload rejected." });
       }
+      await uploadFileToR2(file, "doubts/voice-notes");
     }
     next();
   } catch (err) {
-    cleanupUploadedFields(files);
-    next(err);
-  }
-}
-
-function cleanupUploadedFields(files) {
-  for (const list of Object.values(files)) {
-    for (const file of list) {
-      try { fs.unlinkSync(file.path); } catch (err) { /* already gone, ignore */ }
-    }
+    logger.error(`R2 upload failed (doubts): ${err.message}`);
+    res.status(502).json({ success: false, message: "File storage upload failed. Please try again." });
   }
 }
 
 // ── uploadFacultyApplication — public job application (private storage) ───────
-// Used by the public Careers page (routes/recruitment.js) — no auth, so
-// this is the one uploader on a fully public endpoint. Files land in a
-// private, non-static-served directory just like student documents; only
-// an authenticated admin download route can read them back.
-
-if (!fs.existsSync(FACULTY_APPLICATIONS_DIR)) {
-  fs.mkdirSync(FACULTY_APPLICATIONS_DIR, { recursive: true });
-}
+// Files land as R2 objects that are never made public; only an
+// authenticated admin download route (routes/admin/recruitment.js) can
+// stream them back, same trust model as before.
 
 const uploadFacultyApplication = multer({
-  storage: diskStorage(FACULTY_APPLICATIONS_DIR),
+  storage: multer.memoryStorage(),
   limits: { fileSize: MAX_DEMO_VIDEO_SIZE }, // the largest of the four fields; per-field type is what actually gates size expectations
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -366,30 +406,30 @@ const uploadFacultyApplication = multer({
 });
 
 // Same "check each field against its own allowed MIME list" pattern as
-// doubtMimeGuard, extended to four fields instead of two.
+// doubtMimeGuard, extended to four fields, each uploaded to its own R2
+// folder under faculty-applications/.
 async function facultyApplicationMimeGuard(req, res, next) {
   const files = req.files || {};
   const checks = [
-    { field: "resume", mimes: ALLOWED_RESUME_MIMES, optimize: false },
-    { field: "certificates", mimes: ALLOWED_CERTIFICATE_MIMES, optimize: true },
-    { field: "photo", mimes: ALLOWED_PHOTO_MIMES, optimize: true },
-    { field: "demoVideo", mimes: ALLOWED_DEMO_VIDEO_MIMES, optimize: false },
+    { field: "resume", mimes: ALLOWED_RESUME_MIMES, folder: "faculty-applications/resumes" },
+    { field: "certificates", mimes: ALLOWED_CERTIFICATE_MIMES, folder: "faculty-applications/certificates" },
+    { field: "photo", mimes: ALLOWED_PHOTO_MIMES, folder: "faculty-applications/photos" },
+    { field: "demoVideo", mimes: ALLOWED_DEMO_VIDEO_MIMES, folder: "faculty-applications/demo-videos" },
   ];
   try {
-    for (const { field, mimes, optimize } of checks) {
+    for (const { field, mimes, folder } of checks) {
       for (const file of files[field] || []) {
-        const ok = await validateFileContent(file.path, mimes);
+        const ok = await validateBufferContent(file.buffer, mimes);
         if (!ok) {
-          cleanupUploadedFields(files);
           return res.status(400).json({ success: false, message: `${field} file content does not match its extension. Upload rejected.` });
         }
-        if (optimize) await optimizeImageFile(file.path);
+        await uploadFileToR2(file, folder);
       }
     }
     next();
   } catch (err) {
-    cleanupUploadedFields(files);
-    next(err);
+    logger.error(`R2 upload failed (faculty-applications): ${err.message}`);
+    res.status(502).json({ success: false, message: "File storage upload failed. Please try again." });
   }
 }
 
@@ -401,15 +441,19 @@ module.exports = {
   uploadHomeworkSubmission,
   uploadDoubtAttachment,
   uploadFacultyApplication,
-  notesMimeGuard,   // use after uploadNote.single(...) in routes
-  pdfMimeGuard,     // use after uploadPdf.single(...) in routes
-  homeworkMimeGuard,
+  homeworkMimeGuard: homeworkAttachmentMimeGuard,       // used by routes/admin/homework.js (POST/PUT — attachment field)
+  homeworkSubmissionMimeGuard,                          // used by routes/studentRoutes.js (submission field)
   doubtMimeGuard,
   facultyApplicationMimeGuard,
-  studentDocumentMimeGuard: notesMimeGuard, // same allowed MIME set as notes
+  studentDocumentMimeGuard,
+  uploadFileToR2, // reused by routes/settings.js for branding logo/favicon uploads
+  diskStorage, // exposed for routes/settings.js's own multer instance — no longer used there after this migration (see routes/settings.js), kept exported in case anything else relies on it
+
+  // Local dir constants — kept exported (unchanged import paths for
+  // existing routes) purely for reading back PRE-MIGRATION files that
+  // have no `key` field yet. Nothing writes into these anymore.
   STUDENT_DOCS_DIR,
   HOMEWORK_SUBMISSIONS_DIR,
   DOUBTS_DIR,
   FACULTY_APPLICATIONS_DIR,
-  diskStorage,      // exposed for other routes (e.g. branding logo/favicon uploads) that need their own destination dir
 };

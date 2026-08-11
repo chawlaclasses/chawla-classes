@@ -24,20 +24,23 @@ const multer = require('multer');
 const nodemailer = require('nodemailer');
 const settingsService = require('../services/settings');
 const logger = require('../utils/logger');
-const { diskStorage } = require('../middleware/upload');
-const { cleanupFile } = require('../utils/helpers');
+const { uploadFileToR2 } = require('../middleware/upload');
+const { validateBufferContent } = require('../utils/helpers');
+const r2Service = require('../services/r2Service');
 const { logAudit } = require('../utils/auditLog');
 const { requirePermission } = require('../middleware/permissions');
-const { ROOT_DIR, DATA_DIR } = require('../config');
-
-const IMAGES_DIR = path.join(ROOT_DIR, 'images');
-const BACKUPS_DIR = path.join(ROOT_DIR, 'backups');
-if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
-if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+const db = require('../services/jsonDb');
+const mongoBackup = require('../services/mongoBackup');
 
 const ALLOWED_IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.svg', '.ico']);
+const ALLOWED_IMAGE_MIMES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon'];
+// FIX (local storage -> Cloudflare R2 migration): branding assets go
+// straight to R2 under "branding/" now, with a public URL — this category
+// was already served with no auth via /images, so no access-control
+// change here, just where the bytes live. memoryStorage() replaces the
+// old diskStorage(IMAGES_DIR); see uploadFileToR2() in middleware/upload.js.
 const uploadBranding = multer({
-    storage: diskStorage(IMAGES_DIR),
+    storage: multer.memoryStorage(),
     limits: { fileSize: 2 * 1024 * 1024 }, // 2MB is plenty for a logo/favicon
     fileFilter: (_req, file, cb) => {
         const ext = path.extname(file.originalname).toLowerCase();
@@ -77,30 +80,38 @@ router.put('/', requirePermission('settings:edit'), (req, res) => {
 });
 
 // Upload logo
-router.post('/logo', requirePermission('settings:edit'), uploadBranding.single('logo'), (req, res) => {
+router.post('/logo', requirePermission('settings:edit'), uploadBranding.single('logo'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
-        const logoUrl = `/images/${req.file.filename}`;
-        settingsService.updateSettings({ logoUrl });
+        const isValid = await validateBufferContent(req.file.buffer, ALLOWED_IMAGE_MIMES);
+        if (!isValid) {
+            return res.status(400).json({ success: false, message: 'File content does not match its extension. Upload rejected.' });
+        }
+        await uploadFileToR2(req.file, 'branding');
+        settingsService.updateSettings({ logoUrl: req.file.r2Url, logoKey: req.file.r2Key });
         logAudit(req, 'edit', 'settings', null, 'Updated institute logo');
-        res.json({ success: true, data: { logoUrl }, message: 'Logo updated' });
+        res.json({ success: true, data: { logoUrl: req.file.r2Url }, message: 'Logo updated' });
     } catch (error) {
-        if (req.file) cleanupFile(req.file.path);
+        if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
     }
 });
 
 // Upload favicon
-router.post('/favicon', requirePermission('settings:edit'), uploadBranding.single('favicon'), (req, res) => {
+router.post('/favicon', requirePermission('settings:edit'), uploadBranding.single('favicon'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
-        const faviconUrl = `/images/${req.file.filename}`;
-        settingsService.updateSettings({ faviconUrl });
+        const isValid = await validateBufferContent(req.file.buffer, ALLOWED_IMAGE_MIMES);
+        if (!isValid) {
+            return res.status(400).json({ success: false, message: 'File content does not match its extension. Upload rejected.' });
+        }
+        await uploadFileToR2(req.file, 'branding');
+        settingsService.updateSettings({ faviconUrl: req.file.r2Url, faviconKey: req.file.r2Key });
         logAudit(req, 'edit', 'settings', null, 'Updated favicon');
-        res.json({ success: true, data: { faviconUrl }, message: 'Favicon updated' });
+        res.json({ success: true, data: { faviconUrl: req.file.r2Url }, message: 'Favicon updated' });
     } catch (error) {
-        if (req.file) cleanupFile(req.file.path);
+        if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
     }
@@ -141,80 +152,116 @@ router.post('/test-email', requirePermission('settings:edit'), async (req, res) 
 });
 
 // ── Backups ─────────────────────────────────────────────────────────────────
+// FIX (production hardening, Phase 2, issue #1/#10): this used to
+// fs.copyFileSync the Data/ folder — stale/empty since the jsonDb ->
+// MongoDB migration, so "backups" silently stopped containing any real
+// data, and restoring one did nothing useful. Replaced entirely with
+// services/mongoBackup.js, which snapshots every real MongoDB collection
+// into MongoDB itself (survives a Render redeploy — nothing depends on
+// local disk anymore) and restores via an atomic per-collection swap.
+// Routes, methods, and response envelope shape are unchanged; response
+// payloads are a superset of the old ones (extra fields added, nothing
+// removed) so any existing frontend code reading .name/.createdAt/.message
+// keeps working untouched.
 
-function copyDir(src, dest) {
-    fs.mkdirSync(dest, { recursive: true });
-    for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-        const srcPath = path.join(src, entry.name);
-        const destPath = path.join(dest, entry.name);
-        if (entry.isDirectory()) {
-            copyDir(srcPath, destPath);
-        } else {
-            fs.copyFileSync(srcPath, destPath);
-        }
+// Best-effort: waits briefly for any writes already queued in jsonDb to
+// finish before a restore starts swapping collections underneath them.
+// This narrows, but doesn't eliminate, the race between an in-flight
+// write and a restore's collection swap — see PHASE_2_REPORT.md for the
+// full explanation and why full write-quiescing is deferred to Phase 3
+// (graceful shutdown) rather than solved here.
+async function waitForWritesToDrain(timeoutMs = 5000) {
+    const start = Date.now();
+    while (db.getStatus().pendingWrites > 0 && Date.now() - start < timeoutMs) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
     }
 }
 
-router.post('/backup', requirePermission('settings:edit'), (req, res) => {
+router.post('/backup', requirePermission('settings:edit'), async (req, res) => {
     try {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const backupName = `backup-${timestamp}`;
-        const backupPath = path.join(BACKUPS_DIR, backupName);
-        copyDir(DATA_DIR, backupPath);
-        logAudit(req, 'export', 'settings', null, `Created manual backup: ${backupName}`);
-        res.json({ success: true, data: { name: backupName }, message: 'Backup created successfully' });
+        const backup = await mongoBackup.createBackup({ kind: 'manual' });
+        logAudit(req, 'export', 'settings', null, `Created manual backup: ${backup.name}`);
+        res.json({
+            success: true,
+            data: { name: backup.name, createdAt: backup.createdAt, collections: backup.collections.length, totalDocs: backup.totalDocs },
+            message: 'Backup created successfully'
+        });
     } catch (error) {
         logger.error(`Backup failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Backup failed. Please try again or contact support.' });
     }
 });
 
-router.get('/backups', requirePermission('settings:view'), (req, res) => {
+router.get('/backups', requirePermission('settings:view'), async (req, res) => {
     try {
-        const backups = fs.readdirSync(BACKUPS_DIR, { withFileTypes: true })
-            .filter(e => e.isDirectory())
-            .map(e => {
-                const stat = fs.statSync(path.join(BACKUPS_DIR, e.name));
-                return { name: e.name, createdAt: stat.birthtime || stat.ctime };
-            })
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        res.json({ success: true, data: backups });
+        const backups = await mongoBackup.listBackups();
+        const data = backups.map((b) => ({
+            name: b.name,
+            createdAt: b.createdAt,
+            kind: b.kind,
+            collections: b.collections.length,
+            totalDocs: b.totalDocs,
+        }));
+        res.json({ success: true, data });
     } catch (error) {
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
     }
 });
 
-router.post('/backups/:name/restore', requirePermission('settings:backup_restore'), (req, res) => {
+router.post('/backups/:name/restore', requirePermission('settings:backup_restore'), async (req, res) => {
+    // Best-effort write-quiescing around the restore — see
+    // waitForWritesToDrain's comment. Restored to its original value
+    // (not just switched off) in `finally`, in case it was already on
+    // for an unrelated reason.
+    const wasMaintenanceMode = !!settingsService.getSettings().maintenanceMode;
     try {
-        const backupPath = path.join(BACKUPS_DIR, req.params.name);
-        if (!fs.existsSync(backupPath) || !backupPath.startsWith(BACKUPS_DIR)) {
+        if (!wasMaintenanceMode) {
+            const current = settingsService.getSettings();
+            settingsService.updateSettings({
+                maintenanceMode: true,
+                maintenanceMessage: current.maintenanceMessage || 'Scheduled maintenance in progress. Please check back shortly.',
+            });
+        }
+        await waitForWritesToDrain();
+
+        const result = await mongoBackup.restoreBackup(req.params.name);
+
+        if (result.success) {
+            logAudit(req, 'import', 'settings', null, `Restored backup: ${req.params.name}`);
+            res.json({
+                success: true,
+                data: result,
+                message: `Backup restored (${result.attempted}/${result.totalCollections} collections) and is live now — no server restart needed. A safety snapshot of the prior state was saved as "${result.preRestoreBackupName}".`
+            });
+        } else {
+            // Never report success for a restore that didn't fully complete.
+            logAudit(req, 'import', 'settings', null, `Restore incomplete for backup: ${req.params.name} (${result.attempted}/${result.totalCollections} collections)`);
+            res.status(500).json({
+                success: false,
+                data: result,
+                message: `Restore did not complete for every collection (${result.attempted}/${result.totalCollections} attempted before stopping). Nothing was lost — the prior state was saved as "${result.preRestoreBackupName}". See data.results for which collection failed and why.`
+            });
+        }
+    } catch (error) {
+        if (error.code === 'NOT_FOUND') {
             return res.status(404).json({ success: false, message: 'Backup not found' });
         }
-        // Safety net: back up current state before overwriting, in case the
-        // restore itself needs to be undone.
-        const preRestoreName = `pre-restore-${new Date().toISOString().replace(/[:.]/g, '-')}`;
-        copyDir(DATA_DIR, path.join(BACKUPS_DIR, preRestoreName));
-
-        copyDir(backupPath, DATA_DIR);
-        logAudit(req, 'import', 'settings', null, `Restored backup: ${req.params.name}`);
-        res.json({
-            success: true,
-            message: 'Backup restored. Restart the server to load the restored data (jsonDb reads collections into memory at startup).'
-        });
-    } catch (error) {
         logger.error(`Restore failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Restore failed. Please try again or contact support.' });
+    } finally {
+        if (!wasMaintenanceMode) {
+            settingsService.updateSettings({ maintenanceMode: false });
+        }
     }
 });
 
-router.delete('/backups/:name', requirePermission('settings:backup_restore'), (req, res) => {
+router.delete('/backups/:name', requirePermission('settings:backup_restore'), async (req, res) => {
     try {
-        const backupPath = path.join(BACKUPS_DIR, req.params.name);
-        if (!fs.existsSync(backupPath) || !backupPath.startsWith(BACKUPS_DIR)) {
+        const deleted = await mongoBackup.deleteBackup(req.params.name);
+        if (!deleted) {
             return res.status(404).json({ success: false, message: 'Backup not found' });
         }
-        fs.rmSync(backupPath, { recursive: true, force: true });
         logAudit(req, 'delete', 'settings', null, `Deleted backup: ${req.params.name}`);
         res.json({ success: true, message: 'Backup deleted' });
     } catch (error) {

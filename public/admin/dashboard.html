@@ -83,7 +83,7 @@
         body::after { content: none; } /* no glow blobs on light theme */
 
         .wrap {
-            position: relative; z-index: 1;
+            position: relative;
             max-width: 1600px;
             margin: 0 auto;
             padding: 20px 24px;
@@ -1026,7 +1026,7 @@
                 padding-top: 60px;
                 max-height: 100vh;
                 height: 100vh;
-                padding-bottom: 20px;
+                padding-bottom: 90px;
                 box-shadow: none;
             }
             .sidebar.open {
@@ -1430,6 +1430,17 @@
                 <span class="label">Reports</span>
             </div>
 
+            <div class="sidebar-group-label">Marketing</div>
+            <div class="sidebar-item" data-section="marketing" data-permission="marketing:view" onclick="switchSection('marketing')">
+                <span class="icon-chip"><i class="fas fa-bullhorn"></i></span>
+                <span class="label">Marketing</span>
+            </div>
+            <div class="sidebar-item" data-section="reviews" data-permission="reviews:view" onclick="switchSection('reviews')">
+                <span class="icon-chip"><i class="fas fa-star"></i></span>
+                <span class="label">Reviews</span>
+                <span class="sidebar-badge" id="reviewsBadge" style="display:none;">0</span>
+            </div>
+
             <div class="sidebar-group-label">Security</div>
             <div class="sidebar-item" data-section="active-sessions" data-permission="audit:view" onclick="switchSection('active-sessions')">
                 <span class="icon-chip"><i class="fas fa-desktop"></i></span>
@@ -1647,6 +1658,8 @@
 <script src="js/classes.js" defer></script>
 <script src="js/staff.js" defer></script>
 <script src="js/recruitment.js" defer></script>
+<script src="js/marketing.js" defer></script>
+<script src="js/reviews.js" defer></script>
 <script src="js/subjects.js" defer></script>
 <script src="js/series.js" defer></script>
 <script src="js/tests.js" defer></script>

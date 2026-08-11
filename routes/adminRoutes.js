@@ -190,6 +190,28 @@ router.use('/', require('./admin/dashboard'));
 router.use('/recruitment', require('./admin/recruitment'));
 
 // ============================================================
+// Marketing (Banners + Campaigns)
+// ============================================================
+// Admin-side banner CRUD (routes/admin/marketing.js) and campaign
+// send/history (routes/admin/marketing-campaigns.js) — separate files,
+// same '/marketing' URL family. Public read of active banners is
+// separate and unauthenticated (routes/marketing.js), mounted directly
+// in app.js. Final URLs: /api/admin/marketing/banners,
+// /api/admin/marketing/campaigns/send, etc.
+router.use('/marketing', require('./admin/marketing'));
+router.use('/marketing/campaigns', require('./admin/marketing-campaigns'));
+
+// ============================================================
+// Review Management
+// ============================================================
+// Admin-side moderation (approve/reject/edit/feature/delete) for reviews
+// submitted through index.html's "Student Feedback & Rating" form. Public
+// submission + approved-list read is separate and unauthenticated
+// (routes/reviews.js), mounted directly in app.js. Final URL:
+// /api/admin/reviews.
+router.use('/reviews', require('./admin/reviews'));
+
+// ============================================================
 // Global header search (dashboard.html's "Search anything..." box)
 // ============================================================
 // Was UI-only before this — the frontend has called this URL since the

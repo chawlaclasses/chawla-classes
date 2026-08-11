@@ -21,6 +21,7 @@ const logger = require('../../utils/logger');
 const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { DOUBTS_DIR } = require('../../middleware/upload');
+const r2Service = require('../../services/r2Service');
 const { isClassAllowedForUser, isSubjectAllowedForUser } = require('../../config/permissions');
 
 function doubtWithMeta(doubt) {
@@ -161,24 +162,30 @@ router.put('/:id/priority', requirePermission('doubts:reply'), (req, res) => {
 });
 
 // Stream the doubt's attached image/voice note (admin can view any doubt's attachment)
-router.get('/:id/image', requirePermission('doubts:view'), (req, res) => {
+router.get('/:id/image', requirePermission('doubts:view'), async (req, res) => {
   const doubt = db.findById('doubts', req.params.id);
-  if (!doubt || !doubt.imageFilename) {
+  if (!doubt || (!doubt.imageKey && !doubt.imageFilename)) {
     return res.status(404).json({ success: false, message: 'No image attached to this doubt' });
   }
   if (!isClassAllowedForUser(req.userData, doubt.classId) || !isSubjectAllowedForUser(req.userData, doubt.subjectId)) {
     return res.status(403).json({ success: false, message: "You're not assigned to this class/subject." });
   }
+  if (doubt.imageKey) {
+    return r2Service.streamToResponse(doubt.imageKey, res, { inline: true });
+  }
   res.sendFile(path.join(DOUBTS_DIR, doubt.imageFilename));
 });
 
-router.get('/:id/voice', requirePermission('doubts:view'), (req, res) => {
+router.get('/:id/voice', requirePermission('doubts:view'), async (req, res) => {
   const doubt = db.findById('doubts', req.params.id);
-  if (!doubt || !doubt.voiceNoteFilename) {
+  if (!doubt || (!doubt.voiceNoteKey && !doubt.voiceNoteFilename)) {
     return res.status(404).json({ success: false, message: 'No voice note attached to this doubt' });
   }
   if (!isClassAllowedForUser(req.userData, doubt.classId) || !isSubjectAllowedForUser(req.userData, doubt.subjectId)) {
     return res.status(403).json({ success: false, message: "You're not assigned to this class/subject." });
+  }
+  if (doubt.voiceNoteKey) {
+    return r2Service.streamToResponse(doubt.voiceNoteKey, res, { inline: true });
   }
   res.sendFile(path.join(DOUBTS_DIR, doubt.voiceNoteFilename));
 });

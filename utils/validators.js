@@ -12,6 +12,38 @@
 
 const { body } = require("express-validator");
 
+// FIX (security audit 2026-08): marketing banner ctaLink/imageUrl are
+// admin-entered but rendered on the PUBLIC site (routes/marketing.js
+// returns them verbatim, index.html presumably drops them straight into
+// an <a href>/<img src>). Before this, the only checks were a max length
+// — a value like "javascript:alert(document.cookie)" or a "data:" URI
+// sailed straight through. This restricts both fields to http(s) absolute
+// URLs or a same-site relative path ("/promo"), which is everything a
+// banner link/image legitimately needs, and rejects javascript:, data:,
+// vbscript:, and any other scheme.
+function isSafeUrl(value) {
+  if (value === undefined || value === null || value === "") return true; // optional field, nothing to check
+  const v = String(value).trim();
+
+  // Same-site relative path, e.g. "/admissions" — never carries a scheme,
+  // so it's safe by construction. "//host" is protocol-relative (an
+  // absolute URL in disguise), so it's deliberately excluded here and
+  // falls through to the URL parse/scheme check below.
+  if (v.startsWith("/") && !v.startsWith("//")) return true;
+
+  let parsed;
+  try {
+    parsed = new URL(v);
+  } catch {
+    throw new Error("Must be a valid http(s) URL or a relative path starting with /");
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("Only http, https, or relative (/path) links are allowed");
+  }
+  return true;
+}
+
 const validators = {
   // ── Class validators ──────────────────────────────────────────────────────
   createClass: [
@@ -388,6 +420,58 @@ const validators = {
     body("boardWork").optional().isFloat({ min: 0, max: 10 }),
     body("overallRating").optional().isFloat({ min: 0, max: 10 }),
   ],
+
+  // ── Reviews (public website "Student Feedback & Rating" form + admin ────
+  // manual entry) — routes/reviews.js (public) and routes/admin/reviews.js.
+  submitReview: [
+    body("studentName").trim().notEmpty().withMessage("Name is required").isLength({ min: 2, max: 100 }).withMessage("Name must be 2–100 characters"),
+    body("studentClass").trim().notEmpty().withMessage("Class is required").isLength({ max: 60 }),
+    body("rating").notEmpty().withMessage("Rating is required").isInt({ min: 1, max: 5 }).withMessage("Rating must be between 1 and 5").toInt(),
+    body("feedback").trim().notEmpty().withMessage("Feedback is required").isLength({ min: 5, max: 1000 }).withMessage("Feedback must be 5–1000 characters"),
+  ],
+
+  updateReview: [
+    body("studentName").optional().trim().isLength({ min: 2, max: 100 }).withMessage("Name must be 2–100 characters"),
+    body("studentClass").optional().trim().isLength({ max: 60 }),
+    body("rating").optional().isInt({ min: 1, max: 5 }).withMessage("Rating must be between 1 and 5").toInt(),
+    body("feedback").optional().trim().isLength({ min: 5, max: 1000 }).withMessage("Feedback must be 5–1000 characters"),
+  ],
+
+  updateReviewStatus: [
+    body("status").trim().notEmpty().withMessage("Status is required").isIn(["pending", "approved", "rejected"]).withMessage("Invalid status"),
+    body("rejectionReason").optional().trim().isLength({ max: 300 }),
+  ],
+
+  // ── Marketing banners (admin) — routes/admin/marketing.js. Public read ──
+  // is unauthenticated (routes/marketing.js) so no validator needed there.
+  createMarketingBanner: [
+    body("title").trim().notEmpty().withMessage("Title is required").isLength({ max: 150 }),
+    body("message").trim().notEmpty().withMessage("Message is required").isLength({ max: 500 }),
+    body("placement").optional().trim().isIn(["top_bar", "homepage"]).withMessage("Placement must be top_bar or homepage"),
+    body("ctaText").optional().trim().isLength({ max: 60 }),
+    body("ctaLink").optional().trim().isLength({ max: 300 }).custom(isSafeUrl),
+    body("imageUrl").optional().trim().isLength({ max: 300 }).custom(isSafeUrl),
+    body("startDate").optional({ checkFalsy: true }).trim().isISO8601().withMessage("Invalid start date"),
+    body("endDate").optional({ checkFalsy: true }).trim().isISO8601().withMessage("Invalid end date"),
+    body("priority").optional().isInt({ min: 0, max: 999 }).withMessage("Priority must be 0–999").toInt(),
+  ],
+
+  updateMarketingBanner: [
+    body("title").optional().trim().isLength({ max: 150 }),
+    body("message").optional().trim().isLength({ max: 500 }),
+    body("placement").optional().trim().isIn(["top_bar", "homepage"]).withMessage("Placement must be top_bar or homepage"),
+    body("ctaText").optional().trim().isLength({ max: 60 }),
+    body("ctaLink").optional().trim().isLength({ max: 300 }).custom(isSafeUrl),
+    body("imageUrl").optional().trim().isLength({ max: 300 }).custom(isSafeUrl),
+    body("startDate").optional({ checkFalsy: true }).trim().isISO8601().withMessage("Invalid start date"),
+    body("endDate").optional({ checkFalsy: true }).trim().isISO8601().withMessage("Invalid end date"),
+    body("priority").optional().isInt({ min: 0, max: 999 }).withMessage("Priority must be 0–999").toInt(),
+    body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
+  ],
 };
+
+// Exposed directly (not just wired into the .custom() chains above) so it
+// can be unit-tested and reused without going through express-validator.
+validators.isSafeUrl = isSafeUrl;
 
 module.exports = validators;

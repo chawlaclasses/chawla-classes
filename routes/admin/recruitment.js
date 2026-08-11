@@ -25,6 +25,7 @@ const { requirePermission } = require("../../middleware/permissions");
 const { validate } = require("../../middleware/validation");
 const validators = require("../../utils/validators");
 const { FACULTY_APPLICATIONS_DIR } = require("../../config");
+const r2Service = require("../../services/r2Service");
 const { sendMail, isConfigured: mailConfigured } = require("../../utils/mailer");
 const { sendWhatsApp, isConfigured: whatsappConfigured } = require("../../utils/whatsapp");
 
@@ -425,7 +426,7 @@ router.put("/:id/demo-evaluation", requirePermission("recruitment:edit"), valida
 // File downloads — resume / photo / demo video (single) and
 // certificates/:index (array). All private, admin-auth only.
 // ============================================================
-router.get("/:id/files/:field", requirePermission("recruitment:view"), (req, res) => {
+router.get("/:id/files/:field", requirePermission("recruitment:view"), async (req, res) => {
   const application = db.findById("facultyApplications", req.params.id);
   if (!application) return res.status(404).json({ success: false, message: "Application not found" });
 
@@ -433,12 +434,18 @@ router.get("/:id/files/:field", requirePermission("recruitment:view"), (req, res
   if (["resume", "photo", "demoVideo"].includes(field)) {
     const file = application[field];
     if (!file) return res.status(404).json({ success: false, message: "File not found" });
+    if (file.key) {
+      return r2Service.streamToResponse(file.key, res, { downloadName: file.originalName });
+    }
     return res.sendFile(path.join(FACULTY_APPLICATIONS_DIR, file.filename));
   }
   if (field === "certificate") {
     const idx = parseInt(req.query.index, 10) || 0;
     const file = (application.certificates || [])[idx];
     if (!file) return res.status(404).json({ success: false, message: "Certificate not found" });
+    if (file.key) {
+      return r2Service.streamToResponse(file.key, res, { downloadName: file.originalName });
+    }
     return res.sendFile(path.join(FACULTY_APPLICATIONS_DIR, file.filename));
   }
   res.status(400).json({ success: false, message: "Unknown file field" });

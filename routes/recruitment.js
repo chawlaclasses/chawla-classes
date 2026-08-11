@@ -24,7 +24,7 @@ const { validate } = require("../middleware/validation");
 const validators = require("../utils/validators");
 const { createSubmissionRateLimiter } = require("../middleware/rateLimit");
 const { uploadFacultyApplication, facultyApplicationMimeGuard } = require("../middleware/upload");
-const { cleanupFile } = require("../utils/helpers");
+const r2Service = require("../services/r2Service");
 const { sendMail, isConfigured: mailConfigured } = require("../utils/mailer");
 
 // Public read of open positions — feeds the Careers page's "Current Open
@@ -50,10 +50,12 @@ const applyUpload = uploadFacultyApplication.fields([
   { name: "demoVideo", maxCount: 1 },
 ]);
 
-function cleanupReqFiles(files) {
+async function cleanupReqFiles(files) {
+  const keys = [];
   for (const field of Object.values(files || {})) {
-    for (const f of field) cleanupFile(f.path);
+    for (const f of field) { if (f.r2Key) keys.push(f.r2Key); }
   }
+  await r2Service.deleteObjects(keys);
 }
 
 // SECURITY: 5/minute per IP. A genuine applicant submits once; anything
@@ -70,7 +72,7 @@ router.post(
     try {
       const resumeFile = (files.resume || [])[0];
       if (!resumeFile) {
-        cleanupReqFiles(files);
+        await cleanupReqFiles(files);
         return res.status(400).json({ success: false, message: "Resume is required" });
       }
 
@@ -91,7 +93,7 @@ router.post(
         .find("facultyApplications", {})
         .find(a => (a.email === normalizedEmail || a.phone === (phone || "").trim()) && a.status !== "rejected");
       if (existing) {
-        cleanupReqFiles(files);
+        await cleanupReqFiles(files);
         return res.status(409).json({
           success: false,
           message: "An application with this email or mobile number is already in progress. We'll be in touch.",
@@ -133,10 +135,10 @@ router.post(
         expectedSalary: (expectedSalary || "").trim(),
         joiningDate: joiningDate || "",
         skills: parsedSkills,
-        resume: resumeFile ? { filename: resumeFile.filename, originalName: resumeFile.originalname } : null,
-        certificates: (files.certificates || []).map(f => ({ filename: f.filename, originalName: f.originalname })),
-        photo: (files.photo || [])[0] ? { filename: files.photo[0].filename, originalName: files.photo[0].originalname } : null,
-        demoVideo: (files.demoVideo || [])[0] ? { filename: files.demoVideo[0].filename, originalName: files.demoVideo[0].originalname } : null,
+        resume: resumeFile ? { key: resumeFile.r2Key, filename: resumeFile.filename, originalName: resumeFile.originalname } : null,
+        certificates: (files.certificates || []).map(f => ({ key: f.r2Key, filename: f.filename, originalName: f.originalname })),
+        photo: (files.photo || [])[0] ? { key: files.photo[0].r2Key, filename: files.photo[0].filename, originalName: files.photo[0].originalname } : null,
+        demoVideo: (files.demoVideo || [])[0] ? { key: files.demoVideo[0].r2Key, filename: files.demoVideo[0].filename, originalName: files.demoVideo[0].originalname } : null,
         status: "applied",
         adminNotes: [],
         interview: null,
@@ -167,7 +169,7 @@ router.post(
         data: { applicationId: application._id },
       });
     } catch (error) {
-      cleanupReqFiles(files);
+      await cleanupReqFiles(files);
       logger.error(`POST /careers/apply failed: ${error.message}`, { stack: error.stack });
       res.status(500).json({ success: false, message: "Something went wrong submitting your application. Please try again." });
     }

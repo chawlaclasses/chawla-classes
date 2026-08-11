@@ -20,8 +20,8 @@ const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { validate } = require('../../middleware/validation');
 const validators = require('../../utils/validators');
-const { cleanupFile } = require('../../utils/helpers');
 const { uploadStudentDocument, studentDocumentMimeGuard, STUDENT_DOCS_DIR } = require('../../middleware/upload');
+const r2Service = require('../../services/r2Service');
 const studentReportService = require('../../services/studentReport');
 const { sendPdf, sendCsv } = require('../../utils/reportGenerator');
 const { buildStudentTimeline } = require('../../utils/studentTimeline');
@@ -264,15 +264,15 @@ router.post('/students/:id/notes', requirePermission('students:notes'), (req, re
 });
 
 // Upload a document for a student (ID proof, certificate, etc.)
-router.post('/students/:id/documents', requirePermission('students:edit'), uploadStudentDocument.single('document'), studentDocumentMimeGuard, (req, res) => {
+router.post('/students/:id/documents', requirePermission('students:edit'), uploadStudentDocument.single('document'), studentDocumentMimeGuard, async (req, res) => {
     try {
         const student = db.findById('users', req.params.id);
         if (!student) {
-            if (req.file) cleanupFile(req.file.path);
+            if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
         if (!isClassAllowedForUser(req.userData, student.classId)) {
-            if (req.file) cleanupFile(req.file.path);
+            if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
             return res.status(403).json({ success: false, message: "You're not assigned to this student's class." });
         }
         if (!req.file) {
@@ -282,21 +282,26 @@ router.post('/students/:id/documents', requirePermission('students:edit'), uploa
             studentId: req.params.id,
             name: req.body.name || req.file.originalname,
             originalName: req.file.originalname,
-            filename: req.file.filename,
-            uploadedBy: req.user?.id || 'admin'
+            key: req.file.r2Key,
+            filename: req.file.filename, // display-only, derived from the R2 key
+            uploadedBy: req.user?.id || 'admin',
+            uploadedAt: new Date().toISOString()
         });
         logAudit(req, 'create', 'student', req.params.id, `Uploaded document "${saved.name}" for ${student.name}`);
         res.json({ success: true, data: saved, message: 'Document uploaded' });
     } catch (error) {
-        if (req.file) cleanupFile(req.file.path);
+        if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
     }
 });
 
 // Download a student's document — the ONLY way to read the file back;
-// it is never reachable via a public static path.
-router.get('/students/:id/documents/:docId/download', requirePermission('students:view'), (req, res) => {
+// it is never reachable via a public static path. Streamed straight from
+// R2 through this authenticated route, so R2's bucket never needs to be
+// public. Falls back to local disk only for a PRE-MIGRATION record that
+// has no `key` yet (see migration guidance).
+router.get('/students/:id/documents/:docId/download', requirePermission('students:view'), async (req, res) => {
     try {
         const doc = db.findById('student-documents', req.params.docId);
         if (!doc || doc.studentId !== req.params.id) {
@@ -306,6 +311,10 @@ router.get('/students/:id/documents/:docId/download', requirePermission('student
         if (docStudent && !isClassAllowedForUser(req.userData, docStudent.classId)) {
             return res.status(403).json({ success: false, message: "You're not assigned to this student's class." });
         }
+        if (doc.key) {
+            return r2Service.streamToResponse(doc.key, res, { downloadName: doc.originalName });
+        }
+        // Legacy record (uploaded before the R2 migration) — no key on file.
         const filePath = path.join(STUDENT_DOCS_DIR, doc.filename);
         res.download(filePath, doc.originalName);
     } catch (error) {
@@ -315,7 +324,7 @@ router.get('/students/:id/documents/:docId/download', requirePermission('student
 });
 
 // Delete a student's document
-router.delete('/students/:id/documents/:docId', requirePermission('students:edit'), (req, res) => {
+router.delete('/students/:id/documents/:docId', requirePermission('students:edit'), async (req, res) => {
     try {
         const doc = db.findById('student-documents', req.params.docId);
         if (!doc || doc.studentId !== req.params.id) {
@@ -325,7 +334,13 @@ router.delete('/students/:id/documents/:docId', requirePermission('students:edit
         if (docStudent && !isClassAllowedForUser(req.userData, docStudent.classId)) {
             return res.status(403).json({ success: false, message: "You're not assigned to this student's class." });
         }
-        cleanupFile(path.join(STUDENT_DOCS_DIR, doc.filename));
+        if (doc.key) {
+            await r2Service.deleteObject(doc.key);
+        } else {
+            // Legacy local file (pre-migration record)
+            const fs = require('fs');
+            try { fs.unlinkSync(path.join(STUDENT_DOCS_DIR, doc.filename)); } catch (_) {}
+        }
         db.deleteById('student-documents', req.params.docId);
         logAudit(req, 'delete', 'student', req.params.id, `Deleted document "${doc.name}"`);
         res.json({ success: true, message: 'Document deleted' });

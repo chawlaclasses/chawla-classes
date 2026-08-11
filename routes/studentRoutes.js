@@ -4,10 +4,10 @@ const { requireApiStudent } = require('../middleware/apiAuth');
 const db = require('../services/jsonDb');
 const logger = require('../utils/logger');
 const path = require('path');
-const { uploadHomeworkSubmission, homeworkMimeGuard, HOMEWORK_SUBMISSIONS_DIR, uploadDoubtAttachment, doubtMimeGuard, DOUBTS_DIR } = require('../middleware/upload');
+const { uploadHomeworkSubmission, homeworkSubmissionMimeGuard, HOMEWORK_SUBMISSIONS_DIR, uploadDoubtAttachment, doubtMimeGuard, DOUBTS_DIR } = require('../middleware/upload');
+const r2Service = require('../services/r2Service');
 const { streamFeeReceipt } = require('../utils/feeReceipt');
 const { feeWithComputed } = require('../services/feeCalc');
-const { cleanupFile } = require('../utils/helpers');
 
 const gamificationService = require('../services/gamification');
 const aiController = require('../controllers/student/aiController');
@@ -1270,12 +1270,12 @@ router.get('/homework/:id', requireApiStudent, (req, res) => {
 
 // Upload/replace a submission — blocked once the submission has been graded,
 // so a student can't quietly swap files out from under a marked grade.
-router.post('/homework/:id/submit', uploadHomeworkSubmission.single('file'), homeworkMimeGuard, requireApiStudent, (req, res) => {
+router.post('/homework/:id/submit', uploadHomeworkSubmission.single('file'), homeworkSubmissionMimeGuard, requireApiStudent, async (req, res) => {
     try {
         const student = req.userData;
         const homework = db.findById('homework', req.params.id);
         if (!homework || homework.classId !== student.classId || !homework.isPublished || !homework.isActive) {
-            if (req.file) cleanupFile(req.file.path);
+            if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
             return res.status(404).json({ success: false, message: 'Homework not found' });
         }
         if (!req.file) {
@@ -1284,7 +1284,7 @@ router.post('/homework/:id/submit', uploadHomeworkSubmission.single('file'), hom
 
         const existing = db.findOne('homeworkSubmissions', { homeworkId: homework._id, studentId: student._id });
         if (existing && existing.status === 'graded') {
-            cleanupFile(req.file.path);
+            await r2Service.deleteObject(req.file.r2Key);
             return res.status(400).json({ success: false, message: 'This submission has already been graded and can no longer be replaced' });
         }
 
@@ -1292,9 +1292,15 @@ router.post('/homework/:id/submit', uploadHomeworkSubmission.single('file'), hom
 
         let saved;
         if (existing) {
-            // Replacing an ungraded submission — remove the old file first.
-            cleanupFile(path.join(HOMEWORK_SUBMISSIONS_DIR, existing.filename));
+            // Replacing an ungraded submission — remove the old R2 object first
+            // (or the old local file, for a pre-migration record).
+            if (existing.key) {
+                await r2Service.deleteObject(existing.key);
+            } else if (existing.filename) {
+                try { require('fs').unlinkSync(path.join(HOMEWORK_SUBMISSIONS_DIR, existing.filename)); } catch (_) {}
+            }
             saved = db.findByIdAndUpdate('homeworkSubmissions', existing._id, {
+                key: req.file.r2Key,
                 filename: req.file.filename,
                 originalName: req.file.originalname,
                 submittedAt: new Date().toISOString(),
@@ -1305,6 +1311,7 @@ router.post('/homework/:id/submit', uploadHomeworkSubmission.single('file'), hom
             saved = db.insertOne('homeworkSubmissions', {
                 homeworkId: homework._id,
                 studentId: student._id,
+                key: req.file.r2Key,
                 filename: req.file.filename,
                 originalName: req.file.originalname,
                 submittedAt: new Date().toISOString(),
@@ -1319,7 +1326,7 @@ router.post('/homework/:id/submit', uploadHomeworkSubmission.single('file'), hom
 
         res.json({ success: true, data: saved, message: isLate ? 'Submitted (after the due date)' : 'Submitted successfully' });
     } catch (error) {
-        if (req.file) cleanupFile(req.file.path);
+        if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
     }
@@ -1350,12 +1357,15 @@ router.get('/homework/submissions/history', requireApiStudent, (req, res) => {
 });
 
 // Download the student's own previously submitted file
-router.get('/homework/submissions/:submissionId/download', requireApiStudent, (req, res) => {
+router.get('/homework/submissions/:submissionId/download', requireApiStudent, async (req, res) => {
     try {
         const student = req.userData;
         const submission = db.findById('homeworkSubmissions', req.params.submissionId);
         if (!submission || submission.studentId !== student._id) {
             return res.status(404).json({ success: false, message: 'Submission not found' });
+        }
+        if (submission.key) {
+            return r2Service.streamToResponse(submission.key, res, { downloadName: submission.originalName });
         }
         const filePath = path.join(HOMEWORK_SUBMISSIONS_DIR, submission.filename);
         res.download(filePath, submission.originalName);
@@ -1374,14 +1384,16 @@ router.post('/doubts',
     uploadDoubtAttachment.fields([{ name: 'image', maxCount: 1 }, { name: 'voiceNote', maxCount: 1 }]),
     doubtMimeGuard,
     requireApiStudent,
-    (req, res) => {
+    async (req, res) => {
         try {
             const student = req.userData;
             const { questionText, subjectId } = req.body;
             const files = req.files || {};
 
             if (!questionText || !questionText.trim()) {
-                for (const list of Object.values(files)) { for (const f of list) cleanupFile(f.path); }
+                for (const list of Object.values(files)) {
+                    for (const f of list) { if (f.r2Key) await r2Service.deleteObject(f.r2Key); }
+                }
                 return res.status(400).json({ success: false, message: 'Please describe your doubt' });
             }
 
@@ -1393,8 +1405,10 @@ router.post('/doubts',
                 classId: student.classId || null,
                 subjectId: subjectId || null,
                 questionText: questionText.trim(),
+                imageKey: image ? image.r2Key : null,
                 imageFilename: image ? image.filename : null,
                 imageOriginalName: image ? image.originalname : null,
+                voiceNoteKey: voiceNote ? voiceNote.r2Key : null,
                 voiceNoteFilename: voiceNote ? voiceNote.filename : null,
                 voiceNoteOriginalName: voiceNote ? voiceNote.originalname : null,
                 status: 'open',
@@ -1440,20 +1454,26 @@ router.get('/doubts/:id', requireApiStudent, (req, res) => {
 });
 
 // Stream the student's own doubt image/voice note
-router.get('/doubts/:id/image', requireApiStudent, (req, res) => {
+router.get('/doubts/:id/image', requireApiStudent, async (req, res) => {
     const student = req.userData;
     const doubt = db.findById('doubts', req.params.id);
-    if (!doubt || doubt.studentId !== student._id || !doubt.imageFilename) {
+    if (!doubt || doubt.studentId !== student._id || (!doubt.imageKey && !doubt.imageFilename)) {
         return res.status(404).json({ success: false, message: 'Not found' });
+    }
+    if (doubt.imageKey) {
+        return r2Service.streamToResponse(doubt.imageKey, res, { inline: true });
     }
     res.sendFile(path.join(DOUBTS_DIR, doubt.imageFilename));
 });
 
-router.get('/doubts/:id/voice', requireApiStudent, (req, res) => {
+router.get('/doubts/:id/voice', requireApiStudent, async (req, res) => {
     const student = req.userData;
     const doubt = db.findById('doubts', req.params.id);
-    if (!doubt || doubt.studentId !== student._id || !doubt.voiceNoteFilename) {
+    if (!doubt || doubt.studentId !== student._id || (!doubt.voiceNoteKey && !doubt.voiceNoteFilename)) {
         return res.status(404).json({ success: false, message: 'Not found' });
+    }
+    if (doubt.voiceNoteKey) {
+        return r2Service.streamToResponse(doubt.voiceNoteKey, res, { inline: true });
     }
     res.sendFile(path.join(DOUBTS_DIR, doubt.voiceNoteFilename));
 });

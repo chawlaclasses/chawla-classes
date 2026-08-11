@@ -1,3 +1,4 @@
+require('dotenv').config();
 const db = require('../services/jsonDb');
 
 function assignStudentClass() {
@@ -31,4 +32,10 @@ function assignStudentClass() {
     console.log(`   Class ID: ${classData._id}`);
 }
 
-assignStudentClass();
+// FIX (jsonDb -> MongoDB migration): see scripts/create-admin.js for why
+// db.connect() must be awaited before this runs, and db.close() at the end
+// so the script actually exits.
+db.connect()
+  .then(() => assignStudentClass())
+  .catch(console.error)
+  .finally(() => db.close());

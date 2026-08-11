@@ -43,6 +43,7 @@ const {
 
 const { globalErrorHandler, notFoundHandler } = require("./middleware/errors");
 const logger = require("./utils/logger");
+const healthRoutes = require("./routes/health");
 // NEW (Phase 2): fallback secret for the new session middleware below. Using
 // the resolved JWT_SECRET export (env var -> persisted random 32-byte
 // secret file -> auto-generate + persist, see services/auth.js) rather
@@ -99,6 +100,8 @@ const importRoutes = require("./routes/import");
 const notificationsRoutes = require("./routes/notifications");
 const recruitmentPublicRoutes = require("./routes/recruitment");
 const publicEnquiryRoutes = require("./routes/publicEnquiry");
+const marketingPublicRoutes = require("./routes/marketing");
+const reviewsPublicRoutes = require("./routes/reviews");
 const bookmarksRoutes = require("./routes/bookmarks");
 const practiceRoutes = require("./routes/practice");
 const achievementsRoutes = require("./routes/achievements");
@@ -119,7 +122,7 @@ for (const dir of [DATA_DIR, NOTES_DIR, UPLOADS_DIR, HOMEWORK_DIR, HOMEWORK_SUBM
 
 function createApp() {
   const app = express();
-
+app.set('trust proxy', 1);
   if (process.env.TRUST_PROXY !== undefined) {
     const val = process.env.TRUST_PROXY;
     app.set("trust proxy", val === "0" ? 0 : Number(val) || val);
@@ -168,6 +171,12 @@ function createApp() {
       crossOriginResourcePolicy: { policy: "cross-origin" },
     })
   );
+
+  // ── Health check (NEW, production hardening 2026-08) ──────────────────────
+  // Registered this early, right after helmet, so it stays reachable even
+  // if something later in the chain (Sentry, session, CSRF) has a problem.
+  // See routes/health.js for the route itself.
+  app.use(healthRoutes);
 
   // ── Sentry request/tracing handlers (NEW, Phase 2) ────────────────────────
   // Must be registered early — before routes, right after helmet — so Sentry
@@ -428,6 +437,13 @@ function createApp() {
   // Public — no auth. The marketing site's "Quick Enquiry" form. Writes
   // into the same 'enquiries' collection the admin panel manages.
   app.use("/api/enquiry", publicEnquiryRoutes);
+  // Public — no auth, read-only. Active promo banners for index.html's
+  // promo bar / offers section. Admin CRUD is separate (/api/admin/marketing).
+  app.use("/api/marketing", marketingPublicRoutes);
+  // Public — no auth. index.html's "Student Feedback & Rating" form
+  // (submission) + the "Student Reviews" section (approved-only read).
+  // Admin moderation is separate (/api/admin/reviews).
+  app.use("/api/reviews", reviewsPublicRoutes);
   app.use("/api/bookmarks", bookmarksRoutes);
   app.use("/api/practice", practiceRoutes);
   app.use("/api/achievements", achievementsRoutes);

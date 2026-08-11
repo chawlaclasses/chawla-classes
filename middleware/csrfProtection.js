@@ -69,11 +69,12 @@ const CSRF_ENFORCE = process.env.CSRF_ENFORCE === 'true';
 
 // Real public, unauthenticated write endpoints — enumerated by reading
 // app.js's actual route mounts (not guessed): admin/student login (no
-// token exists yet at login time), the public enquiry form, and the
+// token exists yet at login time), the public enquiry form, the
 // careers/faculty application form (multipart upload — req.body isn't
 // even JSON-parsed for this one by the time this middleware runs, so a
-// token couldn't be read out of it reliably anyway). Each already has its
-// own rate limiting (authRateLimiter / createSubmissionRateLimiter) at the
+// token couldn't be read out of it reliably anyway), and the public
+// review-submission form (routes/reviews.js). Each already has its own
+// rate limiting (authRateLimiter / createSubmissionRateLimiter) at the
 // route level — this allowlist only removes the CSRF check, nothing else.
 const PUBLIC_UNAUTHENTICATED_WRITE_PATHS = [
   '/api/admin/login',
@@ -81,6 +82,7 @@ const PUBLIC_UNAUTHENTICATED_WRITE_PATHS = [
   '/api/enquiry',
   '/api/enquiry/admission',
   '/api/careers/apply',
+  '/api/reviews',
 ];
 
 function isPublicUnauthenticatedWrite(req) {

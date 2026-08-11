@@ -1,36 +1,201 @@
-const fs = require('fs');
-const path = require('path');
-// FIX (code quality audit): jsonDb.js was the one file in the project still
-// using raw console.log/console.error instead of the shared winston logger
-// every other service uses — switching so its output goes through the same
-// log levels/transports/log file as the rest of the app.
+const { MongoClient } = require('mongodb');
 const logger = require('../utils/logger');
 const { generateUUID } = require('../utils/helpers');
 
+// ============================================================================
+// MIGRATION NOTE (jsonDb -> MongoDB)
+// ============================================================================
+// This file used to read/write Data/*.json on disk directly. It's kept named
+// `jsonDb.js` (and still exported as a singleton with the exact same method
+// names) on purpose: 76 files across controllers/, routes/, services/,
+// middleware/, and scripts/ do `const db = require('./jsonDb')` and then
+// call db.find/findOne/findById/insert/updateById/... *synchronously*
+// (most call sites don't `await` these calls at all). Rewriting every one
+// of those ~700 call sites to be fully async against MongoDB directly would
+// have been a much larger, riskier change.
+//
+// Instead, MongoDB is now the actual persistent store, but this class keeps
+// an in-memory mirror of every collection (this.collections) plus the same
+// _id -> doc Map index it already had. All READ methods (find, findOne,
+// findById, findAll, countDocuments, populate, matchesQuery, getStats) are
+// completely unchanged — they still run synchronously against that
+// in-memory mirror, so every existing caller keeps working with zero edits.
+//
+// All WRITE methods (insertOne, insertMany, updateById, updateOne,
+// findByIdAndUpdate, deleteById, deleteOne, findByIdAndDelete,
+// saveCollection) still apply the change to the in-memory mirror
+// immediately (so a read that happens right after a write — even without
+// awaiting it — sees the new state, exactly like before), and *also* queue
+// the equivalent operation against MongoDB, chained per-collection so
+// writes to the same collection can never land out of order (this reuses
+// the same _saveQueue pattern the old file-based version used for the same
+// reason).
+//
+// The one real behavior change: connect() is async (has to be — it opens a
+// real network connection to MongoDB), so it must be awaited once at boot,
+// before the app starts accepting requests. See server.js.
+// ============================================================================
+
 class JsonDB {
   constructor() {
-    // FIX: was '../data' (lowercase) — the real seeded database lives in
-    // '../Data' (capital D). See config/index.js for the full explanation;
-    // this hardcoded path needs the same fix since it doesn't read DATA_DIR
-    // from config at all.
-    this.dataDir = path.join(__dirname, '../Data');
     this.collections = {};
     // PERF: id -> document index per collection, keyed by `_id`, so
     // findById() (called on ~every authenticated request via
     // middleware/apiAuth.js) is an O(1) Map lookup instead of an O(n) array
     // scan. Rebuilt on load, kept in sync incrementally on every
-    // insert/update/delete below. Purely additive — does not change what
-    // any method returns, only how fast it finds it.
+    // insert/update/delete below. Unchanged from the jsonDb-file version.
     this._idIndex = {};
-    // PERF: per-collection queue of pending async writes, so saveCollection()
-    // no longer blocks the event loop with a synchronous fs.writeFileSync of
-    // the entire collection on every single insert/update/delete. Writes to
-    // the same collection are still applied strictly in call order (chained
-    // promises), so on-disk state never goes out of order; writes to
-    // *different* collections proceed independently/in parallel.
+    // Per-collection queue of pending async MongoDB writes, so a write
+    // never overtakes an earlier still-in-flight write to the *same*
+    // collection. Writes to different collections still run concurrently.
+    // (Same role _saveQueue played when writes went to Data/*.json.)
     this._saveQueue = {};
-    this.ensureDataDirectory();
-    this.loadAllCollections();
+
+    this.client = null;
+    this.db = null;
+    this._ready = null;
+
+    // FIX (audit 2026-08): connection state was never tracked after the
+    // initial connect() — the driver reconnects to a healthy replica-set/
+    // Atlas member on its own (that's built into the MongoDB Node driver's
+    // connection pool + server monitoring; there was never a missing
+    // "reconnect loop" to write), but nothing surfaced whether it currently
+    // WAS connected, or logged when it dropped/came back. _connected +
+    // the event wiring in _doConnect() below close that visibility gap;
+    // see getStatus() and GET /health in app.js.
+    this._connected = false;
+    // Count of writes currently queued/in-flight against MongoDB (see
+    // _queueWrite below) — also exposed via getStatus() / GET /health, and
+    // groundwork for graceful shutdown (draining this to 0 before exit).
+    this._pendingWrites = 0;
+  }
+
+  // Opens the MongoDB connection and hydrates the in-memory cache from it.
+  // Must be awaited once at boot (see server.js) before the app starts
+  // accepting requests — every read method below assumes this.collections
+  // is already populated. Safe to call more than once; subsequent calls
+  // just return the same in-flight/completed connection promise.
+  connect() {
+    if (!this._ready) {
+      this._ready = this._doConnect();
+    }
+    return this._ready;
+  }
+
+  async _doConnect() {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('MONGODB_URI is not set. See .env.example.');
+    }
+
+    this.client = new MongoClient(uri, {
+      // Fail fast instead of hanging silently if the Atlas/hosted URI is
+      // wrong or unreachable at boot.
+      serverSelectionTimeoutMS: 10000,
+    });
+
+    // FIX (audit 2026-08 — Mongo reconnect/status): the driver's own SDAM
+    // (Server Discovery and Monitoring) heartbeats already detect a lost
+    // connection and re-establish it against a healthy topology member
+    // with zero code from us — that part was never actually broken. What
+    // was missing was surfacing that as a state anyone could check
+    // (getStatus() / GET /health) and logging the transitions instead of
+    // failing silently mid-flight. Listeners are attached before connect()
+    // so we don't miss a heartbeat failure that happens during the very
+    // first connection attempt.
+    this.client.on('serverHeartbeatSucceeded', () => {
+      if (!this._connected) {
+        this._connected = true;
+        logger.info('✅ MongoDB connection (re)established');
+      }
+    });
+    this.client.on('serverHeartbeatFailed', (event) => {
+      if (this._connected) {
+        this._connected = false;
+        const reason = event && event.failure ? event.failure.message : 'unknown error';
+        logger.error(`❌ MongoDB heartbeat failed — connection lost: ${reason}`);
+      }
+    });
+    this.client.on('close', () => {
+      if (this._connected) {
+        this._connected = false;
+        logger.warn('⚠️  MongoDB client connection closed');
+      }
+    });
+
+    await this.client.connect();
+    this._connected = true;
+    this.db = this.client.db(process.env.MONGODB_DB_NAME || undefined);
+
+    await this._loadAllCollections();
+    logger.info('✅ Connected to MongoDB and hydrated in-memory cache');
+  }
+
+  // Snapshot of connection + write-queue health, consumed by GET /health
+  // (app.js). Safe to call before connect() finishes — reports the
+  // not-yet-connected state truthfully rather than throwing.
+  getStatus() {
+    return {
+      connected: this._connected === true,
+      pendingWrites: this._pendingWrites || 0,
+    };
+  }
+
+  // FIX (audit 2026-08, issues #1/#2): collections whose name starts with
+  // "_" are reserved for this app's own internal bookkeeping (backup
+  // snapshots, backup metadata, restore staging — see
+  // services/mongoBackup.js) and must never be pulled into the in-memory
+  // mirror: (a) nothing in the other ~700 call sites expects them there,
+  // and (b) backups accumulate over time, so loading every historical
+  // snapshot into RAM on every boot would grow unbounded. Real
+  // application collections never start with "_", so this is a safe,
+  // simple convention rather than a hardcoded exclusion list.
+  _isInternalCollectionName(name) {
+    return name.startsWith('_');
+  }
+
+  // Names of "real" application collections (excludes this app's own
+  // internal backup/restore/meta collections — see
+  // _isInternalCollectionName). Used by services/mongoBackup.js so both
+  // the in-memory loader and the backup system agree on what counts as
+  // "every collection" without duplicating the exclusion rule in two
+  // places.
+  async listRealCollectionNames() {
+    const collInfos = await this.db.listCollections().toArray();
+    return collInfos
+      .map(c => c.name)
+      .filter(name => !this._isInternalCollectionName(name));
+  }
+
+  async _loadAllCollections() {
+    const collInfos = await this.db.listCollections().toArray();
+    for (const { name } of collInfos) {
+      if (this._isInternalCollectionName(name)) continue;
+      const docs = await this.db.collection(name).find({}).toArray();
+      this.collections[name] = docs;
+      this._buildIndex(name);
+      logger.info(`✅ Loaded ${name}: ${docs.length} records`);
+    }
+  }
+
+  // Re-hydrates specific collections' in-memory mirror from MongoDB
+  // without a full restart. NEW (audit 2026-08, issue #1): a restore used
+  // to require "restart the server to load the restored data" — this
+  // makes a restore actually take effect immediately. Safe to call at
+  // any time; a collection not yet known locally is picked up too (same
+  // as _loadAllCollections would on boot).
+  async reloadCollections(names) {
+    for (const name of names) {
+      if (this._isInternalCollectionName(name)) continue;
+      const docs = await this.db.collection(name).find({}).toArray();
+      this.collections[name] = docs;
+      this._buildIndex(name);
+      logger.info(`🔄 Reloaded ${name}: ${docs.length} records`);
+    }
+  }
+
+  async close() {
+    if (this.client) await this.client.close();
   }
 
   _buildIndex(collectionName) {
@@ -41,90 +206,93 @@ class JsonDB {
     this._idIndex[collectionName] = map;
   }
 
-  ensureDataDirectory() {
-    if (!fs.existsSync(this.dataDir)) {
-      fs.mkdirSync(this.dataDir, { recursive: true });
-      logger.info('📁 Created data directory');
+  _ensureCollection(collectionName) {
+    if (!this.collections[collectionName]) {
+      this.collections[collectionName] = [];
+      this._buildIndex(collectionName);
     }
   }
 
-  loadAllCollections() {
-    const files = fs.readdirSync(this.dataDir);
-    files.forEach(file => {
-      if (file.endsWith('.json')) {
-        const collectionName = path.basename(file, '.json');
-        const filePath = path.join(this.dataDir, file);
-        try {
-          const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-          this.collections[collectionName] = data;
-          this._buildIndex(collectionName);
-          logger.info(`✅ Loaded ${collectionName}: ${data.length} records`);
-        } catch (error) {
-          logger.error(`❌ Error loading ${file}: ${error.message}`);
-          this.collections[collectionName] = [];
-          this._buildIndex(collectionName);
-          this.saveCollection(collectionName);
-        }
-      }
-    });
-  }
-
-  // PERF: previously fs.writeFileSync'd the WHOLE collection on every call,
-  // synchronously, on the request-handling thread — meaning e.g. saving one
-  // updated question blocked every other in-flight request (auth, results,
-  // dashboards, everything) until the entire questions.json file finished
-  // writing to disk. Now: the JSON payload is still serialized synchronously
-  // right here (so it captures the exact in-memory state at call time, same
-  // as before), but the actual disk write happens async and is queued behind
-  // any earlier still-in-flight write for the *same* collection, so writes
-  // to one collection can never land out of order or interleave/corrupt each
-  // other. Writes to different collections still run concurrently. Callers
-  // never read this collection back from disk (they always read
-  // this.collections in memory), so none of them can observe the write
-  // still being in flight — behaviorally identical, just non-blocking.
-  saveCollection(collectionName) {
-    const filePath = path.join(this.dataDir, `${collectionName}.json`);
-    const payload = JSON.stringify(this.collections[collectionName] || [], null, 2);
+  // Chains `opFn` (a function returning a Mongo Promise) behind any
+  // still-in-flight write to the same collection, so writes to one
+  // collection can never land out of order/interleave. A prior failed
+  // write must not permanently jam the queue for later writes, so errors
+  // are swallowed here (and logged) rather than propagated — matches the
+  // old fire-and-forget saveCollection() semantics: the in-memory state
+  // (already updated by the caller before this is invoked) is the source
+  // of truth for the rest of the running process either way.
+  _queueWrite(collectionName, opFn) {
     const previous = this._saveQueue[collectionName] || Promise.resolve();
+    this._pendingWrites += 1;
     const next = previous
-      .catch(() => {}) // a prior failed write must not permanently jam this collection's queue
-      .then(() => this._writeFileAtomic(filePath, payload))
+      .catch(() => {})
+      .then(opFn)
       .catch(error => {
-        logger.error(`❌ Error saving ${collectionName}: ${error.message}`);
+        logger.error(`❌ Error saving ${collectionName} to MongoDB: ${error.message}`);
+      })
+      .finally(() => {
+        this._pendingWrites = Math.max(0, this._pendingWrites - 1);
       });
     this._saveQueue[collectionName] = next;
+    return next;
+  }
+
+  // Filter that matches how updateById/deleteById below look a doc up
+  // in-memory: by `_id` OR by a self-assigned `id` field, since not every
+  // collection's documents use the auto-generated `_id` as their logical
+  // key (see updateById for the full explanation).
+  _idOrIdFilter(id) {
+    return { $or: [{ _id: id }, { id }] };
+  }
+
+  // Full resync of one collection from the in-memory mirror to MongoDB.
+  // Kept for the handful of call sites (e.g.
+  // routes/admin/question-bank.js bulk-edit/bulk-delete) that mutate
+  // db.collections[name] directly and then call this instead of going
+  // through insert/update/delete — same role it played when this wrote
+  // the whole Data/<name>.json file in one shot.
+  //
+  // FIX (audit 2026-08, issue #2): the deleteMany-then-insertMany below
+  // used to run as two independent operations. If the process crashed or
+  // lost its Mongo connection between them, the collection was left
+  // empty on MongoDB (the in-memory mirror is unaffected either way,
+  // since it was already updated by the caller before this runs — see
+  // _queueWrite's comment — but the next boot's _loadAllCollections()
+  // would hydrate from that now-empty Mongo collection and silently lose
+  // every document in it). Both operations now run inside a single
+  // MongoDB session/transaction: either both apply or neither does. Note
+  // this requires MongoDB to be a replica set (Atlas always is; a bare
+  // standalone local mongod is not — transactions error clearly in that
+  // case rather than silently behaving non-atomically, which is the
+  // correct failure mode here). Kept inside the existing _queueWrite
+  // chain unchanged — still fire-and-forget from the caller's
+  // perspective, still ordered per-collection, still logs (not throws)
+  // on failure, exactly like every other write method here.
+  saveCollection(collectionName) {
+    this._ensureCollection(collectionName);
+    const snapshot = this.collections[collectionName].map(doc => ({ ...doc }));
+    this._queueWrite(collectionName, async () => {
+      const coll = this.db.collection(collectionName);
+      const session = this.client.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await coll.deleteMany({}, { session });
+          if (snapshot.length) await coll.insertMany(snapshot, { ordered: true, session });
+        });
+      } finally {
+        await session.endSession();
+      }
+    });
     return true;
   }
 
-  // Write to a temp file then rename, so a crash/restart mid-write can never
-  // leave a collection file half-written/corrupted — the rename is atomic,
-  // so the file on disk is always either the old complete version or the
-  // new complete version, never a partial one.
-  async _writeFileAtomic(filePath, payload) {
-    const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-    await fs.promises.writeFile(tmpPath, payload, 'utf8');
-    await fs.promises.rename(tmpPath, filePath);
-  }
-
   generateId() {
-    // FIX (audit): was Date.now().toString(36) + Math.random().toString(36) —
-    // not collision-resistant and inconsistent with the rest of the app,
-    // which already depends on the uuid package and utils/helpers.js's own
-    // crypto-based generateUUID(). Verified no code anywhere parses/expects
-    // this ID's old format (length, base36 pattern, etc.), so this is a safe
-    // drop-in swap.
     return generateUUID();
   }
 
   // Find with query
-  // FIX: services/*.js (notifications, bookmarks, ai, practice) call this
-  // with a 3rd options argument like { sort: 'createdAt:desc', limit: 10 }
-  // expecting it to actually sort/paginate — previously this parameter
-  // didn't exist at all and was silently dropped. Still returns a plain
-  // array (not {data: [...]}) so every existing caller elsewhere in the
-  // app that already treats the result as an array keeps working.
   find(collectionName, query = {}, options = {}) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     const collection = this.collections[collectionName];
     let results = collection.filter(doc => this.matchesQuery(doc, query));
 
@@ -150,76 +318,64 @@ class JsonDB {
 
   // Find one
   findOne(collectionName, query = {}) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     const collection = this.collections[collectionName];
     return collection.find(doc => this.matchesQuery(doc, query)) || null;
   }
 
-  // Find by ID
-  // PERF: was a full array scan (collection.find(...)) on every call — this
-  // is the method middleware/apiAuth.js calls to look up the logged-in user
-  // on essentially every authenticated request, so it's the single hottest
-  // read path in the app. Now an O(1) Map lookup. Same return value
-  // (`doc` or `null`) as before.
+  // Find by ID — O(1) Map lookup via the in-memory index.
   findById(collectionName, id) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     if (!this._idIndex[collectionName]) this._buildIndex(collectionName);
     return this._idIndex[collectionName].get(id) || null;
   }
 
-  // FIX: `insert()` was called from 8 places across services/ (notifications,
-  // practice, bookmarks, gamification) but was never defined on this class —
-  // only insertOne/insertMany existed. Every call to db.insert(...) was
-  // throwing "db.insert is not a function" at runtime, breaking
-  // notification/bookmark/achievement/practice-session creation. Adding it
-  // as a plain alias for insertOne (same behavior those call-sites expect).
+  // Alias for insertOne — some services (notifications, practice,
+  // bookmarks, gamification) call db.insert(...) directly.
   insert(collectionName, data) {
     return this.insertOne(collectionName, data);
   }
 
   // Insert one
   insertOne(collectionName, data) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
-    const collection = this.collections[collectionName];
+    this._ensureCollection(collectionName);
     const newDoc = {
       _id: this.generateId(),
       ...data,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    collection.push(newDoc);
-    if (!this._idIndex[collectionName]) this._buildIndex(collectionName);
+    this.collections[collectionName].push(newDoc);
     this._idIndex[collectionName].set(newDoc._id, newDoc);
-    this.saveCollection(collectionName);
+    this._queueWrite(collectionName, () =>
+      this.db.collection(collectionName).insertOne({ ...newDoc })
+    );
     return newDoc;
   }
 
   // Insert many
   insertMany(collectionName, dataArray) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
-    const collection = this.collections[collectionName];
+    this._ensureCollection(collectionName);
     const newDocs = dataArray.map(data => ({
       _id: this.generateId(),
       ...data,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }));
-    collection.push(...newDocs);
-    if (!this._idIndex[collectionName]) this._buildIndex(collectionName);
+    this.collections[collectionName].push(...newDocs);
     for (const doc of newDocs) this._idIndex[collectionName].set(doc._id, doc);
-    this.saveCollection(collectionName);
+    this._queueWrite(collectionName, () =>
+      newDocs.length
+        ? this.db.collection(collectionName).insertMany(newDocs.map(d => ({ ...d })), { ordered: true })
+        : Promise.resolve()
+    );
     return newDocs;
   }
 
-  // FIX: `findAll`, `updateById`, and `deleteById` were called from many
-  // active, mounted routes (routes/students.js, routes/results.js,
-  // routes/questions.js, routes/notes.js, routes/pdf.js) and from the
-  // notifications/bookmarks/practice/gamification services, but none of
-  // these three methods were ever defined on this class — only find,
-  // insertOne, updateOne, findByIdAndUpdate, deleteOne, and
-  // findByIdAndDelete existed. Every call was throwing
-  // "db.<method> is not a function" at runtime.
-  //
+  findAll(collectionName, query = {}) {
+    return this.find(collectionName, query);
+  }
+
   // Note: some collections key their documents by the auto-generated `_id`
   // (e.g. students, users — via insertOne with no custom id), while others
   // self-assign a uuid into an `id` field (e.g. notifications, bookmarks,
@@ -228,13 +384,9 @@ class JsonDB {
   // `id === undefined` guard stops a bug elsewhere (someone accidentally
   // passing `doc.id` on a collection that only has `_id`) from silently
   // matching the wrong document.
-  findAll(collectionName, query = {}) {
-    return this.find(collectionName, query);
-  }
-
   updateById(collectionName, id, update, options = {}) {
     if (id === undefined || id === null) return null;
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     const collection = this.collections[collectionName];
     const index = collection.findIndex(doc => doc._id === id || doc.id === id);
     if (index === -1) return null;
@@ -249,26 +401,30 @@ class JsonDB {
       if (!this._idIndex[collectionName]) this._buildIndex(collectionName);
       this._idIndex[collectionName].set(updatedDoc._id, updatedDoc);
     }
-    this.saveCollection(collectionName);
+    this._queueWrite(collectionName, () =>
+      this.db.collection(collectionName).replaceOne(this._idOrIdFilter(id), { ...updatedDoc }, { upsert: true })
+    );
     return options.new !== false ? updatedDoc : collection[index];
   }
 
   deleteById(collectionName, id) {
     if (id === undefined || id === null) return { deletedCount: 0 };
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     const collection = this.collections[collectionName];
     const index = collection.findIndex(doc => doc._id === id || doc.id === id);
     if (index === -1) return { deletedCount: 0 };
 
     const [removed] = collection.splice(index, 1);
     if (removed && removed._id !== undefined) this._idIndex[collectionName]?.delete(removed._id);
-    this.saveCollection(collectionName);
+    this._queueWrite(collectionName, () =>
+      this.db.collection(collectionName).deleteOne(this._idOrIdFilter(id))
+    );
     return { deletedCount: 1 };
   }
 
   // Update one
   updateOne(collectionName, filter, update) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     const collection = this.collections[collectionName];
     const index = collection.findIndex(doc => this.matchesQuery(doc, filter));
     if (index === -1) return null;
@@ -283,13 +439,18 @@ class JsonDB {
       if (!this._idIndex[collectionName]) this._buildIndex(collectionName);
       this._idIndex[collectionName].set(updatedDoc._id, updatedDoc);
     }
-    this.saveCollection(collectionName);
+    const mongoFilter = updatedDoc._id !== undefined
+      ? { _id: updatedDoc._id }
+      : filter;
+    this._queueWrite(collectionName, () =>
+      this.db.collection(collectionName).replaceOne(mongoFilter, { ...updatedDoc }, { upsert: true })
+    );
     return updatedDoc;
   }
 
-  // Update by ID
+  // Update by ID (matches only `_id`, unlike updateById above)
   findByIdAndUpdate(collectionName, id, update, options = {}) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     const collection = this.collections[collectionName];
     const index = collection.findIndex(doc => doc._id === id);
     if (index === -1) return null;
@@ -304,40 +465,54 @@ class JsonDB {
       if (!this._idIndex[collectionName]) this._buildIndex(collectionName);
       this._idIndex[collectionName].set(updatedDoc._id, updatedDoc);
     }
-    this.saveCollection(collectionName);
+    this._queueWrite(collectionName, () =>
+      this.db.collection(collectionName).replaceOne({ _id: id }, { ...updatedDoc }, { upsert: true })
+    );
     return options.new !== false ? updatedDoc : collection[index];
   }
 
   // Delete one
   deleteOne(collectionName, filter) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     const collection = this.collections[collectionName];
     const index = collection.findIndex(doc => this.matchesQuery(doc, filter));
     if (index === -1) return { deletedCount: 0 };
-    
+
     const [removed] = collection.splice(index, 1);
     if (removed && removed._id !== undefined) this._idIndex[collectionName]?.delete(removed._id);
-    this.saveCollection(collectionName);
+    const mongoFilter = removed && removed._id !== undefined ? { _id: removed._id } : filter;
+    this._queueWrite(collectionName, () =>
+      this.db.collection(collectionName).deleteOne(mongoFilter)
+    );
     return { deletedCount: 1 };
   }
 
-  // Delete by ID
+  // Alias for deleteOne — controllers/authController.js calls db.delete(...)
+  // directly (this method never existed on the old jsonDb.js either; adding
+  // it here since it's a one-line fix and otherwise that call site throws).
+  delete(collectionName, filter) {
+    return this.deleteOne(collectionName, filter);
+  }
+
+  // Delete by ID (matches only `_id`, unlike deleteById above)
   findByIdAndDelete(collectionName, id) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     const collection = this.collections[collectionName];
     const index = collection.findIndex(doc => doc._id === id);
     if (index === -1) return null;
-    
+
     const deletedDoc = collection[index];
     collection.splice(index, 1);
     if (deletedDoc && deletedDoc._id !== undefined) this._idIndex[collectionName]?.delete(deletedDoc._id);
-    this.saveCollection(collectionName);
+    this._queueWrite(collectionName, () =>
+      this.db.collection(collectionName).deleteOne({ _id: id })
+    );
     return deletedDoc;
   }
 
   // Count documents
   countDocuments(collectionName, query = {}) {
-    if (!this.collections[collectionName]) this.collections[collectionName] = [];
+    this._ensureCollection(collectionName);
     const collection = this.collections[collectionName];
     if (Object.keys(query).length === 0) return collection.length;
     return this.find(collectionName, query).length;
@@ -348,7 +523,7 @@ class JsonDB {
     if (!doc) return null;
     const refId = doc[field];
     if (!refId) return doc;
-    
+
     let referenced = this.findById(refCollection, refId);
     if (select && referenced) {
       const selected = {};

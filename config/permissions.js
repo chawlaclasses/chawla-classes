@@ -78,6 +78,12 @@ const ROLE_PERMISSIONS = {
     // Candidate PII (resumes, contact info, salary expectations) — only
     // admin/super_admin, never teacher/reception/accountant.
     'recruitment:*',
+    // Promo banners on the public site + bulk promotional Email/WhatsApp/
+    // SMS campaigns to leads and students. Same trust level as
+    // 'communication:*' above — kept admin/super_admin only for now.
+    'marketing:*',
+    // Moderating what shows in the public "Student Reviews" section.
+    'reviews:*',
   ],
 
   // Runs classes and tests. No visibility into money or admissions
