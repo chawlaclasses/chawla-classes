@@ -25,14 +25,17 @@ const { PORT, validateConfig } = require("./config");
 const logger = require("./utils/logger");
 const settingsService = require("./services/settings");
 const { ensureAdminAccount } = require("./services/auth");
+
 const db = require("./services/jsonDb");
 const mongoBackup = require("./services/mongoBackup");
 const { createGracefulShutdown } = require("./utils/gracefulShutdown");
+
 
 // Fail fast on bad/missing critical configuration.
 validateConfig();
 
 const app = createApp();
+
 
 // Set once app.listen() below succeeds — needed by the SIGTERM/SIGINT
 // handlers further down, which must be registered up front (not nested
@@ -69,6 +72,20 @@ db.connect()
     logger.error(`❌ FATAL: could not connect to MongoDB: ${error.message}`, { stack: error.stack });
     process.exit(1);
   });
+
+// FIX (login self-heal): guarantees the ADMIN_EMAIL/ADMIN_PASSWORD account
+// exists, is unlocked, and is active on every boot — see
+// services/auth.js#ensureAdminAccount for the full reasoning. Runs before
+// the server starts accepting requests; any failure is logged but never
+// blocks startup (same behavior as before this existed, just self-healing
+// when it can).
+ensureAdminAccount().finally(() => {
+  app.listen(PORT, () => {
+    logger.info(`🚀 Server running on port ${PORT}`);
+    logger.info(`📍 http://localhost:${PORT}`);
+  });
+});
+
 
 // FIX: node-cron was already a listed dependency in package.json but was
 // never required or scheduled anywhere in the codebase — the "Backup

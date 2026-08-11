@@ -29,7 +29,9 @@
  * change the password immediately after logging in)
  */
 
+
 require('dotenv').config();
+
 const bcrypt = require('bcryptjs');
 const db = require('../services/jsonDb');
 const { BCRYPT_ROUNDS } = require('../config');
@@ -82,6 +84,7 @@ async function createAdmin() {
   console.log(`   ID: ${admin._id}`);
 }
 
+
 // FIX (jsonDb -> MongoDB migration): this script used to be able to read/
 // write the in-memory jsonDb singleton the instant it was require()'d,
 // since it hydrated itself synchronously from Data/*.json in its
@@ -96,3 +99,8 @@ db.connect()
     process.exitCode = 1;
   })
   .finally(() => db.close());
+
+createAdmin().catch((err) => {
+  console.error('❌ Failed:', err.message);
+  process.exit(1);
+});
