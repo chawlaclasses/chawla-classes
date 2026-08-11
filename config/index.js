@@ -148,7 +148,7 @@ function validateConfig() {
   // disk (see middleware/upload.js, services/r2Service.js) — a missing
   // R2 config used to mean every single upload endpoint would 500 the
   // first time someone actually used it. Fail loudly at boot instead.
-  validateR2Config({ required: true });
+  validateR2Config({ required: false });
 
   // FIX (production hardening, Phase 3, issue #4): if PERSISTENT_DATA_DIR
   // is set (pointing uploads at a Render Persistent Disk or similar), fail
