@@ -73,20 +73,6 @@ db.connect()
     process.exit(1);
   });
 
-// FIX (login self-heal): guarantees the ADMIN_EMAIL/ADMIN_PASSWORD account
-// exists, is unlocked, and is active on every boot — see
-// services/auth.js#ensureAdminAccount for the full reasoning. Runs before
-// the server starts accepting requests; any failure is logged but never
-// blocks startup (same behavior as before this existed, just self-healing
-// when it can).
-ensureAdminAccount().finally(() => {
-  app.listen(PORT, () => {
-    logger.info(`🚀 Server running on port ${PORT}`);
-    logger.info(`📍 http://localhost:${PORT}`);
-  });
-});
-
-
 // FIX: node-cron was already a listed dependency in package.json but was
 // never required or scheduled anywhere in the codebase — the "Backup
 // Settings" auto-backup toggle in the Settings module had nothing behind
