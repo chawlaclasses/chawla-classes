@@ -2075,26 +2075,134 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   white-space: nowrap;
 }
 
-.promo-homepage-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
+/* =====================
+   HOMEPAGE BANNER SLIDER (Swiper.js) — Admin -> Marketing -> Banners &
+   Offers ('homepage' placement). Replaces the old static promo-card grid.
+   Fixed height via clamp() (not just aspect-ratio) so the box is reserved
+   before Swiper/images finish loading — avoids layout shift either way.
+===================== */
+.banner-slider-wrap {
   margin: 0 0 14px;
+  position: relative;
 }
-.promo-card {
-  background: #fff;
-  border: 1px solid rgba(11,31,58,0.08);
-  border-left: 4px solid #f4b400;
+.bannerSwiper {
+  height: clamp(150px, 22vw, 240px);
   border-radius: 14px;
-  padding: 18px 20px;
-  box-shadow: 0 4px 18px rgba(11,31,58,0.08);
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(11, 31, 58, 0.12);
 }
-.promo-card h4 { color: var(--primary); margin-bottom: 6px; font-size: 16px; }
-.promo-card p { color: #555; font-size: 14px; line-height: 1.6; margin-bottom: 12px; }
-.promo-card img { width: 100%; border-radius: 8px; margin-bottom: 10px; display: block; }
-.promo-card .promo-cta { background: var(--primary); color: #fff; }
+.banner-slide {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  cursor: grab;
+}
+.banner-slide-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.banner-slide-text {
+  background: linear-gradient(135deg, #0b1f3a 0%, #143a6b 60%, #0b1f3a 100%);
+}
+.banner-slide-overlay {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(0deg, rgba(11, 31, 58, 0.88) 0%, rgba(11, 31, 58, 0.4) 55%, rgba(11, 31, 58, 0) 100%);
+  color: #fff;
+}
+.banner-slide-text .banner-slide-overlay {
+  background: none;
+  padding: 20px 26px;
+}
+.banner-slide-overlay h3 {
+  font-size: 19px;
+  line-height: 1.25;
+  margin-bottom: 6px;
+  color: #fff;
+}
+.banner-slide-overlay p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 560px;
+}
+.banner-slide-cta {
+  display: inline-block;
+  background: #f4b400;
+  color: #0b1f3a;
+  padding: 9px 22px;
+  border-radius: 24px;
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.banner-slide-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(244, 180, 0, 0.4);
+}
+
+/* Swiper chrome — gold/navy themed to match the rest of the site */
+.bannerSwiper .swiper-pagination-bullet {
+  background: #fff;
+  opacity: 0.55;
+  width: 8px;
+  height: 8px;
+  transition: width 0.2s ease, opacity 0.2s ease;
+}
+.bannerSwiper .swiper-pagination-bullet-active {
+  background: #f4b400;
+  opacity: 1;
+  width: 22px;
+  border-radius: 4px;
+}
+.bannerSwiper .swiper-button-next,
+.bannerSwiper .swiper-button-prev {
+  width: 36px;
+  height: 36px;
+  background: rgba(11, 31, 58, 0.55);
+  border-radius: 50%;
+  color: #fff;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.bannerSwiper .swiper-button-next:hover,
+.bannerSwiper .swiper-button-prev:hover {
+  background: #f4b400;
+  color: #0b1f3a;
+}
+.bannerSwiper .swiper-button-next::after,
+.bannerSwiper .swiper-button-prev::after {
+  font-size: 15px;
+  font-weight: 900;
+}
 
 @media screen and (max-width: 768px) {
   .promo-topbar { font-size: 12.5px; padding: 8px 14px; }
-  .promo-homepage-grid { grid-template-columns: 1fr; }
+  .bannerSwiper { height: clamp(130px, 40vw, 190px); border-radius: 10px; }
+  .banner-slide-overlay { padding: 12px 16px; }
+  .banner-slide-overlay h3 { font-size: 15.5px; }
+  .banner-slide-overlay p {
+    font-size: 12px;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .banner-slide-cta { padding: 7px 16px; font-size: 12px; }
+  .bannerSwiper .swiper-button-next,
+  .bannerSwiper .swiper-button-prev { width: 28px; height: 28px; }
+  .bannerSwiper .swiper-button-next::after,
+  .bannerSwiper .swiper-button-prev::after { font-size: 11px; }
 }

@@ -468,6 +468,13 @@ const validators = {
     body("priority").optional().isInt({ min: 0, max: 999 }).withMessage("Priority must be 0–999").toInt(),
     body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
   ],
+
+  reorderMarketingBanners: [
+    // No .isMongoId() — see note at the top of this file, these ids are
+    // generateUUID() strings, not real Mongo ObjectIds.
+    body("orderedIds").isArray({ min: 1 }).withMessage("orderedIds must be a non-empty array"),
+    body("orderedIds.*").isString().trim().notEmpty().withMessage("Each id must be a non-empty string"),
+  ],
 };
 
 // Exposed directly (not just wired into the .custom() chains above) so it

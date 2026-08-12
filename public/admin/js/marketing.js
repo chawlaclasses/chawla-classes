@@ -75,14 +75,19 @@ function renderBannersView() {
         ` : `
             <div class="table-container">
                 <table>
-                    <thead><tr><th>Title</th><th>Placement</th><th>Dates</th><th>Priority</th><th>Status</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Order</th><th>Title</th><th>Placement</th><th>Dates</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
-                        ${banners.map(b => `
+                        ${banners.map((b, idx) => `
                             <tr>
+                                <td style="white-space:nowrap;">
+                                    ${hasPermission('marketing:edit') ? `
+                                        <button class="btn btn-secondary btn-sm" onclick="moveBanner('${b._id}', -1)" ${idx === 0 ? 'disabled' : ''} title="Move up"><i class="fas fa-arrow-up"></i></button>
+                                        <button class="btn btn-secondary btn-sm" onclick="moveBanner('${b._id}', 1)" ${idx === banners.length - 1 ? 'disabled' : ''} title="Move down"><i class="fas fa-arrow-down"></i></button>
+                                    ` : `<span style="font-size:12px;color:var(--muted);">${idx + 1}</span>`}
+                                </td>
                                 <td><strong>${escapeHtml(b.title)}</strong><div style="font-size:11px;color:var(--muted);max-width:260px;">${escapeHtml((b.message || '').slice(0, 80))}${(b.message || '').length > 80 ? '…' : ''}</div></td>
                                 <td>${escapeHtml(PLACEMENT_LABELS[b.placement] || b.placement || '—')}</td>
                                 <td style="font-size:12px;">${b.startDate || '—'} ${b.endDate ? `→ ${b.endDate}` : ''}</td>
-                                <td>${b.priority ?? 0}</td>
                                 <td><span class="status-badge ${b.isActive ? 'status-active' : 'status-inactive'}">${b.isActive ? 'Active' : 'Inactive'}</span></td>
                                 <td style="white-space:nowrap;">
                                     ${hasPermission('marketing:edit') ? `
@@ -100,6 +105,27 @@ function renderBannersView() {
     `;
 }
 
+// Swap this banner with its neighbour and persist the new order. Banners
+// are already priority-sorted (server sorts by `priority` on load), so
+// swapping two adjacent array entries and re-sending the whole ID order is
+// enough — the reorder endpoint rewrites every banner's `priority` to its
+// index in that list.
+async function moveBanner(id, direction) {
+    const banners = (window._marketingBanners || []).slice();
+    const idx = banners.findIndex(x => x._id === id);
+    const newIdx = idx + direction;
+    if (idx === -1 || newIdx < 0 || newIdx >= banners.length) return;
+
+    [banners[idx], banners[newIdx]] = [banners[newIdx], banners[idx]];
+    const orderedIds = banners.map(b => b._id);
+
+    const result = await apiCall('/marketing/banners/reorder', { method: 'PUT', body: JSON.stringify({ orderedIds }) });
+    if (!result || !result.success) { showToast('Error', result?.message || 'Failed to reorder', 'error'); return; }
+
+    window._marketingBanners = banners.map((b, i) => ({ ...b, priority: i }));
+    renderBannersView();
+}
+
 function bannerFormFields(b = {}) {
     return `
         <div class="form-group"><label>Title *</label><input type="text" id="banTitle" value="${escapeHtml(b.title || '')}" placeholder="e.g. Admissions Open — 2027 Batch"></div>
@@ -115,15 +141,151 @@ function bannerFormFields(b = {}) {
         </div>
         <div class="form-row">
             <div class="form-group"><label>Button Text (optional)</label><input type="text" id="banCtaText" value="${escapeHtml(b.ctaText || '')}" placeholder="e.g. Enroll Now"></div>
-            <div class="form-group"><label>Button Link (optional)</label><input type="text" id="banCtaLink" value="${escapeHtml(b.ctaLink || '')}" placeholder="e.g. #admission"></div>
+            <div class="form-group"><label>Button Link (optional)</label><input type="text" id="banCtaLink" value="${escapeHtml(b.ctaLink || '')}" placeholder="e.g. /#admission or https://..."></div>
         </div>
-        <div class="form-group"><label>Image URL (optional)</label><input type="text" id="banImageUrl" value="${escapeHtml(b.imageUrl || '')}" placeholder="e.g. /images/offer.jpg"></div>
+        <div class="form-group">
+            <label>Banner Image (optional)</label>
+            <div id="banImagePreviewWrap" style="margin-bottom:8px;">${bannerImagePreviewHtml(b.imageUrl || '')}</div>
+            <input type="text" id="banImageUrl" value="${escapeHtml(b.imageUrl || '')}" placeholder="Paste an image URL, or upload a file below" onchange="handleBannerImageUrlChange()">
+            <input type="file" id="banImageFile" accept="image/png,image/jpeg,image/webp" onchange="handleBannerImageSelect(this)" style="margin-top:6px;">
+            <div id="banImageUploadProgressWrap" style="display:none;margin-top:6px;">
+                <div style="background:var(--border,#e5e7eb);border-radius:4px;height:6px;overflow:hidden;">
+                    <div id="banImageUploadProgressBar" style="background:var(--gold,#c9a227);height:100%;width:0%;transition:width .15s ease;"></div>
+                </div>
+                <span id="banImageUploadProgressText" style="font-size:11px;color:var(--muted);">0%</span>
+            </div>
+            <p style="font-size:11px;color:var(--muted);margin-top:4px;">JPG, PNG, or WEBP, up to 5MB — paste a URL above or upload a file. Leave empty and the slider shows a text-based banner design instead.</p>
+        </div>
         <div class="form-row">
             <div class="form-group"><label>Start Date (optional)</label><input type="date" id="banStartDate" value="${b.startDate || ''}"></div>
             <div class="form-group"><label>End Date (optional)</label><input type="date" id="banEndDate" value="${b.endDate || ''}"></div>
         </div>
         <p style="font-size:11px;color:var(--muted);">Leave dates blank to run indefinitely until you deactivate it.</p>
     `;
+}
+
+// Shared by the initial form render, a successful upload, a pasted-URL
+// change, and "Remove Image" — one place that decides what the preview
+// area shows. onerror on the <img> covers a pasted URL that doesn't
+// actually load (dead link, wrong domain, etc.) — swaps to a plain
+// message instead of showing a browser broken-image icon, and the Remove
+// button stays available either way so a bad URL is never a dead end.
+function bannerImagePreviewHtml(url) {
+    if (!url) return `<span style="font-size:12px;color:var(--muted);">No image — text-based banner design will be used</span>`;
+    return `
+        <img src="${escapeHtml(url)}" style="max-width:220px;max-height:110px;border-radius:8px;display:block;margin-bottom:6px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <span style="display:none;font-size:12px;color:#c0392b;margin-bottom:6px;">Couldn't load this image — check the URL or upload a file instead.</span>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="clearBannerImage()">Remove Image</button>
+    `;
+}
+
+// Client-side mirror of the backend's ALLOWED_BANNER_IMAGE_MIMES / 5MB
+// limit (routes/admin/marketing.js) — fails fast with a clear message
+// instead of waiting on a network round-trip only to get a 400 back.
+// The backend check is still the real guard; this is just a faster no.
+const BANNER_IMAGE_ALLOWED_MIMES = ['image/png', 'image/jpeg', 'image/webp'];
+const BANNER_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+// XHR (not fetch) specifically so we get real upload progress via
+// xhr.upload.onprogress — fetch has no stable, widely-supported way to
+// track upload (as opposed to download) progress.
+function uploadBannerImageFile(file, onProgress) {
+    return new Promise((resolve) => {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_BASE}/marketing/banners/upload-image`);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`); // no Content-Type — browser sets the multipart boundary
+
+        xhr.upload.onprogress = (e) => {
+            if (!e.lengthComputable || !onProgress) return;
+            onProgress(Math.round((e.loaded / e.total) * 100));
+        };
+
+        xhr.onload = () => {
+            if (xhr.status === 401) {
+                localStorage.removeItem('adminToken');
+                window.location.href = '/admin/login.html';
+                return resolve(null);
+            }
+            try {
+                resolve(JSON.parse(xhr.responseText));
+            } catch (error) {
+                console.error('Banner image upload error: bad response', error);
+                resolve(null);
+            }
+        };
+        xhr.onerror = () => {
+            console.error('Banner image upload error: network failure');
+            resolve(null);
+        };
+
+        xhr.send(formData);
+    });
+}
+
+function showBannerUploadProgress(show) {
+    const wrap = document.getElementById('banImageUploadProgressWrap');
+    if (!wrap) return;
+    wrap.style.display = show ? 'block' : 'none';
+    if (show) setBannerUploadProgress(0);
+}
+
+function setBannerUploadProgress(pct) {
+    const bar = document.getElementById('banImageUploadProgressBar');
+    const text = document.getElementById('banImageUploadProgressText');
+    if (bar) bar.style.width = pct + '%';
+    if (text) text.textContent = pct + '%';
+}
+
+async function handleBannerImageSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Fail fast on type/size before ever hitting the network — same
+    // limits the backend enforces (routes/admin/marketing.js).
+    if (!BANNER_IMAGE_ALLOWED_MIMES.includes(file.type)) {
+        showToast('Error', 'Only JPG, PNG, or WEBP images are allowed', 'error');
+        input.value = '';
+        return;
+    }
+    if (file.size > BANNER_IMAGE_MAX_BYTES) {
+        showToast('Error', 'Image is too large. Max size is 5MB.', 'error');
+        input.value = '';
+        return;
+    }
+
+    const previewWrap = document.getElementById('banImagePreviewWrap');
+    previewWrap.innerHTML = `<span style="font-size:12px;color:var(--muted);">Uploading…</span>`;
+    showBannerUploadProgress(true);
+
+    const result = await uploadBannerImageFile(file, setBannerUploadProgress);
+    input.value = ''; // allow re-selecting the same file later
+    showBannerUploadProgress(false);
+
+    if (!result || !result.success) {
+        showToast('Error', result?.message || 'Image upload failed', 'error');
+        previewWrap.innerHTML = bannerImagePreviewHtml(document.getElementById('banImageUrl').value);
+        return;
+    }
+
+    document.getElementById('banImageUrl').value = result.data.imageUrl;
+    previewWrap.innerHTML = bannerImagePreviewHtml(result.data.imageUrl);
+    showToast('Success', 'Image uploaded', 'success');
+}
+
+// Fires when the admin pastes/edits the URL field directly and clicks
+// away — refreshes the preview (and Remove button) to match, same as a
+// successful upload does.
+function handleBannerImageUrlChange() {
+    const url = document.getElementById('banImageUrl').value.trim();
+    document.getElementById('banImagePreviewWrap').innerHTML = bannerImagePreviewHtml(url);
+}
+
+function clearBannerImage() {
+    document.getElementById('banImageUrl').value = '';
+    document.getElementById('banImagePreviewWrap').innerHTML = bannerImagePreviewHtml('');
 }
 
 function readBannerForm() {

@@ -155,7 +155,7 @@ app.set('trust proxy', 1);
           scriptSrcAttr: ["'unsafe-inline'"],
           imgSrc: ["'self'", "data:", "blob:", "https:"],
           fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
-          connectSrc: ["'self'", "https://script.google.com", "https://script.googleusercontent.com"],
+          connectSrc: ["'self'", "https://script.google.com", "https://script.googleusercontent.com", "https://cdnjs.cloudflare.com"],
           frameSrc: ["'self'", "https://www.google.com", "https://maps.google.com"],
           // FIX (CSP tighten): these four directives weren't set before, so helmet
           // left them at CSP's permissive defaults. Verified safe to lock down:

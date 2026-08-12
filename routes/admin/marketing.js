@@ -16,10 +16,16 @@
  * Mounted at '/marketing' by routes/adminRoutes.js, under app.js's
  * '/api/admin' + requireApiAdmin. Campaign sending lives in the sibling
  * routes/admin/marketing-campaigns.js, mounted at '/marketing/campaigns'.
+ *
+ * Also here: POST /banners/upload-image (R2 image upload for the banner
+ * form — JPG/PNG/WEBP, 5MB max) and PUT /banners/reorder (drag-reorder from
+ * the admin UI, bulk rewrites `priority`).
  */
 
 "use strict";
 
+const path = require("path");
+const multer = require("multer");
 const express = require("express");
 const router = express.Router();
 
@@ -29,8 +35,54 @@ const { logAudit } = require("../../utils/auditLog");
 const { requirePermission } = require("../../middleware/permissions");
 const { validate } = require("../../middleware/validation");
 const validators = require("../../utils/validators");
+const { uploadFileToR2 } = require("../../middleware/upload");
+const { validateBufferContent } = require("../../utils/helpers");
+const r2Service = require("../../services/r2Service");
 
 const EDITABLE_FIELDS = ["title", "message", "placement", "ctaText", "ctaLink", "imageUrl", "startDate", "endDate", "priority", "isActive"];
+
+// ── Banner image upload (optional) ─────────────────────────────────────────
+// Same "memoryStorage -> validate magic bytes -> uploadFileToR2()" pattern
+// as routes/settings.js's branding logo/favicon upload. Kept as its own
+// endpoint (rather than accepting multipart on POST/PUT /banners) so the
+// admin banner form can upload the image first and just send the resulting
+// URL as a normal JSON field, same as it already does for a pasted image
+// URL — the form doesn't need two different code paths.
+const ALLOWED_BANNER_IMAGE_EXT = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+const ALLOWED_BANNER_IMAGE_MIMES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_BANNER_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+const uploadBannerImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_BANNER_IMAGE_BYTES },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_BANNER_IMAGE_EXT.has(ext)) {
+      return cb(new Error(`Unsupported image type: ${ext}. Use JPG, PNG, or WEBP.`));
+    }
+    cb(null, true);
+  },
+});
+
+// FIX: multer's fileFilter/limits errors (wrong type, LIMIT_FILE_SIZE) arrive
+// as a plain Error with no .status/.statusCode set, thrown from inside
+// upload middleware, BEFORE the route handler's own try/catch ever runs.
+// Left as-is, the app's global error handler (middleware/errors.js) treats
+// any error without a status as a 500 and returns the generic "Internal
+// server error" — hiding the actual, useful reason ("File too large" /
+// "Unsupported image type") from the admin UI. Wrapping .single() in a
+// plain callback here (instead of using it directly as route middleware)
+// lets us catch that error ourselves and send back a clean, specific 400.
+// Scoped to just this endpoint — no other upload route in the app is
+// touched by this change.
+function handleBannerImageUpload(req, res, next) {
+  uploadBannerImage.single("image")(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ success: false, message: "Image is too large. Max size is 5MB." });
+    }
+    return res.status(400).json({ success: false, message: err.message || "Upload failed" });
+  });
+}
 
 // List — admin view includes inactive/expired banners too, unlike the
 // public endpoint, so Rohit can see and re-activate/edit old offers.
@@ -67,6 +119,44 @@ router.post("/banners", requirePermission("marketing:create"), validators.create
 
     logAudit(req, "create", "marketing-banner", banner._id, `Created banner "${title}"`);
     res.status(201).json({ success: true, data: banner, message: "Banner created" });
+  } catch (error) {
+    logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+    res.status(500).json({ success: false, message: "Something went wrong. Please try again." });
+  }
+});
+
+// Upload a banner image to R2 and hand back its public URL — used by the
+// Add/Edit Banner form before create/update; NOT mounted under /:id so it
+// works for a banner that doesn't exist yet.
+router.post("/banners/upload-image", requirePermission("marketing:create"), handleBannerImageUpload, async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
+    const isValid = await validateBufferContent(req.file.buffer, ALLOWED_BANNER_IMAGE_MIMES);
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: "File content does not match its extension. Upload rejected." });
+    }
+    await uploadFileToR2(req.file, "marketing-banners");
+    res.json({ success: true, data: { imageUrl: req.file.r2Url }, message: "Image uploaded" });
+  } catch (error) {
+    if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
+    logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+    res.status(500).json({ success: false, message: "Something went wrong. Please try again." });
+  }
+});
+
+// Reorder — bulk-writes `priority` to match the given ID order (index in
+// the array becomes the new priority, lower shows first). Must stay ABOVE
+// the PUT /banners/:id route below: both are PUT under /banners/..., and
+// Express matches route definitions in file order, so /banners/:id would
+// otherwise swallow a /banners/reorder request with id="reorder".
+router.put("/banners/reorder", requirePermission("marketing:edit"), validators.reorderMarketingBanners, validate, (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    orderedIds.forEach((id, index) => {
+      db.findByIdAndUpdate("marketingBanners", id, { priority: index });
+    });
+    logAudit(req, "edit", "marketing-banner", null, `Reordered ${orderedIds.length} banner(s)`);
+    res.json({ success: true, message: "Banners reordered" });
   } catch (error) {
     logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
     res.status(500).json({ success: false, message: "Something went wrong. Please try again." });

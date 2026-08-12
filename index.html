@@ -59,6 +59,7 @@
 
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.2.10/swiper-bundle.min.css">
 </head>
 <body>
 
@@ -1000,13 +1001,63 @@
   loadFeedback();
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.2.10/swiper-bundle.min.js"></script>
 <script>
-  // Promo banners managed from Admin → Marketing (routes/marketing.js).
+  // Promo banners managed from Admin -> Marketing (routes/marketing.js).
+  // 'top_bar' placement renders as a thin sticky strip, same as before.
+  // 'homepage' placement now renders as an auto-scrolling Swiper slider
+  // instead of a static grid -- see style.css's "HOMEPAGE BANNER SLIDER"
+  // block, and Admin -> Marketing -> Banners & Offers for management
+  // (add/edit/delete/reorder/enable-disable, optional image upload;
+  // text-based design is used automatically when no image is set).
   // Renders inside the hero section so it automatically inherits the
-  // fixed-navbar clearance already built into .hero-new's padding-top —
+  // fixed-navbar clearance already built into .hero-new's padding-top --
   // no change to existing header/hero CSS needed. Renders nothing (and
-  // takes up no space) when there are no active banners, which is the
-  // default state until banners are added from the admin panel.
+  // takes up no space) when there are no active banners for a placement.
+  let bannerSwiperInstance = null;
+
+  // Escapes for safe use in both HTML text AND inside a quoted HTML
+  // attribute (href="...") -- the div.textContent trick alone (used
+  // elsewhere in the admin panel) only covers text nodes, not quotes.
+  function escapeHtmlPromo(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function buildBannerSlideHtml(b) {
+    const cta = (b.ctaText && b.ctaLink)
+      ? `<a href="${escapeHtmlPromo(b.ctaLink)}" class="banner-slide-cta">${escapeHtmlPromo(b.ctaText)}</a>`
+      : "";
+    const textBlock = `
+        <div class="banner-slide-overlay">
+          <h3>${escapeHtmlPromo(b.title)}</h3>
+          <p>${escapeHtmlPromo(b.message)}</p>
+          ${cta}
+        </div>`;
+
+    if (b.imageUrl) {
+      // onerror -- covers a broken/expired image URL (deleted R2 object, a
+      // pasted external link that's gone dead, etc.), not just a missing
+      // one. Promotes the slide to .banner-slide-text on load failure so it
+      // falls back to the same gradient text design used when no image was
+      // ever set, instead of showing a broken-image icon to visitors.
+      return `
+        <div class="swiper-slide banner-slide">
+          <img class="banner-slide-img" src="${escapeHtmlPromo(b.imageUrl)}" alt="${escapeHtmlPromo(b.title)}" loading="lazy" onerror="this.closest('.banner-slide').classList.add('banner-slide-text'); this.remove();">
+          ${textBlock}
+        </div>`;
+    }
+    // No image uploaded -- text-based banner design (navy/gold gradient).
+    return `
+        <div class="swiper-slide banner-slide banner-slide-text">
+          ${textBlock}
+        </div>`;
+  }
+
   async function loadMarketingPromos() {
     const wrap = document.getElementById("marketing-promo-wrap");
     if (!wrap) return;
@@ -1014,6 +1065,8 @@
       const response = await fetch("/api/marketing/banners");
       const result   = await response.json();
       const banners  = (result && result.success) ? result.data : [];
+
+      if (bannerSwiperInstance) { bannerSwiperInstance.destroy(true, true); bannerSwiperInstance = null; }
       wrap.innerHTML = "";
       if (!banners || banners.length === 0) return;
 
@@ -1039,39 +1092,48 @@
       });
 
       if (homepage.length > 0) {
-        const grid = document.createElement("div");
-        grid.className = "promo-homepage-grid";
-        homepage.forEach(b => {
-          const card = document.createElement("div");
-          card.className = "promo-card";
+        const multiple = homepage.length > 1;
+        const sliderWrap = document.createElement("div");
+        sliderWrap.className = "banner-slider-wrap";
+        sliderWrap.setAttribute("role", "region");
+        sliderWrap.setAttribute("aria-label", "Chawla Classes promotional banners");
+        sliderWrap.innerHTML = `
+          <div class="swiper bannerSwiper" id="bannerSwiper">
+            <div class="swiper-wrapper">
+              ${homepage.map(buildBannerSlideHtml).join("")}
+            </div>
+            ${multiple ? `
+              <div class="swiper-pagination"></div>
+              <div class="swiper-button-prev"></div>
+              <div class="swiper-button-next"></div>
+            ` : ""}
+          </div>
+        `;
+        wrap.appendChild(sliderWrap);
 
-          if (b.imageUrl) {
-            const img = document.createElement("img");
-            img.src = b.imageUrl;
-            img.alt = b.title;
-            card.appendChild(img);
-          }
-          const h4 = document.createElement("h4");
-          h4.textContent = b.title;
-          card.appendChild(h4);
-
-          const p = document.createElement("p");
-          p.textContent = b.message;
-          card.appendChild(p);
-
-          if (b.ctaText && b.ctaLink) {
-            const cta = document.createElement("a");
-            cta.className = "promo-cta";
-            cta.textContent = b.ctaText;
-            cta.href = b.ctaLink;
-            card.appendChild(cta);
-          }
-          grid.appendChild(card);
-        });
-        wrap.appendChild(grid);
+        // A single active banner is shown as a static card -- no
+        // autoplay/loop/nav controls needed (and Swiper needs 2+ real
+        // slides for loop mode to work correctly anyway).
+        if (multiple && window.Swiper) {
+          bannerSwiperInstance = new Swiper("#bannerSwiper", {
+            loop: true,
+            speed: 700,
+            spaceBetween: 0,
+            slidesPerView: 1,
+            grabCursor: true,
+            autoplay: {
+              delay: 4500,
+              disableOnInteraction: false,
+              pauseOnMouseEnter: true, // pause on hover (desktop), resumes when the pointer leaves
+            },
+            pagination: { el: ".swiper-pagination", clickable: true },
+            navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" },
+            a11y: { enabled: true },
+          });
+        }
       }
     } catch(err) {
-      // Fails silently — a missing promo banner should never block the
+      // Fails silently -- a missing promo banner should never block the
       // rest of the page from working.
     }
   }
