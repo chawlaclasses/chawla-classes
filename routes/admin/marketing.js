@@ -118,6 +118,10 @@ router.post("/banners", requirePermission("marketing:create"), validators.create
     });
 
     logAudit(req, "create", "marketing-banner", banner._id, `Created banner "${title}"`);
+    // LOGGING (2026-08-12 fix): the exact imageUrl string persisted to
+    // MongoDB for this banner, so a bad URL is visible in logs right at
+    // save time instead of only being discovered later on the homepage.
+    logger.info(`Marketing banner saved: id=${banner._id} imageUrl="${banner.imageUrl || "(none)"}"`);
     res.status(201).json({ success: true, data: banner, message: "Banner created" });
   } catch (error) {
     logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
@@ -136,6 +140,11 @@ router.post("/banners/upload-image", requirePermission("marketing:create"), hand
       return res.status(400).json({ success: false, message: "File content does not match its extension. Upload rejected." });
     }
     await uploadFileToR2(req.file, "marketing-banners");
+    // LOGGING (2026-08-12 fix): uploaded key + generated public URL, right
+    // where the admin form receives the URL it's about to send back on
+    // POST/PUT /banners for MongoDB save — makes it obvious in logs if the
+    // URL handed to the frontend doesn't look like a real R2 public URL.
+    logger.info(`Marketing banner image uploaded: key="${req.file.r2Key}" publicUrl=${req.file.r2Url}`);
     res.json({ success: true, data: { imageUrl: req.file.r2Url }, message: "Image uploaded" });
   } catch (error) {
     if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key);
@@ -176,6 +185,10 @@ router.put("/banners/:id", requirePermission("marketing:edit"), validators.updat
 
     const updated = db.findByIdAndUpdate("marketingBanners", req.params.id, updates);
     logAudit(req, "edit", "marketing-banner", req.params.id, `Updated banner "${banner.title}"`);
+    if (updates.imageUrl !== undefined) {
+      // LOGGING (2026-08-12 fix): same as the create path above.
+      logger.info(`Marketing banner updated: id=${req.params.id} imageUrl="${updated.imageUrl || "(none)"}"`);
+    }
     res.json({ success: true, data: updated, message: "Banner updated" });
   } catch (error) {
     logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
