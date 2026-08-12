@@ -183,6 +183,12 @@ async function uploadFileToR2(file, folder) {
   file.r2Key = key;
   file.r2Url = url; // non-null only for folders the bucket serves publicly
   file.filename = path.basename(key); // kept for any code/log still reading .filename for display
+
+  // LOGGING (requested by 2026-08-12 marketing-banner URL fix): the R2
+  // object key and the public URL derived from it, at the exact moment
+  // they're generated — so a bad R2_PUBLIC_URL config shows up immediately
+  // in logs instead of silently producing a saved URL that 404s later.
+  logger.info(`R2 upload complete: key="${key}" -> publicUrl=${url || "(null — private folder or R2_PUBLIC_URL unset)"}`);
 }
 
 // ── MIME validation + R2 upload wrapper (single-file uploaders) ───────────────
