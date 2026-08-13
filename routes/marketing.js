@@ -45,6 +45,7 @@ router.get("/banners", (req, res) => {
         placement: b.placement,
         ctaText: b.ctaText,
         ctaLink: b.ctaLink,
+        ctaPosition: b.ctaPosition,
         imageUrl: b.imageUrl,
       }));
     res.json({ success: true, data: banners });

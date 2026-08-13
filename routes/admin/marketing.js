@@ -39,7 +39,7 @@ const { uploadFileToR2 } = require("../../middleware/upload");
 const { validateBufferContent } = require("../../utils/helpers");
 const r2Service = require("../../services/r2Service");
 
-const EDITABLE_FIELDS = ["title", "message", "placement", "ctaText", "ctaLink", "imageUrl", "startDate", "endDate", "priority", "isActive"];
+const EDITABLE_FIELDS = ["title", "message", "placement", "ctaText", "ctaLink", "ctaPosition", "imageUrl", "startDate", "endDate", "priority", "isActive"];
 
 // ── Banner image upload (optional) ─────────────────────────────────────────
 // Same "memoryStorage -> validate magic bytes -> uploadFileToR2()" pattern
@@ -101,7 +101,7 @@ router.get("/banners", requirePermission("marketing:view"), (req, res) => {
 
 router.post("/banners", requirePermission("marketing:create"), validators.createMarketingBanner, validate, (req, res) => {
   try {
-    const { title, message, placement, ctaText, ctaLink, imageUrl, startDate, endDate, priority } = req.body;
+    const { title, message, placement, ctaText, ctaLink, ctaPosition, imageUrl, startDate, endDate, priority } = req.body;
 
     const banner = db.insertOne("marketingBanners", {
       title: title.trim(),
@@ -109,6 +109,7 @@ router.post("/banners", requirePermission("marketing:create"), validators.create
       placement: placement || "homepage",
       ctaText: (ctaText || "").trim(),
       ctaLink: (ctaLink || "").trim(),
+      ctaPosition: (ctaPosition || "bottom-right").trim(),
       imageUrl: (imageUrl || "").trim(),
       startDate: startDate || "",
       endDate: endDate || "",

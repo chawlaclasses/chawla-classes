@@ -1032,29 +1032,42 @@
     const cta = (b.ctaText && b.ctaLink)
       ? `<a href="${escapeHtmlPromo(b.ctaLink)}" class="banner-slide-cta">${escapeHtmlPromo(b.ctaText)}</a>`
       : "";
-    const textBlock = `
-        <div class="banner-slide-overlay">
-          <h3>${escapeHtmlPromo(b.title)}</h3>
-          <p>${escapeHtmlPromo(b.message)}</p>
-          ${cta}
-        </div>`;
+    const textOverlayHtml = `
+          <div class="banner-slide-overlay">
+            <h3>${escapeHtmlPromo(b.title)}</h3>
+            <p>${escapeHtmlPromo(b.message)}</p>
+            ${cta}
+          </div>`;
 
     if (b.imageUrl) {
-      // onerror -- covers a broken/expired image URL (deleted R2 object, a
-      // pasted external link that's gone dead, etc.), not just a missing
-      // one. Promotes the slide to .banner-slide-text on load failure so it
-      // falls back to the same gradient text design used when no image was
-      // ever set, instead of showing a broken-image icon to visitors.
+      // The uploaded graphic already carries its own title/description/CTA
+      // baked into the image design (this is how every banner in practice
+      // gets made -- a fully designed poster, not a plain photo). Stacking
+      // the DB title/message/CTA as a text overlay on top of that just
+      // duplicates and visually clashes with what's already in the image,
+      // so image slides render image-only.
+      //
+      // The text overlay markup is still included here, but hidden
+      // (display:none via the "banner-slide-fallback" class) -- if the
+      // image URL is broken/expired (deleted R2 object, a dead pasted
+      // link), onerror below promotes the slide to .banner-slide-text and
+      // reveals this pre-built fallback instead of leaving a blank/broken
+      // slide.
       return `
         <div class="swiper-slide banner-slide">
-          <img class="banner-slide-img" src="${escapeHtmlPromo(b.imageUrl)}" alt="${escapeHtmlPromo(b.title)}" loading="lazy" onerror="this.closest('.banner-slide').classList.add('banner-slide-text'); this.remove();">
-          ${textBlock}
+          <img class="banner-slide-img" src="${escapeHtmlPromo(b.imageUrl)}" alt="${escapeHtmlPromo(b.title)}" loading="lazy" onerror="const slide = this.closest('.banner-slide'); slide.classList.add('banner-slide-text'); this.remove(); const ctaOnly = slide.querySelector('.banner-slide-cta-only'); if (ctaOnly) ctaOnly.remove(); const fb = slide.querySelector('.banner-slide-fallback'); if (fb) fb.style.display = '';">
+          ${cta ? `<div class="banner-slide-overlay banner-slide-cta-only banner-slide-cta-pos-${escapeHtmlPromo(b.ctaPosition || "bottom-right")}">${cta}</div>` : ""}
+          <div class="banner-slide-overlay banner-slide-fallback" style="display:none">
+            <h3>${escapeHtmlPromo(b.title)}</h3>
+            <p>${escapeHtmlPromo(b.message)}</p>
+            ${cta}
+          </div>
         </div>`;
     }
     // No image uploaded -- text-based banner design (navy/gold gradient).
     return `
         <div class="swiper-slide banner-slide banner-slide-text">
-          ${textBlock}
+          ${textOverlayHtml}
         </div>`;
   }
 
@@ -1121,6 +1134,9 @@
             spaceBetween: 0,
             slidesPerView: 1,
             grabCursor: true,
+            autoHeight: true, // container height auto-adjusts to match each
+                               // slide's actual image aspect ratio -- no fixed
+                               // box, no letterbox gaps, no cropping.
             autoplay: {
               delay: 4500,
               disableOnInteraction: false,

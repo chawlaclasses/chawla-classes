@@ -2078,15 +2078,23 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
 /* =====================
    HOMEPAGE BANNER SLIDER (Swiper.js) — Admin -> Marketing -> Banners &
    Offers ('homepage' placement). Replaces the old static promo-card grid.
-   Fixed height via clamp() (not just aspect-ratio) so the box is reserved
-   before Swiper/images finish loading — avoids layout shift either way.
+
+   Auto-fit sizing: the box no longer has a fixed height. The <img> renders
+   at its own natural aspect ratio (width:100%; height:auto), so whatever
+   size/ratio an admin uploads, the frame reshapes to match it exactly --
+   no cropping, no letterbox gaps to manage by hand. For a multi-banner
+   carousel, Swiper's `autoHeight: true` (see index.html) re-measures and
+   animates the container to each slide's real height as it becomes active.
+   The text-only fallback (.banner-slide-text, no image uploaded) has no
+   image to size itself against, so it keeps a fixed clamp() height.
 ===================== */
 .banner-slider-wrap {
-  margin: 0 0 14px;
+  margin: 0 auto 14px;
   position: relative;
+  max-width: 1400px;
+  padding: 0 20px;
 }
 .bannerSwiper {
-  height: clamp(150px, 22vw, 240px);
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 4px 18px rgba(11, 31, 58, 0.12);
@@ -2094,20 +2102,17 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
 .banner-slide {
   position: relative;
   width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
   cursor: grab;
 }
 .banner-slide-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   display: block;
+  width: 100%;
+  height: auto;
 }
 .banner-slide-text {
+  min-height: clamp(220px, 20vw, 340px);
+  display: flex;
+  align-items: center;
   background: linear-gradient(135deg, #0b1f3a 0%, #143a6b 60%, #0b1f3a 100%);
 }
 .banner-slide-overlay {
@@ -2118,9 +2123,47 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   background: linear-gradient(0deg, rgba(11, 31, 58, 0.88) 0%, rgba(11, 31, 58, 0.4) 55%, rgba(11, 31, 58, 0) 100%);
   color: #fff;
 }
+/* Image slides: overlay sits ON TOP of the image, pinned to its bottom
+   edge, instead of taking up its own flow height (the image alone now
+   determines the slide's height). */
+/* This targets ONLY the broken-image fallback overlay (title+description+
+   button, shown if the uploaded image URL fails to load) -- scoped to
+   .banner-slide-fallback specifically, NOT the generic .banner-slide-overlay
+   class, so it never competes with .banner-slide-cta-only's own
+   position rules below (a broader ".banner-slide-overlay" selector here
+   was previously winning the specificity fight and pinning the CTA button
+   to bottom-left no matter which position the admin picked). */
+.banner-slide-fallback {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+}
+/* CTA-only overlay for image slides -- just the button, positioned
+   wherever the admin picked in the "Button Position" dropdown, instead of
+   the full title/description block (which duplicates text already baked
+   into the uploaded image design). Each position class pins the overlay
+   to a corner/edge/center of the image via absolute positioning. */
+.banner-slide-overlay.banner-slide-cta-only {
+  position: absolute;
+  padding: 16px 20px;
+  background: none;
+  width: auto;
+}
+.banner-slide-cta-pos-bottom-right   { right: 0; bottom: 0; }
+.banner-slide-cta-pos-bottom-left    { left: 0; bottom: 0; }
+.banner-slide-cta-pos-bottom-center  { left: 50%; bottom: 0; transform: translateX(-50%); }
+.banner-slide-cta-pos-top-right      { right: 0; top: 0; }
+.banner-slide-cta-pos-top-left       { left: 0; top: 0; }
+.banner-slide-cta-pos-top-center     { left: 50%; top: 0; transform: translateX(-50%); }
+.banner-slide-cta-pos-center         { left: 50%; top: 50%; transform: translate(-50%, -50%); }
 .banner-slide-text .banner-slide-overlay {
   background: none;
-  padding: 20px 26px;
+  padding: 20px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 .banner-slide-overlay h3 {
   font-size: 19px;
@@ -2128,12 +2171,24 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   margin-bottom: 6px;
   color: #fff;
 }
+.banner-slide-text .banner-slide-overlay h3 {
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
 .banner-slide-overlay p {
   font-size: 13.5px;
   line-height: 1.5;
   margin-bottom: 10px;
   color: rgba(255, 255, 255, 0.92);
   max-width: 560px;
+}
+.banner-slide-text .banner-slide-overlay p {
+  font-size: clamp(13.5px, 1.15vw, 16px);
+  margin-bottom: 18px;
+  max-width: 680px;
 }
 .banner-slide-cta {
   display: inline-block;
@@ -2147,9 +2202,18 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   white-space: nowrap;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+.banner-slide-text .banner-slide-cta {
+  padding: 14px 36px;
+  font-size: 15.5px;
+  box-shadow: 0 6px 18px rgba(244, 180, 0, 0.35);
+}
 .banner-slide-cta:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(244, 180, 0, 0.4);
+}
+.banner-slide-text .banner-slide-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(244, 180, 0, 0.5);
 }
 
 /* Swiper chrome — gold/navy themed to match the rest of the site */
@@ -2188,7 +2252,9 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
 
 @media screen and (max-width: 768px) {
   .promo-topbar { font-size: 12.5px; padding: 8px 14px; }
-  .bannerSwiper { height: clamp(130px, 40vw, 190px); border-radius: 10px; }
+  .banner-slider-wrap { padding: 0 12px; }
+  .bannerSwiper { border-radius: 10px; }
+  .banner-slide-text { min-height: clamp(150px, 45vw, 220px); }
   .banner-slide-overlay { padding: 12px 16px; }
   .banner-slide-overlay h3 { font-size: 15.5px; }
   .banner-slide-overlay p {
@@ -2201,6 +2267,8 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
     overflow: hidden;
   }
   .banner-slide-cta { padding: 7px 16px; font-size: 12px; }
+  .banner-slide-text .banner-slide-overlay { padding: 16px 20px; }
+  .banner-slide-text .banner-slide-cta { padding: 10px 24px; font-size: 13px; }
   .bannerSwiper .swiper-button-next,
   .bannerSwiper .swiper-button-prev { width: 28px; height: 28px; }
   .bannerSwiper .swiper-button-next::after,

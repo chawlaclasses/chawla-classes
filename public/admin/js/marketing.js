@@ -144,6 +144,19 @@ function bannerFormFields(b = {}) {
             <div class="form-group"><label>Button Link (optional)</label><input type="text" id="banCtaLink" value="${escapeHtml(b.ctaLink || '')}" placeholder="e.g. /#admission or https://..."></div>
         </div>
         <div class="form-group">
+            <label>Button Position (on the banner image)</label>
+            <select id="banCtaPosition">
+                <option value="bottom-right" ${(b.ctaPosition || 'bottom-right') === 'bottom-right' ? 'selected' : ''}>Bottom Right</option>
+                <option value="bottom-left" ${b.ctaPosition === 'bottom-left' ? 'selected' : ''}>Bottom Left</option>
+                <option value="bottom-center" ${b.ctaPosition === 'bottom-center' ? 'selected' : ''}>Bottom Center</option>
+                <option value="top-right" ${b.ctaPosition === 'top-right' ? 'selected' : ''}>Top Right</option>
+                <option value="top-left" ${b.ctaPosition === 'top-left' ? 'selected' : ''}>Top Left</option>
+                <option value="top-center" ${b.ctaPosition === 'top-center' ? 'selected' : ''}>Top Center</option>
+                <option value="center" ${b.ctaPosition === 'center' ? 'selected' : ''}>Center</option>
+            </select>
+            <p style="font-size:11px;color:var(--muted);margin-top:4px;">Only applies when a Banner Image is set below and Button Text + Link are both filled in — pick a spot on the image that has empty space so the button doesn't sit on top of existing text/logos.</p>
+        </div>
+        <div class="form-group">
             <label>Banner Image (optional)</label>
             <div id="banImagePreviewWrap" style="margin-bottom:8px;">${bannerImagePreviewHtml(b.imageUrl || '')}</div>
             <input type="text" id="banImageUrl" value="${escapeHtml(b.imageUrl || '')}" placeholder="Paste an image URL, or upload a file below" onchange="handleBannerImageUrlChange()">
@@ -296,6 +309,7 @@ function readBannerForm() {
         priority: parseInt(document.getElementById('banPriority').value, 10) || 0,
         ctaText: document.getElementById('banCtaText').value.trim(),
         ctaLink: document.getElementById('banCtaLink').value.trim(),
+        ctaPosition: document.getElementById('banCtaPosition').value,
         imageUrl: document.getElementById('banImageUrl').value.trim(),
         startDate: document.getElementById('banStartDate').value,
         endDate: document.getElementById('banEndDate').value,
