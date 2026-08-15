@@ -34,6 +34,13 @@ function getTransporter() {
     port: Number(process.env.SMTP_PORT) || 587,
     secure: Number(process.env.SMTP_PORT) === 465,
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    // FIX: default connectionTimeout is 2 minutes — if the host's outbound
+    // SMTP is blocked (e.g. Render free tier), every fee-reminder send would
+    // silently hang for 2 min before failing. Fail fast instead so callers
+    // (and their HTTP requests) aren't stuck waiting on a doomed connection.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
   return _transporter;
 }
