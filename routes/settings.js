@@ -117,13 +117,42 @@ router.post('/favicon', requirePermission('settings:edit'), uploadBranding.singl
     }
 });
 
-// Send a real test email using the configured SMTP settings
+// Send a real test email — prefers Brevo's HTTP API (if BREVO_API_KEY is set,
+// since that bypasses SMTP port blocking entirely) and falls back to SMTP
+// otherwise, so this keeps working for anyone still on plain SMTP settings.
 router.post('/test-email', requirePermission('settings:edit'), async (req, res) => {
     try {
         const { to } = req.body;
         if (!to) return res.status(400).json({ success: false, message: 'Recipient email (to) is required' });
 
         const { email, instituteName } = settingsService.getSettings();
+
+        if (process.env.BREVO_API_KEY) {
+            const { sendViaBrevoApi } = require('../utils/brevoMailer');
+            try {
+                await sendViaBrevoApi({
+                    to,
+                    subject: `Test email from ${instituteName}`,
+                    text: `This is a test email from ${instituteName}'s admin settings, sent via Brevo's API. If you received this, your email configuration is working correctly.`,
+                    fromName: (email && email.fromName) || instituteName,
+                    fromEmail: (email && email.fromAddress) || (email && email.user),
+                    apiKey: process.env.BREVO_API_KEY
+                });
+                logAudit(req, 'edit', 'settings', null, `Sent test email to ${to} via Brevo API`);
+                return res.json({ success: true, message: `Test email sent to ${to} via Brevo API` });
+            } catch (error) {
+                let hint = '';
+                if (/sender|from.*not.*valid|not authorized/i.test(error.message)) {
+                    hint = ' — in Brevo, the "from" address must be a verified sender: dashboard → Senders, Domains & Dedicated IPs → Senders, add/verify this email or your whole domain, then try again.';
+                } else if (error.code === 'HTTP_401' || /unauthorized|invalid.*api.*key/i.test(error.message)) {
+                    hint = ' — check that the BREVO_API_KEY env var on Render is a valid, current API key from Brevo\'s dashboard (Settings → SMTP & API → API Keys).';
+                } else if (error.code === 'NO_FROM') {
+                    hint = ' — set a "From Address" in the Email Configuration form above and save, then retry.';
+                }
+                return res.status(500).json({ success: false, message: `Failed to send test email via Brevo: ${error.message}${hint}` });
+            }
+        }
+
         if (!email.host || !email.user || !email.pass) {
             return res.status(400).json({ success: false, message: 'Email settings are incomplete — host, user, and password are required' });
         }
