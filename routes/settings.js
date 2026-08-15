@@ -128,11 +128,28 @@ router.post('/test-email', requirePermission('settings:edit'), async (req, res) 
             return res.status(400).json({ success: false, message: 'Email settings are incomplete — host, user, and password are required' });
         }
 
+        // FIX: saveEmailSettings() on the frontend never collects/sends a
+        // `secure` value, so it silently stayed at its DEFAULTS value (false)
+        // no matter what port was saved — including port 465, which requires
+        // implicit TLS (secure:true). Auto-derive it from the port instead of
+        // trusting a field nothing in the UI ever actually sets. An explicit
+        // `email.secure` (if some future UI/API caller does set it) still wins.
+        const port = email.port || 587;
+        const secure = typeof email.secure === 'boolean' ? email.secure : port === 465;
+
         const transporter = nodemailer.createTransport({
             host: email.host,
-            port: email.port || 587,
-            secure: !!email.secure,
-            auth: { user: email.user, pass: email.pass }
+            port,
+            secure,
+            auth: { user: email.user, pass: email.pass },
+            // FIX: nodemailer's default connectionTimeout is 2 minutes, which is
+            // why the button appeared to hang for ~2 min before erroring. Fail
+            // fast — a real SMTP server responds in well under a second; a hang
+            // this long is almost always a firewall silently dropping packets,
+            // not a slow server.
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000
         });
 
         await transporter.sendMail({
@@ -146,8 +163,53 @@ router.post('/test-email', requirePermission('settings:edit'), async (req, res) 
         res.json({ success: true, message: `Test email sent to ${to}` });
     } catch (error) {
         // Real SMTP errors (bad credentials, unreachable host, etc.) surface here —
-        // this is genuine feedback, not a placeholder response.
-        res.status(500).json({ success: false, message: `Failed to send test email: ${error.message}` });
+        // this is genuine feedback, not a placeholder response. Add a plain-language
+        // hint on top of the raw nodemailer error, since "connection timeout" alone
+        // is genuinely ambiguous between misconfiguration and a blocked network path.
+        let hint = '';
+        if (error.code === 'ETIMEDOUT' || error.code === 'ESOCKET' || /timeout/i.test(error.message)) {
+            hint = ' — this pattern (correct config, valid credentials, pure timeout) usually means outbound SMTP is being blocked at the network level, not a login problem. Use "Test Connectivity" below to confirm.';
+        } else if (error.code === 'EAUTH' || /invalid login|username and password not accepted/i.test(error.message)) {
+            hint = ' — check the username/app password (Gmail requires a 16-character App Password, not your normal login password).';
+        } else if (error.code === 'ECONNREFUSED') {
+            hint = ' — the host actively refused the connection; double-check host/port.';
+        }
+        res.status(500).json({ success: false, message: `Failed to send test email: ${error.message}${hint}` });
+    }
+});
+
+// Diagnose *why* email sending is failing, independent of SMTP auth: opens
+// raw TCP sockets (no SMTP/TLS handshake, no credentials involved) to the
+// configured host on the two SMTP ports, plus a control connection to a
+// known-open HTTPS port on a well-known host. If 587/465 both hang while the
+// control succeeds instantly, that's conclusive evidence of a network-level
+// block on SMTP ports specifically (e.g. Render's free-tier restriction,
+// live since Sept 26 2025) rather than a credentials/config problem.
+router.post('/test-smtp-connectivity', requirePermission('settings:edit'), async (req, res) => {
+    const { probeTcpPort } = require('../utils/netProbe');
+
+    try {
+        const { email } = settingsService.getSettings();
+        const host = (email && email.host) || 'smtp.gmail.com';
+
+        const [smtp587, smtp465, control] = await Promise.all([
+            probeTcpPort(host, 587),
+            probeTcpPort(host, 465),
+            probeTcpPort('www.google.com', 443) // control: a port that is never blocked, to prove general egress works
+        ]);
+
+        let verdict;
+        if (!control.ok) {
+            verdict = 'General outbound network problem — even HTTPS (443) is unreachable from this server. This is broader than an SMTP-specific block.';
+        } else if (!smtp587.ok && !smtp465.ok) {
+            verdict = 'Outbound SMTP ports (587 and 465) are blocked while normal HTTPS traffic (443) works fine. This matches a hosting-provider firewall restriction on SMTP ports (e.g. Render free-tier, blocked since Sept 26 2025) — not a credentials or code problem. Fix: upgrade to a paid instance, or send email via an HTTP-based provider (Resend/Brevo/SendGrid) instead of raw SMTP.';
+        } else {
+            verdict = 'SMTP ports are reachable at the network level. If sending still fails, the problem is credentials, host/port/secure mismatch, or the provider is rejecting the login — not network blocking.';
+        }
+
+        res.json({ success: true, data: { host, probes: { smtp_587: smtp587, smtp_465: smtp465, control_https_443: control }, verdict } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: `Connectivity test failed: ${error.message}` });
     }
 });
 
