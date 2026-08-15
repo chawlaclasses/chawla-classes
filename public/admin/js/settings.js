@@ -84,9 +84,10 @@ function renderSettings() {
                     <div class="form-group"><label>From Name</label><input type="text" id="setEmailFromName" value="${escapeHtml(s.email?.fromName || '')}"></div>
                     <div class="form-group"><label>From Address</label><input type="text" id="setEmailFromAddress" value="${escapeHtml(s.email?.fromAddress || '')}"></div>
                 </div>
-                <div style="display:flex;gap:10px;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <button class="btn btn-gold" onclick="saveEmailSettings()"><i class="fas fa-save"></i> Save</button>
                     <button class="btn btn-sm" style="background:var(--card-bg);border:1px solid var(--card-border);color:var(--white);" onclick="sendTestEmail()"><i class="fas fa-paper-plane"></i> Send Test Email</button>
+                    <button class="btn btn-sm" style="background:var(--card-bg);border:1px solid var(--card-border);color:var(--white);" onclick="testSmtpConnectivity()"><i class="fas fa-network-wired"></i> Test Connectivity</button>
                 </div>
             `)}
 
@@ -196,6 +197,25 @@ async function sendTestEmail() {
     const result = await apiCall('/settings/test-email', { method: 'POST', body: JSON.stringify({ to }) });
     if (!result || !result.success) { showToast('Error', result?.message || 'Failed to send test email', 'error'); return; }
     showToast('Success', result.message, 'success');
+}
+
+// Diagnostic: checks whether outbound SMTP ports are network-reachable at
+// all, independent of credentials. Distinguishes "hosting provider is
+// blocking SMTP ports" from "your host/port/password is wrong".
+async function testSmtpConnectivity() {
+    showToast('Info', 'Testing network connectivity to SMTP ports...', 'info');
+    const result = await apiCall('/settings/test-smtp-connectivity', { method: 'POST', body: JSON.stringify({}) });
+    if (!result || !result.success) { showToast('Error', result?.message || 'Connectivity test failed', 'error'); return; }
+    const { probes, verdict } = result.data;
+    const line = (label, p) => `${label}: ${p.ok ? '✅ reachable' : '❌ blocked/no response'} — ${p.detail} (${p.ms}ms)`;
+    alert([
+        line('Port 587', probes.smtp_587),
+        line('Port 465', probes.smtp_465),
+        line('Control — HTTPS 443', probes.control_https_443),
+        '',
+        verdict
+    ].join('\n'));
+    showToast(probes.smtp_587.ok || probes.smtp_465.ok ? 'Info' : 'Warning', verdict, probes.smtp_587.ok || probes.smtp_465.ok ? 'info' : 'error');
 }
 
 async function saveWhatsAppSettings() {
