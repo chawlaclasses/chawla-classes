@@ -12,12 +12,24 @@
 
 const nodemailer = require("nodemailer");
 const logger = require("./logger");
+const { sendViaBrevoApi } = require("./brevoMailer");
 
 let _transporter = null;
 let _checkedConfig = false;
 
 function isConfigured() {
-  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+  return Boolean(process.env.BREVO_API_KEY) || Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
+// Parses '"Chawla Classes" <no-reply@chawlaclasses.com>' (or a bare email)
+// into { name, email }, reusing the existing SMTP_FROM env var so Brevo
+// doesn't need its own separate from-name/from-email config.
+function parseFrom(raw) {
+  if (!raw) return null;
+  const quoted = raw.match(/^"?([^"<]*)"?\s*<([^>]+)>$/);
+  if (quoted) return { name: quoted[1].trim(), email: quoted[2].trim() };
+  if (/^[^<>\s]+@[^<>\s]+$/.test(raw.trim())) return { name: "Chawla Classes", email: raw.trim() };
+  return null;
 }
 
 function getTransporter() {
@@ -51,6 +63,28 @@ function getTransporter() {
  */
 async function sendMail({ to, subject, html, text }) {
   if (!to) return { sent: false, reason: "No recipient email address" };
+
+  // Prefer Brevo's HTTP API when configured — it goes over HTTPS (443), so
+  // it isn't affected by hosts (like Render's free tier) that block outbound
+  // SMTP ports. Falls through to SMTP below if BREVO_API_KEY isn't set.
+  if (process.env.BREVO_API_KEY) {
+    const from = parseFrom(process.env.SMTP_FROM) || { name: "Chawla Classes", email: process.env.SMTP_USER };
+    try {
+      await sendViaBrevoApi({
+        to,
+        subject,
+        html,
+        text: text || (html ? html.replace(/<[^>]+>/g, " ") : undefined),
+        fromName: from.name,
+        fromEmail: from.email,
+        apiKey: process.env.BREVO_API_KEY,
+      });
+      return { sent: true };
+    } catch (err) {
+      logger.error(`Brevo API email send failed to ${to}: ${err.message}`);
+      return { sent: false, reason: err.message };
+    }
+  }
 
   const transporter = getTransporter();
   if (!transporter) return { sent: false, reason: "SMTP not configured" };
