@@ -36,6 +36,18 @@ class TestsAPI {
         return response.data?.upcomingTests || [];
     }
 
+    // "Resume where you left off" -- there's no backend endpoint that
+    // proactively reports an in-progress attempt (resume logic only
+    // exists INSIDE POST /student/tests/start, triggered when a student
+    // clicks to start/continue a specific test they already picked --
+    // see routes/studentRoutes.js's `isResumed` flag). Returns null
+    // (never throws) until a real "do I have an attempt in progress"
+    // endpoint exists, so Dashboard/index.js's QuickActions widget just
+    // shows no resume card instead of crashing the whole dashboard load.
+    async resumeTest() {
+        return null;
+    }
+
     async getTestDetail(testId) {
         const response = await apiClient.get(`/student/tests/${testId}/details`);
         return response.data;

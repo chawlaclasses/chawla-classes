@@ -83,17 +83,17 @@
 
     <!-- Nav Links -->
     <ul class="nav-links" id="navLinks">
-      <li><a href="#home" class="nav-active">Home</a></li>
-      <li><a href="#about">About</a></li>
-      <li><a href="#courses">Courses</a></li>
-      <li><a href="#faculty">Leadership</a></li>
-      <li><a href="#results">Results</a></li>
-      <li><a href="#fees">Fees &amp; Timings</a></li>
-      <li><a href="#classes-overview">Classes</a></li>
-      <li><a href="#admission">Admission</a></li>
-      <li><a href="/careers.html">Careers</a></li>
-      <li><a href="#feedback">Feedback</a></li>
-      <li><a href="#contact">Contact</a></li>
+      <li class="cat-nav-item"><a href="#home" class="nav-active">Home</a></li>
+      <li class="cat-nav-item"><a href="#about">About</a></li>
+      <li class="cat-nav-item"><a href="#courses">Courses</a></li>
+      <li class="cat-nav-item"><a href="#faculty">Leadership</a></li>
+      <li class="cat-nav-item"><a href="#results">Results</a></li>
+      <li class="cat-nav-item"><a href="#fees">Fees &amp; Timings</a></li>
+      <li class="cat-nav-item"><a href="#classes-overview">Classes</a></li>
+      <li class="cat-nav-item"><a href="#admission">Admission</a></li>
+      <li class="cat-nav-item"><a href="/careers.html">Careers</a></li>
+      <li class="cat-nav-item"><a href="#feedback">Feedback</a></li>
+      <li class="cat-nav-item"><a href="#contact">Contact</a></li>
       <!-- Login dropdown -->
       <li class="nav-login-dropdown">
         <a href="javascript:void(0)" class="login-toggle">
@@ -136,18 +136,18 @@
     <button class="drawer-close" id="drawerClose" aria-label="Close Menu">&#x2715;</button>
   </div>
   <ul class="drawer-nav" id="drawerNav">
-  <li><a href="#home" class="active"><i class="fas fa-home"></i> Home <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li><a href="#about"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li><a href="#courses"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li><a href="#faculty"><i class="fas fa-users"></i> Leadership <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li class="drawer-divider"></li>
-  <li><a href="#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li><a href="#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li><a href="#classes-overview"><i class="fas fa-layer-group"></i> Classes <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li><a href="#admission"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li><a href="/careers.html"><i class="fas fa-user-tie"></i> Careers <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li><a href="#feedback"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
-  <li><a href="#contact"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="#home" class="active"><i class="fas fa-home"></i> Home <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="#about"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="#courses"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="#faculty"><i class="fas fa-users"></i> Leadership <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="drawer-divider cat-nav-divider"></li>
+  <li class="cat-nav-item"><a href="#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="#classes-overview"><i class="fas fa-layer-group"></i> Classes <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="#admission"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="/careers.html"><i class="fas fa-user-tie"></i> Careers <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="#feedback"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
+  <li class="cat-nav-item"><a href="#contact"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
   <li class="drawer-divider"></li>
   <li style="padding: 0 20px;">
     <a href="/student/login.html" style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.15);border-radius:8px;margin-bottom:8px;justify-content:center;color:#F5A623;">
@@ -643,6 +643,13 @@
     width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"
     title="Chawla Classes Location"></iframe>
 </section>
+
+<!-- WEBSITE BUILDER HOMEPAGE SECTIONS (Admin -> Website Builder) --
+     empty until index.html's loadWebsiteSections script (near the
+     bottom of the page) fills it in from GET /api/website-sections. Left
+     completely empty otherwise, so nothing renders here on a fresh
+     install until an admin actually adds a section. -->
+<div id="dynamicHomepageSections"></div>
 
 </main>
 
@@ -1154,6 +1161,111 @@
     }
   }
   loadMarketingPromos();
+</script>
+
+<script>
+  // Homepage navbar categories — Admin -> Categories (routes/categories.js
+  // for this public read; routes/admin/categories.js is the CRUD side).
+  // Progressive enhancement, not a hard dependency: the <li class="cat-nav-item">
+  // items already in the HTML above (desktop #navLinks + mobile #drawerNav)
+  // are the fallback/default navbar and are left completely alone unless
+  // this fetch succeeds AND returns at least one active category -- so a
+  // slow/failed API call, an empty categories collection (e.g. freshly
+  // migrated site before anyone's opened Admin -> Categories), or JS being
+  // disabled all just mean visitors see the original static navbar, never
+  // a broken or empty one.
+  async function loadNavCategories() {
+    try {
+      const res = await fetch("/api/categories");
+      const json = await res.json();
+      const categories = json?.data || [];
+      if (!Array.isArray(categories) || categories.length === 0) return;
+
+      renderDesktopNavCategories(categories);
+      renderDrawerNavCategories(categories);
+    } catch (err) {
+      // Fails silently, same as loadMarketingPromos above -- a missing/slow
+      // categories API should never block the rest of the page, and the
+      // static fallback navbar already in the HTML keeps working as-is.
+    }
+  }
+
+  function renderDesktopNavCategories(categories) {
+    const navLinks = document.getElementById("navLinks");
+    if (!navLinks) return;
+    const loginDropdown = navLinks.querySelector(".nav-login-dropdown");
+    if (!loginDropdown) return; // structure changed elsewhere -- don't guess, leave the static list alone
+
+    navLinks.querySelectorAll(".cat-nav-item").forEach(el => el.remove());
+
+    const frag = document.createDocumentFragment();
+    categories.forEach((c, idx) => {
+      const li = document.createElement("li");
+      li.className = "cat-nav-item";
+      const a = document.createElement("a");
+      a.href = c.url;
+      if (idx === 0) a.className = "nav-active";
+      a.textContent = c.name;
+      li.appendChild(a);
+      frag.appendChild(li);
+    });
+    navLinks.insertBefore(frag, loginDropdown);
+  }
+
+  function renderDrawerNavCategories(categories) {
+    const drawerNav = document.getElementById("drawerNav");
+    if (!drawerNav) return;
+    // The mid-list divider that used to visually split the old hardcoded
+    // 4+7 item groups doesn't mean anything once the list is a single
+    // admin-ordered sequence, so it's dropped along with the old items.
+    // The trailing divider right before Student/Admin Login is kept --
+    // insertion point for the new items is right before it.
+    drawerNav.querySelectorAll(".cat-nav-divider").forEach(el => el.remove());
+    const trailingDivider = drawerNav.querySelector(".drawer-divider");
+    drawerNav.querySelectorAll(".cat-nav-item").forEach(el => el.remove());
+    if (!trailingDivider) return; // structure changed elsewhere -- don't guess
+
+    const frag = document.createDocumentFragment();
+    categories.forEach((c, idx) => {
+      const li = document.createElement("li");
+      li.className = "cat-nav-item";
+      const a = document.createElement("a");
+      a.href = c.url;
+      if (idx === 0) a.className = "active";
+      const icon = document.createElement("i");
+      icon.className = "fas " + (c.icon ? escapeHtmlPromo(c.icon).replace(/"/g, "") : "fa-circle");
+      a.appendChild(icon);
+      a.appendChild(document.createTextNode(" " + c.name + " "));
+      const arrow = document.createElement("i");
+      arrow.className = "fas fa-chevron-right arrow";
+      a.appendChild(arrow);
+      // Re-attach the same "highlight active link + close drawer" click
+      // behavior the static items had (wired in the Mobile Drawer script
+      // above, before these dynamic nodes existed).
+      a.addEventListener("click", () => {
+        drawerNav.querySelectorAll("a").forEach(l => l.classList.remove("active"));
+        a.classList.add("active");
+        if (typeof closeDrawer === "function") closeDrawer();
+      });
+      li.appendChild(a);
+      frag.appendChild(li);
+    });
+    drawerNav.insertBefore(frag, trailingDivider);
+  }
+
+  loadNavCategories();
+</script>
+
+<script src="/js/website-sections-renderer.js"></script>
+<script>
+  // Website Builder homepage sections (Admin -> Website Builder, page:
+  // "home") — rendered into the <div id="dynamicHomepageSections"> placed
+  // right before </main> above. The actual per-type rendering logic lives
+  // in public/js/website-sections-renderer.js (loaded just above), shared
+  // with public/site-page.html for standalone pages an admin creates
+  // (e.g. "gallery", served at /page/gallery) so both surfaces stay in
+  // sync from one source instead of two copies drifting apart.
+  renderWebsiteSectionsInto(document.getElementById("dynamicHomepageSections"), "home");
 </script>
 
 </body>

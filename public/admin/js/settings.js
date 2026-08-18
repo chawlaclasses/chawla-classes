@@ -101,6 +101,13 @@ function renderSettings() {
                 <button class="btn btn-gold" onclick="saveWhatsAppSettings()"><i class="fas fa-save"></i> Save</button>
             `)}
 
+            ${settingsCard('Social Links', '📸', `
+                <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">Shown on the public website's Gallery page (Instagram feed + Google Photos album link).</p>
+                <div class="form-group"><label>Instagram Handle or URL</label><input type="text" id="setInstagram" placeholder="e.g. @chawlaclasses or https://instagram.com/chawlaclasses" value="${escapeHtml(s.socialLinks?.instagram || '')}"></div>
+                <div class="form-group"><label>Google Photos Album Link</label><input type="text" id="setGooglePhotos" placeholder="https://photos.app.goo.gl/..." value="${escapeHtml(s.socialLinks?.googlePhotos || '')}"></div>
+                <button class="btn btn-gold" onclick="saveSocialLinks()"><i class="fas fa-save"></i> Save</button>
+            `)}
+
             ${settingsCard('Backup Settings', '💾', `
                 <div class="form-group">
                     <label><input type="checkbox" id="setAutoBackup" ${s.backup?.autoBackupEnabled ? 'checked' : ''} style="width:auto;margin-right:8px;"> Enable automatic backups</label>
@@ -174,6 +181,17 @@ async function saveThemeColor() {
     if (!result || !result.success) { showToast('Error', result?.message || 'Failed to save', 'error'); return; }
     document.documentElement.style.setProperty('--gold', themeColor);
     showToast('Success', 'Theme applied', 'success');
+}
+
+async function saveSocialLinks() {
+    const socialLinks = {
+        instagram: document.getElementById('setInstagram').value.trim(),
+        googlePhotos: document.getElementById('setGooglePhotos').value.trim()
+    };
+    const result = await apiCall('/settings', { method: 'PUT', body: JSON.stringify({ socialLinks }) });
+    if (!result || !result.success) { showToast('Error', result?.message || 'Failed to save', 'error'); return; }
+    showToast('Success', 'Social links saved', 'success');
+    loadSettings();
 }
 
 async function saveEmailSettings() {

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gallery | Chawla Classes — Photos &amp; Moments</title>
+<meta name="description" content="See photos from Chawla Classes — Uttam Nagar's trusted coaching institute since 2002. Follow us on Instagram or browse our full photo album.">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root { --primary: #0b1f3a; --secondary: #f4b400; --white: #ffffff; --light: #f7f9fc; --text: #333333; --muted: #6b7280; --border: #e5e7eb; --radius: 14px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: var(--text); background: var(--white); line-height: 1.6; }
+    a { text-decoration: none; color: inherit; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Nav — same simplified pattern as careers.html (same colors/logo),
+       kept independent of index.html's JS-driven mobile drawer since this
+       is a standalone page. */
+    header.site-nav { background: var(--primary); padding: 14px 0; }
+    .navrow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .navrow .brand { display: flex; align-items: center; gap: 10px; color: var(--white); font-weight: 800; font-size: 18px; }
+    .navrow .brand span { color: var(--secondary); }
+    .navrow a.back { color: var(--white); font-size: 14px; opacity: 0.85; }
+    .navrow a.back:hover { opacity: 1; }
+
+    .hero { background: linear-gradient(135deg, var(--primary), #14335e); color: var(--white); padding: 70px 0 60px; text-align: center; }
+    .hero h1 { font-size: 34px; font-weight: 800; margin-bottom: 12px; }
+    .hero p { font-size: 16px; opacity: 0.9; max-width: 620px; margin: 0 auto; }
+
+    section { padding: 56px 0; }
+    section.alt { background: var(--light); }
+    .section-title { font-size: 26px; font-weight: 800; color: var(--primary); text-align: center; margin-bottom: 8px; }
+    .section-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+
+    /* Two link cards -- Instagram / Google Photos -- shown/hidden based on
+       what's configured in Admin -> Settings -> Social Links (socialLinks
+       in services/settings.js). Neither is hardcoded: both start hidden
+       and loadSocialLinks() below reveals only the ones the admin has
+       actually filled in, so the page never shows a dead/empty link. */
+    .link-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 760px; margin: 0 auto; }
+    @media (max-width: 640px) { .link-grid { grid-template-columns: 1fr; } }
+    .link-card {
+        display: none; /* revealed by JS once a value exists */
+        flex-direction: column; align-items: center; text-align: center;
+        background: var(--white); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 36px 24px; transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .link-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(11,31,58,0.1); }
+    .link-card .icon-circle {
+        width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 26px; color: var(--white); margin-bottom: 16px;
+    }
+    .link-card.instagram .icon-circle { background: radial-gradient(circle at 30% 30%, #f9ce34, #ee2a7b 55%, #6228d7); }
+    .link-card.google-photos .icon-circle { background: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335); }
+    .link-card h3 { font-size: 17px; color: var(--primary); margin-bottom: 6px; }
+    .link-card p { font-size: 13.5px; color: var(--muted); margin-bottom: 18px; }
+    .link-card .visit-btn {
+        display: inline-flex; align-items: center; gap: 8px; background: var(--primary); color: var(--white);
+        font-weight: 700; padding: 11px 24px; border-radius: 999px; font-size: 13.5px;
+    }
+    .link-card.instagram .visit-btn { background: linear-gradient(135deg, #f9ce34, #ee2a7b 55%, #6228d7); }
+
+    /* Shown only if NEITHER link is configured yet, so the page is never
+       just a blank section for a visitor. */
+    #emptyState { display: none; text-align: center; color: var(--muted); font-size: 14px; max-width: 480px; margin: 0 auto; }
+
+    footer.site-footer { background: var(--primary); color: rgba(255,255,255,0.75); text-align: center; padding: 26px 0; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+    <div class="wrap navrow">
+        <a href="/" class="brand"><i class="fas fa-graduation-cap" style="color:var(--secondary)"></i> CHAWLA <span>CLASSES</span></a>
+        <a href="/" class="back"><i class="fas fa-arrow-left"></i> Back to Home</a>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="wrap">
+        <h1>Gallery</h1>
+        <p>A look at life at Chawla Classes — classes in session, events, achievements, and everyday moments from Uttam Nagar's trusted coaching institute since 2002.</p>
+    </div>
+</section>
+
+<section class="alt">
+    <div class="wrap">
+        <h2 class="section-title">See More Photos</h2>
+        <p class="section-sub">Follow along or browse our full album</p>
+
+        <div class="link-grid" id="linkGrid">
+            <a class="link-card instagram" id="instagramCard" href="#" target="_blank" rel="noopener">
+                <div class="icon-circle"><i class="fab fa-instagram"></i></div>
+                <h3>Instagram</h3>
+                <p>Photos and reels from classes, events, and student achievements.</p>
+                <span class="visit-btn"><i class="fab fa-instagram"></i> Follow Us</span>
+            </a>
+            <a class="link-card google-photos" id="googlePhotosCard" href="#" target="_blank" rel="noopener">
+                <div class="icon-circle"><i class="fas fa-images"></i></div>
+                <h3>Photo Album</h3>
+                <p>Browse our complete, full-resolution photo collection.</p>
+                <span class="visit-btn"><i class="fas fa-external-link-alt"></i> View Album</span>
+            </a>
+        </div>
+
+        <p id="emptyState">Our photo gallery is being set up — check back soon, or follow Chawla Classes on social media for the latest updates.</p>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="wrap">&copy; <span id="year"></span> Chawla Classes. All rights reserved.</div>
+</footer>
+
+<script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Reads the same public, unauthenticated settings endpoint used
+    // site-wide for branding/maintenance-mode (app.js's
+    // GET /api/public-settings -> services/settings.js's
+    // getPublicSettings(), which now includes socialLinks). Admin sets
+    // these under Admin -> Settings -> Social Links.
+    async function loadSocialLinks() {
+        try {
+            const res = await fetch('/api/public-settings');
+            const json = await res.json();
+            const links = json?.data?.socialLinks || {};
+            let anyShown = false;
+
+            if (links.instagram) {
+                const url = /^https?:\/\//i.test(links.instagram)
+                    ? links.instagram
+                    : `https://instagram.com/${links.instagram.replace(/^@/, '')}`;
+                const card = document.getElementById('instagramCard');
+                card.href = url;
+                card.style.display = 'flex';
+                anyShown = true;
+            }
+            if (links.googlePhotos) {
+                const card = document.getElementById('googlePhotosCard');
+                card.href = links.googlePhotos;
+                card.style.display = 'flex';
+                anyShown = true;
+            }
+            if (!anyShown) document.getElementById('emptyState').style.display = 'block';
+        } catch (err) {
+            // Same fail-quiet approach as index.html's loadNavCategories/
+            // loadMarketingPromos -- a slow/failed settings fetch shouldn't
+            // break the page, it just means neither card gets revealed and
+            // the "being set up" message shows instead.
+            document.getElementById('emptyState').style.display = 'block';
+        }
+    }
+    loadSocialLinks();
+</script>
+
+</body>
+</html>

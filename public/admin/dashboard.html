@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard – Chawla Classes</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+    <link rel="shortcut icon" href="/images/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -1440,6 +1442,14 @@
                 <span class="label">Reviews</span>
                 <span class="sidebar-badge" id="reviewsBadge" style="display:none;">0</span>
             </div>
+            <div class="sidebar-item" data-section="categories" data-permission="categories:view" onclick="switchSection('categories')">
+                <span class="icon-chip"><i class="fas fa-bars"></i></span>
+                <span class="label">Categories</span>
+            </div>
+            <div class="sidebar-item" data-section="website-builder" data-permission="website_builder:view" onclick="switchSection('website-builder')">
+                <span class="icon-chip"><i class="fas fa-th-large"></i></span>
+                <span class="label">Website Builder</span>
+            </div>
 
             <div class="sidebar-group-label">Security</div>
             <div class="sidebar-item" data-section="active-sessions" data-permission="audit:view" onclick="switchSection('active-sessions')">
@@ -1660,6 +1670,8 @@
 <script src="js/recruitment.js" defer></script>
 <script src="js/marketing.js" defer></script>
 <script src="js/reviews.js" defer></script>
+<script src="js/categories.js" defer></script>
+<script src="js/website-builder.js" defer></script>
 <script src="js/subjects.js" defer></script>
 <script src="js/series.js" defer></script>
 <script src="js/tests.js" defer></script>

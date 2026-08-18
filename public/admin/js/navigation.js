@@ -148,6 +148,8 @@ var sectionLoaders = {
     'recruitment': function() { return window.loadRecruitment && window.loadRecruitment(); },
     'marketing': function() { return window.loadMarketing && window.loadMarketing(); },
     'reviews': function() { return window.loadReviews && window.loadReviews(); },
+    'categories': function() { return window.loadCategories && window.loadCategories(); },
+    'website-builder': function() { return window.loadWebsiteBuilder && window.loadWebsiteBuilder(); },
     'students': function() { return window.loadStudents && window.loadStudents(); },
     'active-sessions': function() { return window.loadActiveSessions && window.loadActiveSessions(); },
     'login-history': function() { return window.loadLoginHistory && window.loadLoginHistory(); },

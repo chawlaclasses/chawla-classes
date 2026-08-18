@@ -194,7 +194,27 @@ class JsonDB {
     }
   }
 
+  // FIX (2026-08-14): previously closed the MongoClient immediately,
+  // without waiting for any writes still in flight via _queueWrite. That's
+  // invisible in the long-running server process (the connection just
+  // stays open until process exit), but every one-off script that follows
+  // the documented `db.connect().then(fn).finally(() => db.close())`
+  // pattern (scripts/seed-categories.js, seed-marketing-banners.js,
+  // create-admin.js, etc.) calls close() right after its work function
+  // resolves -- and insertOne/insertMany/updateById/etc. all queue their
+  // actual MongoDB write and return before that write has necessarily
+  // completed (that's the whole point of _queueWrite: the in-memory
+  // mirror is updated synchronously so callers don't have to await it).
+  // Closing the client while one of those writes is still in flight fails
+  // it with "Cannot use a session that has ended" -- the in-memory state
+  // was already correct, but the write never actually reached MongoDB, so
+  // the process exits believing it succeeded (seed script prints
+  // "Seeded...") while nothing landed in the real database. Draining
+  // every collection's queue first (each is a promise chain that already
+  // swallows its own errors, per _queueWrite's comment, so this can't
+  // reject) closes that gap.
   async close() {
+    await Promise.allSettled(Object.values(this._saveQueue));
     if (this.client) await this.client.close();
   }
 

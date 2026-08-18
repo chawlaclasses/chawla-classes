@@ -30,6 +30,12 @@ function isSafeUrl(value) {
   // absolute URL in disguise), so it's deliberately excluded here and
   // falls through to the URL parse/scheme check below.
   if (v.startsWith("/") && !v.startsWith("//")) return true;
+  // In-page anchor, e.g. "#admission" — used throughout index.html's own
+  // single-page nav (Home/About/Courses/... all scroll to a section on
+  // the same page rather than navigating anywhere), so this needs to stay
+  // valid for both the marketing banner CTA link and the categories nav
+  // URL field below. No scheme, can't navigate off-site — safe.
+  if (v.startsWith("#")) return true;
 
   let parsed;
   try {
@@ -43,6 +49,123 @@ function isSafeUrl(value) {
   }
   return true;
 }
+
+// ── Website Builder section content validation ──────────────────────────
+// Each section `type` has a fixed field shape — no free-text HTML field
+// anywhere (see routes/admin/website-sections.js's header comment for
+// why: this whole module exists specifically so an admin never has to
+// enter markup). Called from the createSection/updateSection express-
+// validator chains below with `req.body.type` + `req.body.data`.
+function str(value, { field, required = false, maxLen = 500 } = {}) {
+  if (value === undefined || value === null || value === "") {
+    if (required) throw new Error(`${field} is required`);
+    return;
+  }
+  if (typeof value !== "string") throw new Error(`${field} must be text`);
+  if (value.length > maxLen) throw new Error(`${field} must be ${maxLen} characters or fewer`);
+}
+
+function url(value, { field, required = false } = {}) {
+  if (value === undefined || value === null || value === "") {
+    if (required) throw new Error(`${field} is required`);
+    return;
+  }
+  if (typeof value !== "string") throw new Error(`${field} must be text`);
+  isSafeUrl(value); // throws its own message if unsafe/malformed
+}
+
+const SECTION_FIELD_VALIDATORS = {
+  hero: (d) => {
+    str(d.heading, { field: "Heading", required: true, maxLen: 150 });
+    str(d.subHeading, { field: "Sub Heading", maxLen: 300 });
+    str(d.buttonText, { field: "Button Text", maxLen: 60 });
+    url(d.buttonLink, { field: "Button Link" });
+    url(d.backgroundImage, { field: "Background Image" });
+  },
+  text: (d) => {
+    str(d.title, { field: "Title", required: true, maxLen: 150 });
+    str(d.description, { field: "Description", required: true, maxLen: 3000 });
+  },
+  image: (d) => {
+    url(d.image, { field: "Image", required: true });
+    str(d.caption, { field: "Caption", maxLen: 200 });
+  },
+  image_text: (d) => {
+    str(d.title, { field: "Title", required: true, maxLen: 150 });
+    str(d.description, { field: "Description", required: true, maxLen: 3000 });
+    url(d.image, { field: "Image", required: true });
+    if (!["left", "right"].includes(d.imagePosition)) {
+      throw new Error("Image Position must be 'left' or 'right'");
+    }
+  },
+  gallery: (d) => {
+    if (!Array.isArray(d.images) || d.images.length === 0) {
+      throw new Error("At least one image is required");
+    }
+    if (d.images.length > 30) throw new Error("Maximum 30 images per gallery");
+    d.images.forEach((img, i) => url(img, { field: `Image ${i + 1}`, required: true }));
+  },
+  testimonials: (d) => {
+    if (!Array.isArray(d.items) || d.items.length === 0) {
+      throw new Error("At least one testimonial is required");
+    }
+    if (d.items.length > 50) throw new Error("Maximum 50 testimonials");
+    d.items.forEach((item, i) => {
+      str(item.name, { field: `Testimonial ${i + 1}: Student Name`, required: true, maxLen: 100 });
+      str(item.review, { field: `Testimonial ${i + 1}: Review`, required: true, maxLen: 1000 });
+      url(item.photo, { field: `Testimonial ${i + 1}: Photo` });
+    });
+  },
+  faq: (d) => {
+    if (!Array.isArray(d.items) || d.items.length === 0) {
+      throw new Error("At least one FAQ is required");
+    }
+    if (d.items.length > 50) throw new Error("Maximum 50 FAQs");
+    d.items.forEach((item, i) => {
+      str(item.question, { field: `FAQ ${i + 1}: Question`, required: true, maxLen: 300 });
+      str(item.answer, { field: `FAQ ${i + 1}: Answer`, required: true, maxLen: 2000 });
+    });
+  },
+  video: (d) => {
+    str(d.title, { field: "Title", maxLen: 150 });
+    url(d.videoUrl, { field: "Video URL", required: true });
+  },
+  cta: (d) => {
+    str(d.heading, { field: "Heading", required: true, maxLen: 150 });
+    str(d.description, { field: "Description", maxLen: 500 });
+    str(d.buttonText, { field: "Button Text", maxLen: 60 });
+    url(d.buttonLink, { field: "Button Link" });
+  },
+  contact: (d) => {
+    str(d.title, { field: "Title", maxLen: 100 });
+    str(d.phone, { field: "Phone", maxLen: 30 });
+    str(d.email, { field: "Email", maxLen: 150 });
+    str(d.address, { field: "Address", maxLen: 300 });
+  },
+};
+
+function validateSectionData(type, data) {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    throw new Error("data must be an object");
+  }
+  const fieldValidator = SECTION_FIELD_VALIDATORS[type];
+  if (!fieldValidator) throw new Error("Invalid section type"); // body("type") above already rejects this, belt-and-suspenders
+  fieldValidator(data);
+  return true;
+}
+
+// Where a Website Builder section can be positioned relative to the
+// homepage's existing hardcoded sections (index.html's <section id="...">
+// elements), plus "end" (the historical/default behavior: appended in its
+// own container right before the footer, after everything else). Kept as
+// a fixed allowlist matching index.html's actual section ids exactly --
+// an arbitrary free-text anchor would let an admin "position" a section
+// next to something that doesn't exist, silently falling back to "end"
+// with no feedback that the anchor didn't match anything.
+const HOMEPAGE_ANCHORS = [
+  "end", "home", "about", "courses", "classes-overview", "faculty",
+  "results", "fees", "online-classes", "faq", "admission", "feedback", "contact",
+];
 
 const validators = {
   // ── Class validators ──────────────────────────────────────────────────────
@@ -477,10 +600,106 @@ const validators = {
     body("orderedIds").isArray({ min: 1 }).withMessage("orderedIds must be a non-empty array"),
     body("orderedIds.*").isString().trim().notEmpty().withMessage("Each id must be a non-empty string"),
   ],
+
+  // ── Homepage nav categories ─────────────────────────────────────────────
+  // Admin-managed replacement for index.html's hardcoded navbar
+  // (Home/About/Courses/.../Contact). See routes/admin/categories.js and
+  // routes/categories.js.
+  createCategory: [
+    body("name").trim().notEmpty().withMessage("Name is required").isLength({ max: 60 }),
+    body("slug")
+      .trim().notEmpty().withMessage("Slug is required").isLength({ max: 60 })
+      .matches(/^[a-z0-9-]+$/).withMessage("Slug can only contain lowercase letters, numbers, and hyphens"),
+    body("url").trim().notEmpty().withMessage("URL is required").isLength({ max: 300 }).custom(isSafeUrl),
+    body("icon").optional().trim().isLength({ max: 60 }),
+    body("order").optional().isInt({ min: 0, max: 999 }).withMessage("Order must be 0–999").toInt(),
+    body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  updateCategory: [
+    body("name").optional().trim().isLength({ min: 1, max: 60 }),
+    body("slug")
+      .optional().trim().isLength({ min: 1, max: 60 })
+      .matches(/^[a-z0-9-]+$/).withMessage("Slug can only contain lowercase letters, numbers, and hyphens"),
+    body("url").optional().trim().isLength({ min: 1, max: 300 }).custom(isSafeUrl),
+    body("icon").optional().trim().isLength({ max: 60 }),
+    body("order").optional().isInt({ min: 0, max: 999 }).withMessage("Order must be 0–999").toInt(),
+    body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  reorderCategories: [
+    body("orderedIds").isArray({ min: 1 }).withMessage("orderedIds must be a non-empty array"),
+    body("orderedIds.*").isString().trim().notEmpty().withMessage("Each id must be a non-empty string"),
+  ],
+
+  updateCategoryStatus: [
+    body("isActive").isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  // ── Website Builder (GoDaddy-style homepage sections) ───────────────────
+  // Strictly form-based, fixed-shape content blocks — no free HTML/rich-
+  // text field anywhere. `data` is validated per `type` below so a "hero"
+  // section can't be saved with, say, FAQ fields and vice versa. See
+  // routes/admin/website-sections.js for the full type list.
+  createSection: [
+    body("type").trim().notEmpty().isIn([
+      "hero", "text", "image", "image_text", "gallery",
+      "testimonials", "faq", "video", "cta", "contact",
+    ]).withMessage("Invalid section type"),
+    body("data").custom((data, { req }) => validateSectionData(req.body.type, data)),
+    body("page")
+      .optional().trim().isLength({ max: 60 })
+      .matches(/^[a-z0-9-]+$/).withMessage("Page must be lowercase letters, numbers, and hyphens only"),
+    body("anchor").optional().trim().isIn(HOMEPAGE_ANCHORS).withMessage("Invalid position"),
+    body("order").optional().isInt({ min: 0, max: 999 }).withMessage("Order must be 0–999").toInt(),
+    body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  updateSection: [
+    body("type").optional().trim().isIn([
+      "hero", "text", "image", "image_text", "gallery",
+      "testimonials", "faq", "video", "cta", "contact",
+    ]).withMessage("Invalid section type"),
+    // On update, `type` may be omitted (editing content only) — validated
+    // against the existing document's type by the route handler itself
+    // (it has access to the record; a body-only validator here doesn't).
+    body("data").optional().custom((data, { req }) => {
+      if (req.body.type) return validateSectionData(req.body.type, data);
+      if (data === undefined) return true; // no data change in this update
+      if (typeof data !== "object" || data === null || Array.isArray(data)) {
+        throw new Error("data must be an object");
+      }
+      return true;
+    }),
+    body("page")
+      .optional().trim().isLength({ max: 60 })
+      .matches(/^[a-z0-9-]+$/).withMessage("Page must be lowercase letters, numbers, and hyphens only"),
+    body("anchor").optional().trim().isIn(HOMEPAGE_ANCHORS).withMessage("Invalid position"),
+    body("order").optional().isInt({ min: 0, max: 999 }).withMessage("Order must be 0–999").toInt(),
+    body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  reorderSections: [
+    body("orderedIds").isArray({ min: 1 }).withMessage("orderedIds must be a non-empty array"),
+    body("orderedIds.*").isString().trim().notEmpty().withMessage("Each id must be a non-empty string"),
+  ],
+
+  updateSectionStatus: [
+    body("isActive").isBoolean().withMessage("isActive must be a boolean"),
+  ],
 };
 
 // Exposed directly (not just wired into the .custom() chains above) so it
 // can be unit-tested and reused without going through express-validator.
 validators.isSafeUrl = isSafeUrl;
+// Also called directly from routes/admin/website-sections.js's PUT /:id
+// handler: when an edit changes `data` but not `type`, the express-
+// validator chain above (updateSection) can only confirm `data` is *an
+// object* — it has no DB access to know the record's existing type, so it
+// can't validate hero-shaped vs faq-shaped fields at that point. The route
+// handler re-validates data against the existing document's type with
+// this same function right before saving, so a malformed edit still can't
+// reach MongoDB.
+validators.validateSectionData = validateSectionData;
 
 module.exports = validators;

@@ -1,4 +1,16 @@
 // public/student/js/api/student.js
+//
+// Of everything in this file, only getDashboard() below has a real
+// backend route (routes/studentRoutes.js's GET /student/dashboard) --
+// checked and confirmed no /student/profile, /photo, /stats,
+// /profile-completion, /achievements, /gamification, /weak-chapters,
+// /strong-chapters, /recent-activity, /attendance, or /downloads route
+// exists anywhere. getDashboard() already returns student info, stats,
+// and recentActivity in one payload, which is what
+// Dashboard/index.js's loadDashboard() now actually uses (see the fix
+// note there) instead of the broken getProfile()/getStats()/
+// getRecentActivity() calls it used to make. Every other method below
+// will 404 until a matching backend endpoint is built.
 import apiClient from './client.js';
 
 class StudentAPI {
@@ -32,6 +44,12 @@ class StudentAPI {
         return response.data;
     }
 
+    // NO BACKEND ROUTE EXISTS below this point -- see the file-header
+    // comment for the full list checked. Dashboard/index.js used to call
+    // getStats() and getRecentActivity() directly and broke the whole
+    // dashboard on every load as a result (Promise.all rejects on any
+    // one failure); it now gets that same data from getDashboard()
+    // above instead, which already includes both.
     async getStats() {
         const response = await apiClient.get('/student/stats');
         return response.data;

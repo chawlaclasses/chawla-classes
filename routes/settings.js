@@ -65,7 +65,7 @@ router.get('/', requirePermission('settings:view'), (req, res) => {
 router.put('/', requirePermission('settings:edit'), (req, res) => {
     try {
         const allowed = ['instituteName', 'academicSession', 'passingCriteria', 'themeColor',
-            'email', 'whatsapp', 'backup', 'maintenanceMode', 'maintenanceMessage'];
+            'email', 'whatsapp', 'backup', 'socialLinks', 'maintenanceMode', 'maintenanceMessage'];
         const patch = {};
         for (const key of allowed) {
             if (req.body[key] !== undefined) patch[key] = req.body[key];

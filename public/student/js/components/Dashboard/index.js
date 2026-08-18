@@ -101,28 +101,38 @@ export class Dashboard {
             this.state.loading = true;
             this.showSkeleton();
 
-            const [student, stats, tests, leaderboard, notifications, ai, target, resume, activities] = 
+            // FIX (connectivity audit, 2026-08): this used to call
+            // studentAPI.getProfile(), .getStats(), and .getRecentActivity()
+            // separately -- none of which have a backend route (only
+            // /student/dashboard does, and it already returns all three:
+            // `student`, `stats`, and `recentActivity` in one payload — see
+            // routes/studentRoutes.js). Since this whole block is a
+            // Promise.all, those 3 guaranteed-404s meant EVERY dashboard
+            // load rejected and fell into the catch below, showing the
+            // error state instead of the real dashboard, every time, for
+            // every student. Calling getDashboard() once and destructuring
+            // from it fixes that at the source instead of patching the
+            // symptom.
+            const [dashboard, tests, leaderboard, notifications, ai, target, resume] =
                 await Promise.all([
-                    studentAPI.getProfile(),
-                    studentAPI.getStats(),
+                    studentAPI.getDashboard(),
                     testsAPI.getUpcomingTests(),
                     this.getLeaderboard(),
                     notificationsAPI.getNotifications({ limit: 10 }),
                     aiAPI.getSuggestions(),
                     aiAPI.getDailyGoal(),
-                    testsAPI.resumeTest(),
-                    studentAPI.getRecentActivity()
+                    testsAPI.resumeTest()
                 ]);
 
-            this.state.student = student;
-            this.state.stats = stats;
+            this.state.student = dashboard.student;
+            this.state.stats = dashboard.stats;
+            this.state.activities = dashboard.recentActivity;
             this.state.tests = tests;
             this.state.leaderboard = leaderboard;
             this.state.notifications = notifications;
             this.state.aiSuggestions = ai;
             this.state.dailyTarget = target;
             this.state.resumeTest = resume;
-            this.state.activities = activities;
             this.state.loading = false;
 
         } catch (error) {

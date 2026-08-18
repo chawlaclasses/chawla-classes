@@ -26,6 +26,9 @@ const DEFAULTS = {
     backup: {
         autoBackupEnabled: false, schedule: 'daily' // 'daily' | 'weekly'
     },
+    socialLinks: {
+        instagram: '', googlePhotos: ''
+    },
     maintenanceMode: false,
     maintenanceMessage: 'We are performing scheduled maintenance. Please check back soon.'
 };
@@ -44,7 +47,8 @@ function getSettings() {
         ...existing,
         email: { ...DEFAULTS.email, ...(existing.email || {}) },
         whatsapp: { ...DEFAULTS.whatsapp, ...(existing.whatsapp || {}) },
-        backup: { ...DEFAULTS.backup, ...(existing.backup || {}) }
+        backup: { ...DEFAULTS.backup, ...(existing.backup || {}) },
+        socialLinks: { ...DEFAULTS.socialLinks, ...(existing.socialLinks || {}) }
     };
 }
 
@@ -55,7 +59,8 @@ function updateSettings(patch) {
         ...patch,
         email: { ...current.email, ...(patch.email || {}) },
         whatsapp: { ...current.whatsapp, ...(patch.whatsapp || {}) },
-        backup: { ...current.backup, ...(patch.backup || {}) }
+        backup: { ...current.backup, ...(patch.backup || {}) },
+        socialLinks: { ...current.socialLinks, ...(patch.socialLinks || {}) }
     };
     delete merged._id;
     const existing = db.findById('app-settings', SETTINGS_ID);
@@ -65,7 +70,8 @@ function updateSettings(patch) {
     return db.insert('app-settings', { _id: SETTINGS_ID, ...merged });
 }
 
-// Safe subset for unauthenticated pages (login screens, maintenance check) —
+// Safe subset for unauthenticated pages (login screens, maintenance check,
+// and the public gallery.html page's Instagram/Google Photos links) —
 // never include email/whatsapp credentials here.
 function getPublicSettings() {
     const s = getSettings();
@@ -74,7 +80,8 @@ function getPublicSettings() {
         logoUrl: s.logoUrl,
         faviconUrl: s.faviconUrl,
         maintenanceMode: s.maintenanceMode,
-        maintenanceMessage: s.maintenanceMessage
+        maintenanceMessage: s.maintenanceMessage,
+        socialLinks: s.socialLinks
     };
 }
 

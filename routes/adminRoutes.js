@@ -202,6 +202,28 @@ router.use('/marketing', require('./admin/marketing'));
 router.use('/marketing/campaigns', require('./admin/marketing-campaigns'));
 
 // ============================================================
+// Homepage Nav Categories
+// ============================================================
+// Admin CRUD for the homepage navbar (routes/admin/categories.js). Public
+// read of active categories is separate and unauthenticated
+// (routes/categories.js), mounted directly in app.js. Final URLs:
+// /api/admin/categories, /api/admin/categories/:id,
+// /api/admin/categories/:id/status, /api/admin/categories/reorder.
+router.use('/categories', require('./admin/categories'));
+
+// ============================================================
+// Website Builder (GoDaddy-style homepage sections)
+// ============================================================
+// Admin CRUD for the section library (routes/admin/website-sections.js).
+// Public read is separate and unauthenticated
+// (routes/website-sections.js), mounted directly in app.js. Final URLs:
+// /api/admin/website-sections, /api/admin/website-sections/:id,
+// /api/admin/website-sections/:id/status,
+// /api/admin/website-sections/reorder,
+// /api/admin/website-sections/upload-image.
+router.use('/website-sections', require('./admin/website-sections'));
+
+// ============================================================
 // Review Management
 // ============================================================
 // Admin-side moderation (approve/reject/edit/feature/delete) for reviews

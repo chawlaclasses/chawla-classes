@@ -101,6 +101,8 @@ const notificationsRoutes = require("./routes/notifications");
 const recruitmentPublicRoutes = require("./routes/recruitment");
 const publicEnquiryRoutes = require("./routes/publicEnquiry");
 const marketingPublicRoutes = require("./routes/marketing");
+const categoriesPublicRoutes = require("./routes/categories");
+const websiteSectionsPublicRoutes = require("./routes/website-sections");
 const reviewsPublicRoutes = require("./routes/reviews");
 const bookmarksRoutes = require("./routes/bookmarks");
 const practiceRoutes = require("./routes/practice");
@@ -377,6 +379,27 @@ app.set('trust proxy', 1);
     res.sendFile(path.join(STATIC_DIR, "index.html"));
   });
 
+  // ── Website Builder standalone pages (Admin -> Website Builder, any
+  //    `page` other than "home") ───────────────────────────────────────────
+  // Any page slug an admin uses (e.g. "gallery") renders through this ONE
+  // shared shell (public/site-page.html) instead of a hand-written .html
+  // file per page -- the shell reads the slug from the URL client-side and
+  // fetches+renders its sections from GET /api/website-sections?page=slug,
+  // using the exact same renderers as the homepage (see
+  // public/js/website-sections-renderer.js). Registered here (after
+  // express.static() above but before the API routes below) so a real
+  // static file at the same path would still win if one ever existed
+  // (e.g. public/gallery.html, kept as-is, reachable at /gallery.html --
+  // this route is /page/:slug, a different path), and so this never
+  // intercepts /api/*.
+  app.get("/page/:slug", (_req, res) => {
+    // NOT STATIC_DIR (that's the project root -- index.html/style.css
+    // live there, see config/index.js). site-page.html lives in public/
+    // alongside gallery.html/careers.html, which is a separately-mounted
+    // static directory (express.static() above).
+    res.sendFile(path.join(__dirname, "public", "site-page.html"));
+  });
+
   // ── Existing API routes ───────────────────────────────────────────────────
   // FIX: notesRoutes and pdfRoutes were mounted at bare "/" alongside
   // studentRoutes (routes/students.js, the legacy CRUD one). Their generic
@@ -440,6 +463,14 @@ app.set('trust proxy', 1);
   // Public — no auth, read-only. Active promo banners for index.html's
   // promo bar / offers section. Admin CRUD is separate (/api/admin/marketing).
   app.use("/api/marketing", marketingPublicRoutes);
+  // Public — no auth, read-only. Active homepage navbar categories,
+  // replacing index.html's previously hardcoded navbar <ul>. Admin CRUD
+  // is separate (/api/admin/categories).
+  app.use("/api/categories", categoriesPublicRoutes);
+  // Public — no auth, read-only. Active homepage sections from the
+  // Website Builder (GoDaddy-style section library). Admin CRUD is
+  // separate (/api/admin/website-sections).
+  app.use("/api/website-sections", websiteSectionsPublicRoutes);
   // Public — no auth. index.html's "Student Feedback & Rating" form
   // (submission) + the "Student Reviews" section (approved-only read).
   // Admin moderation is separate (/api/admin/reviews).

@@ -13,6 +13,7 @@
     "setup": "node scripts/setup.js",
     "create-admin": "node scripts/create-admin.js",
   "seed-banners": "node scripts/seed-marketing-banners.js",
+    "seed-categories": "node scripts/seed-categories.js",
     "create-student": "node scripts/create-student.js",
     "fix-json": "node scripts/fix-json.js",
     "init-data": "node scripts/init-data.js",

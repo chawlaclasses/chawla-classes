@@ -84,6 +84,12 @@ const ROLE_PERMISSIONS = {
     'marketing:*',
     // Moderating what shows in the public "Student Reviews" section.
     'reviews:*',
+    // Homepage navbar categories (Home/About/Courses/.../Contact) —
+    // same trust level as marketing/reviews: changes what every visitor
+    // sees on the public site, but not financial/student-record data.
+    'categories:*',
+    // Website Builder — homepage section library (Admin -> Website Builder).
+    'website_builder:*',
   ],
 
   // Runs classes and tests. No visibility into money or admissions

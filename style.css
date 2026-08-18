@@ -1086,6 +1086,62 @@ body {
 ===================== */
 
 .admission-section { padding: 100px 8%; background: #f7f9fc; }
+/* Used by index.html's loadHomepageSections (Admin -> Pages, type:
+   'section') to alternate background between consecutive admin-added
+   sections, same idea as this file's other section pairs
+   (e.g. #about vs #courses) already do by hand. */
+.admission-section.alt-bg { background: #ffffff; }
+/* Used by index.html's renderTextSection/renderImageSection (Website
+   Builder, Admin -> Website Builder) for the plain description text /
+   caption under an image. */
+.dynamic-section-content { max-width: 900px; margin: 0 auto; font-size: 15.5px; color: #333; line-height: 1.7; text-align: center; }
+.dynamic-section-content img { max-width: 100%; border-radius: 14px; margin: 0 auto 12px; display: block; }
+
+/* ============================================================
+   WEBSITE BUILDER — homepage sections (Admin -> Website Builder)
+   One block per section type, matching index.html's render<Type>Section
+   functions. Kept visually consistent with the rest of the homepage
+   (navy/gold palette, .section-title, .admission-section spacing).
+   ============================================================ */
+.ws-hero {
+  text-align: center; color: #fff; background: linear-gradient(135deg, #0b1f3a, #14335e);
+  background-size: cover; background-position: center; padding: 90px 8%;
+}
+.ws-hero-heading { font-size: clamp(28px, 4vw, 42px); font-weight: 800; margin-bottom: 14px; }
+.ws-hero-sub { font-size: 16px; opacity: 0.92; max-width: 680px; margin: 0 auto 26px; }
+
+.ws-image-text-row { display: flex; align-items: center; gap: 48px; max-width: 1100px; margin: 0 auto; }
+.ws-image-left { flex-direction: row-reverse; }
+.ws-image-text-col { flex: 1; min-width: 0; }
+.ws-image-text-col h3 { font-size: 24px; color: #0b1f3a; margin-bottom: 12px; }
+.ws-image-text-col p { font-size: 15px; color: #444; line-height: 1.7; }
+.ws-image-text-col img { width: 100%; border-radius: 14px; display: block; }
+@media (max-width: 768px) { .ws-image-text-row, .ws-image-left { flex-direction: column; } }
+
+.ws-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; max-width: 1100px; margin: 0 auto; }
+.ws-gallery-grid img { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; display: block; }
+
+.ws-testimonial-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; }
+.ws-testimonial-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; text-align: center; }
+.ws-testimonial-card img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin: 0 auto 12px; display: block; }
+.ws-testimonial-card strong { display: block; color: #0b1f3a; margin-bottom: 8px; }
+.ws-testimonial-card p { color: #555; font-size: 14px; line-height: 1.6; }
+
+.ws-faq-wrap { max-width: 760px; margin: 0 auto; }
+.ws-faq-item { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 20px; margin-bottom: 10px; }
+.ws-faq-item summary { font-weight: 600; color: #0b1f3a; cursor: pointer; }
+.ws-faq-item p { margin-top: 10px; color: #555; font-size: 14px; line-height: 1.6; }
+
+.ws-video-wrap { max-width: 900px; margin: 0 auto; position: relative; padding-top: 50.625%; border-radius: 14px; overflow: hidden; }
+.ws-video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+.ws-cta { text-align: center; background: linear-gradient(135deg, #0b1f3a, #14335e); color: #fff; }
+.ws-cta h2 { font-size: 28px; font-weight: 800; margin-bottom: 10px; }
+.ws-cta p { opacity: 0.9; margin-bottom: 22px; }
+
+.ws-contact-wrap { max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.ws-contact-row { display: flex; align-items: center; gap: 14px; font-size: 15px; color: #333; }
+.ws-contact-row i { color: #f4b400; font-size: 18px; width: 22px; text-align: center; }
 .admission-form-box {
   max-width: 800px; margin: auto;
   background: white; padding: 40px;
@@ -2207,6 +2263,11 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   font-size: 15.5px;
   box-shadow: 0 6px 18px rgba(244, 180, 0, 0.35);
 }
+.banner-slide-cta-only .banner-slide-cta {
+  padding: 13px 32px;
+  font-size: 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
 .banner-slide-cta:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(244, 180, 0, 0.4);
@@ -2269,6 +2330,7 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   .banner-slide-cta { padding: 7px 16px; font-size: 12px; }
   .banner-slide-text .banner-slide-overlay { padding: 16px 20px; }
   .banner-slide-text .banner-slide-cta { padding: 10px 24px; font-size: 13px; }
+  .banner-slide-cta-only .banner-slide-cta { padding: 9px 20px; font-size: 12.5px; }
   .bannerSwiper .swiper-button-next,
   .bannerSwiper .swiper-button-prev { width: 28px; height: 28px; }
   .bannerSwiper .swiper-button-next::after,
