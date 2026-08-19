@@ -507,6 +507,14 @@
   <p id="lightboxCaption"></p>
 </div>
 
+<!-- MARKETING POPUP (Admin -> Marketing -> Banners & Offers, 'popup' placement) -->
+<div class="marketing-popup-overlay" id="marketingPopupOverlay">
+  <div class="marketing-popup-box">
+    <button class="marketing-popup-close" id="marketingPopupClose" aria-label="Close">&#x2715;</button>
+    <div id="marketingPopupContent"></div>
+  </div>
+</div>
+
 <!-- TESTIMONIALS -->
 <section class="testimonial-section">
   <h2 class="section-title">Student Reviews</h2>
@@ -721,6 +729,27 @@
     });
   });
   document.addEventListener("keydown", e => { if (e.key==="Escape") { closeDrawer(); closeLightbox(); } });
+</script>
+
+<script>
+  // Desktop navbar active-link highlight. The "Home" link (and, once
+  // loadNavCategories() below replaces the list, whichever category is
+  // first) starts pre-marked with the "nav-active" class in the HTML/JS
+  // that builds #navLinks -- but nothing ever moved that class when a
+  // *different* link was clicked, so "Home" stayed highlighted forever
+  // (style.css's active styling used to key off ":first-child" too, which
+  // made this worse -- fixed there as well). Delegated on the #navLinks
+  // container (not on each <a> directly) because renderDesktopNavCategories()
+  // in the categories script further down wipes and rebuilds the
+  // ".cat-nav-item" links after page load -- a direct listener on the
+  // original elements would be lost when that happens, but delegation
+  // keeps working for the replacement links too.
+  document.getElementById("navLinks").addEventListener("click", (e) => {
+    const link = e.target.closest(".cat-nav-item a");
+    if (!link) return;
+    document.querySelectorAll("#navLinks a.nav-active").forEach(l => l.classList.remove("nav-active"));
+    link.classList.add("nav-active");
+  });
 </script>
 
 <script>
@@ -1078,6 +1107,52 @@
         </div>`;
   }
 
+  // Popup ('popup' placement) -- a modal shown once per visitor session, a
+  // few seconds after page load. Only the highest-priority active popup
+  // banner is shown (banners arrive already priority-sorted from the API,
+  // same ordering the homepage slider uses). "Seen" is tracked per banner
+  // id in sessionStorage, so editing/replacing the popup in Admin shows it
+  // again even to a visitor who already dismissed the old one, but a
+  // visitor who dismissed today's popup won't see it again until their
+  // next browser session.
+  const POPUP_SEEN_KEY = "marketingPopupSeenId";
+  function buildPopupContentHtml(b) {
+    const cta = (b.ctaText && b.ctaLink)
+      ? `<a href="${escapeHtmlPromo(b.ctaLink)}" class="marketing-popup-cta">${escapeHtmlPromo(b.ctaText)}</a>`
+      : "";
+    const img = b.imageUrl
+      ? `<img class="marketing-popup-img" src="${escapeHtmlPromo(b.imageUrl)}" alt="${escapeHtmlPromo(b.title)}" loading="lazy" onerror="this.remove();">`
+      : "";
+    return `
+      ${img}
+      <div class="marketing-popup-text">
+        <h3>${escapeHtmlPromo(b.title)}</h3>
+        <p>${escapeHtmlPromo(b.message)}</p>
+        ${cta}
+      </div>
+    `;
+  }
+  function openMarketingPopup(banner) {
+    const overlay = document.getElementById("marketingPopupOverlay");
+    const content = document.getElementById("marketingPopupContent");
+    if (!overlay || !content) return;
+    content.innerHTML = buildPopupContentHtml(banner);
+    overlay.classList.add("active");
+    document.body.style.overflow = "hidden";
+    try { sessionStorage.setItem(POPUP_SEEN_KEY, banner._id); } catch (err) { /* private browsing etc. -- popup still works, just may re-show */ }
+  }
+  function closeMarketingPopup() {
+    const overlay = document.getElementById("marketingPopupOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("active");
+    document.body.style.overflow = "";
+  }
+  document.getElementById("marketingPopupClose").addEventListener("click", closeMarketingPopup);
+  document.getElementById("marketingPopupOverlay").addEventListener("click", (e) => {
+    if (e.target.id === "marketingPopupOverlay") closeMarketingPopup();
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMarketingPopup(); });
+
   async function loadMarketingPromos() {
     const wrap = document.getElementById("marketing-promo-wrap");
     if (!wrap) return;
@@ -1091,7 +1166,19 @@
       if (!banners || banners.length === 0) return;
 
       const topBar = banners.filter(b => b.placement === "top_bar");
-      const homepage = banners.filter(b => b.placement !== "top_bar");
+      const popups = banners.filter(b => b.placement === "popup");
+      // Everything else (placement === "homepage", or missing/legacy) goes
+      // to the homepage slider -- kept as a fallback rather than an exact
+      // "homepage" match so older banners saved before this field existed
+      // still show up where they always did.
+      const homepage = banners.filter(b => b.placement !== "top_bar" && b.placement !== "popup");
+
+      if (popups.length > 0) {
+        const chosen = popups[0];
+        let alreadySeen = false;
+        try { alreadySeen = sessionStorage.getItem(POPUP_SEEN_KEY) === chosen._id; } catch (err) { /* ignore */ }
+        if (!alreadySeen) setTimeout(() => openMarketingPopup(chosen), 1200);
+      }
 
       topBar.forEach(b => {
         const bar = document.createElement("div");
@@ -1198,18 +1285,47 @@
 
     navLinks.querySelectorAll(".cat-nav-item").forEach(el => el.remove());
 
+    const activeIdx = findActiveCategoryIndex(categories);
     const frag = document.createDocumentFragment();
     categories.forEach((c, idx) => {
       const li = document.createElement("li");
       li.className = "cat-nav-item";
       const a = document.createElement("a");
       a.href = c.url;
-      if (idx === 0) a.className = "nav-active";
+      if (idx === activeIdx) a.className = "nav-active";
       a.textContent = c.name;
       li.appendChild(a);
       frag.appendChild(li);
     });
     navLinks.insertBefore(frag, loginDropdown);
+  }
+
+  // Which admin-configured category (if any) points at the page we're
+  // currently on -- so the navbar highlights "Home" on "/", "Careers" on
+  // "/careers.html", "Gallery" on "/gallery.html", etc., instead of always
+  // lighting up whichever category happens to be first in Admin's order.
+  // Falls back to index 0 if nothing matches, so the navbar is never left
+  // with no highlight at all (matches the old always-first-item behavior
+  // as a last resort). Same-page anchor links (#about, #courses, ...) are
+  // handled separately by the click-based highlight below, once the user
+  // actually clicks one -- this only decides the highlight on page LOAD.
+  function findActiveCategoryIndex(categories) {
+    const herePath = window.location.pathname.replace(/\/index\.html$/, "/") || "/";
+    const idx = categories.findIndex(c => {
+      try {
+        const target = new URL(c.url, window.location.origin);
+        const targetPath = target.pathname.replace(/\/index\.html$/, "/") || "/";
+        if (targetPath !== herePath) return false;
+        // On the homepage itself, only the actual "#home" (or bare "/")
+        // link counts as active on load -- not every homepage-section
+        // link, which all share the same pathname.
+        if (herePath === "/") return target.hash === "#home" || target.hash === "";
+        return true;
+      } catch (err) {
+        return false;
+      }
+    });
+    return idx === -1 ? 0 : idx;
   }
 
   function renderDrawerNavCategories(categories) {
@@ -1225,13 +1341,14 @@
     drawerNav.querySelectorAll(".cat-nav-item").forEach(el => el.remove());
     if (!trailingDivider) return; // structure changed elsewhere -- don't guess
 
+    const activeIdx = findActiveCategoryIndex(categories);
     const frag = document.createDocumentFragment();
     categories.forEach((c, idx) => {
       const li = document.createElement("li");
       li.className = "cat-nav-item";
       const a = document.createElement("a");
       a.href = c.url;
-      if (idx === 0) a.className = "active";
+      if (idx === activeIdx) a.className = "active";
       const icon = document.createElement("i");
       icon.className = "fas " + (c.icon ? escapeHtmlPromo(c.icon).replace(/"/g, "") : "fa-circle");
       a.appendChild(icon);

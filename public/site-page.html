@@ -242,12 +242,27 @@
             renderNavCategoriesInto(document.getElementById("drawerNav"), categories, true);
         } catch (err) { /* keep the static fallback nav above */ }
     }
+    // Which admin-configured category (if any) points at THIS standalone
+    // page (e.g. "/page/gallery"), so the navbar highlights it here the
+    // same way "Home" highlights on the homepage, instead of nothing
+    // lighting up at all.
+    function findActiveCategoryIndex(categories) {
+        const herePath = window.location.pathname.replace(/\/$/, "") || "/";
+        return categories.findIndex(c => {
+            try {
+                const target = new URL(c.url, window.location.origin);
+                const targetPath = target.pathname.replace(/\/$/, "") || "/";
+                return targetPath === herePath;
+            } catch (err) { return false; }
+        });
+    }
     function renderNavCategoriesInto(list, categories, isDrawer) {
         if (!list) return;
         const boundary = isDrawer ? list.querySelector(".drawer-divider") : list.querySelector(".nav-login-dropdown");
         list.querySelectorAll(".cat-nav-item").forEach(el => el.remove());
+        const activeIdx = findActiveCategoryIndex(categories);
         const frag = document.createDocumentFragment();
-        categories.forEach((c) => {
+        categories.forEach((c, idx) => {
             const li = document.createElement("li");
             li.className = "cat-nav-item";
             const a = document.createElement("a");
@@ -256,6 +271,7 @@
             // page they need the leading "/" to navigate back there
             // first, same as the static fallback links above.
             a.href = c.url.startsWith("#") ? "/" + c.url : c.url;
+            if (idx === activeIdx) a.className = isDrawer ? "active" : "nav-active";
             if (isDrawer) {
                 const icon = document.createElement("i");
                 icon.className = "fas " + (c.icon || "fa-circle");

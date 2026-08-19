@@ -570,7 +570,7 @@ const validators = {
   createMarketingBanner: [
     body("title").trim().notEmpty().withMessage("Title is required").isLength({ max: 150 }),
     body("message").trim().notEmpty().withMessage("Message is required").isLength({ max: 500 }),
-    body("placement").optional().trim().isIn(["top_bar", "homepage"]).withMessage("Placement must be top_bar or homepage"),
+    body("placement").optional().trim().isIn(["top_bar", "homepage", "popup"]).withMessage("Placement must be top_bar, homepage, or popup"),
     body("ctaText").optional().trim().isLength({ max: 60 }),
     body("ctaLink").optional().trim().isLength({ max: 300 }).custom(isSafeUrl),
     body("ctaPosition").optional().trim().isIn(["top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right", "center"]).withMessage("Invalid CTA position"),
@@ -583,7 +583,7 @@ const validators = {
   updateMarketingBanner: [
     body("title").optional().trim().isLength({ max: 150 }),
     body("message").optional().trim().isLength({ max: 500 }),
-    body("placement").optional().trim().isIn(["top_bar", "homepage"]).withMessage("Placement must be top_bar or homepage"),
+    body("placement").optional().trim().isIn(["top_bar", "homepage", "popup"]).withMessage("Placement must be top_bar, homepage, or popup"),
     body("ctaText").optional().trim().isLength({ max: 60 }),
     body("ctaLink").optional().trim().isLength({ max: 300 }).custom(isSafeUrl),
     body("ctaPosition").optional().trim().isIn(["top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right", "center"]).withMessage("Invalid CTA position"),

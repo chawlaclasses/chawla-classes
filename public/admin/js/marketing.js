@@ -59,7 +59,7 @@ function renderMarketing() {
 // ============================================================
 // BANNERS
 // ============================================================
-const PLACEMENT_LABELS = { top_bar: 'Top Bar (site-wide strip)', homepage: 'Homepage Section' };
+const PLACEMENT_LABELS = { top_bar: 'Top Bar (site-wide strip)', homepage: 'Homepage Section', popup: 'Popup (on page load)' };
 
 function renderBannersView() {
     const wrap = document.getElementById('marketingViewWrap');
@@ -135,7 +135,9 @@ function bannerFormFields(b = {}) {
                 <select id="banPlacement">
                     <option value="homepage" ${(b.placement || 'homepage') === 'homepage' ? 'selected' : ''}>Homepage Section</option>
                     <option value="top_bar" ${b.placement === 'top_bar' ? 'selected' : ''}>Top Bar (site-wide strip)</option>
+                    <option value="popup" ${b.placement === 'popup' ? 'selected' : ''}>Popup (on page load)</option>
                 </select>
+                <p style="font-size:11px;color:var(--muted);margin-top:4px;">Popup shows once per visitor session, a few seconds after the homepage loads. Only the highest-priority active popup banner is shown.</p>
             </div>
             <div class="form-group"><label>Priority (lower shows first)</label><input type="number" id="banPriority" value="${b.priority ?? 0}" min="0" max="999"></div>
         </div>

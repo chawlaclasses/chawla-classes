@@ -121,7 +121,7 @@
       <li class="cat-nav-item"><a href="/#fees">Fees &amp; Timings</a></li>
       <li class="cat-nav-item"><a href="/#classes-overview">Classes</a></li>
       <li class="cat-nav-item"><a href="/#admission">Admission</a></li>
-      <li class="cat-nav-item"><a href="/careers.html">Careers</a></li>
+      <li class="cat-nav-item"><a href="/careers.html" class="nav-active">Careers</a></li>
       <li class="cat-nav-item"><a href="/#feedback">Feedback</a></li>
       <li class="cat-nav-item"><a href="/#contact">Contact</a></li>
       <li class="nav-login-dropdown">
@@ -160,7 +160,7 @@
     <li class="cat-nav-item"><a href="/#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/#classes-overview"><i class="fas fa-layer-group"></i> Classes <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/#admission"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/careers.html"><i class="fas fa-user-tie"></i> Careers <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/careers.html" class="active"><i class="fas fa-user-tie"></i> Careers <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/#feedback"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/#contact"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="drawer-divider"></li>
@@ -493,12 +493,29 @@ async function loadNavCategories() {
         renderNavCategoriesInto(document.getElementById("drawerNav"), categories, true);
     } catch (err) { /* keep the static fallback nav above */ }
 }
+// Which admin-configured category (if any) points at THIS page, so the
+// navbar highlights "Careers" here the same way it highlights "Home" on
+// the homepage -- instead of nothing lighting up at all (the previous
+// behavior) or always the first item regardless of page. Falls back to
+// -1 (nothing marked) rather than 0 here, since guessing "first item" on
+// a non-homepage page would just highlight the wrong link.
+function findActiveCategoryIndex(categories) {
+    const herePath = window.location.pathname.replace(/\/index\.html$/, "/") || "/";
+    return categories.findIndex(c => {
+        try {
+            const target = new URL(c.url, window.location.origin);
+            const targetPath = target.pathname.replace(/\/index\.html$/, "/") || "/";
+            return targetPath === herePath;
+        } catch (err) { return false; }
+    });
+}
 function renderNavCategoriesInto(list, categories, isDrawer) {
     if (!list) return;
     const boundary = isDrawer ? list.querySelector(".drawer-divider") : list.querySelector(".nav-login-dropdown");
     list.querySelectorAll(".cat-nav-item").forEach(el => el.remove());
+    const activeIdx = findActiveCategoryIndex(categories);
     const frag = document.createDocumentFragment();
-    categories.forEach((c) => {
+    categories.forEach((c, idx) => {
         const li = document.createElement("li");
         li.className = "cat-nav-item";
         const a = document.createElement("a");
@@ -506,6 +523,7 @@ function renderNavCategoriesInto(list, categories, isDrawer) {
         // sections, not this page -- so here they need the leading "/" to
         // navigate back there first, same as the static fallback links above.
         a.href = c.url.startsWith("#") ? "/" + c.url : c.url;
+        if (idx === activeIdx) a.className = isDrawer ? "active" : "nav-active";
         if (isDrawer) {
             const icon = document.createElement("i");
             icon.className = "fas " + (c.icon || "fa-circle");

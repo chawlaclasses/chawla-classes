@@ -93,9 +93,8 @@ body {
   border-radius: 6px;
 }
 .nav-links a:hover { color: #f4b400; background: #fffbea; }
-.nav-links a.nav-active,
-.nav-links li:first-child a { color: #f4b400; font-weight: 700; }
-.nav-links li:first-child a::after {
+.nav-links a.nav-active { color: #f4b400; font-weight: 700; }
+.nav-links a.nav-active::after {
   content: '';
   position: absolute;
   bottom: 2px; left: 8px;
@@ -1031,6 +1030,31 @@ body {
   transition: background .2s;
 }
 .lightbox-close:hover { background: rgba(255,255,255,0.25); }
+
+/* Prev/Next arrows for the Website Builder gallery lightbox (multi-photo
+   galleries only -- hidden via JS when a gallery has just one photo). */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: white;
+  font-size: 20px;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+}
+.lightbox-nav:hover { background: rgba(255,255,255,0.25); }
+.lightbox-prev { left: 16px; }
+.lightbox-next { right: 16px; }
+@media (max-width: 640px) {
+  .lightbox-nav { width: 38px; height: 38px; font-size: 16px; }
+  .lightbox-prev { left: 6px; }
+  .lightbox-next { right: 6px; }
+}
 
 /* =====================
    TESTIMONIALS
@@ -2129,6 +2153,67 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   font-size: 12.5px;
   text-decoration: none;
   white-space: nowrap;
+}
+
+/* =====================
+   MARKETING POPUP — Admin -> Marketing -> Banners & Offers ('popup'
+   placement). A centered modal shown once per visitor session, a few
+   seconds after the homepage loads (see index.html's loadMarketingPromos).
+===================== */
+.marketing-popup-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 31, 58, 0.72);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+.marketing-popup-overlay.active { display: flex; }
+.marketing-popup-box {
+  position: relative;
+  background: var(--white);
+  border-radius: 16px;
+  max-width: 440px;
+  width: 100%;
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  animation: popupPopIn 0.25s ease;
+}
+@keyframes popupPopIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.marketing-popup-close {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: rgba(11, 31, 58, 0.06);
+  border: none;
+  color: var(--primary);
+  font-size: 16px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.marketing-popup-close:hover { background: rgba(11, 31, 58, 0.14); }
+.marketing-popup-img { display: block; width: 100%; height: auto; border-radius: 16px 16px 0 0; }
+.marketing-popup-text { padding: 26px 24px; text-align: center; }
+.marketing-popup-text h3 { font-size: 20px; font-weight: 800; color: var(--primary); margin-bottom: 10px; }
+.marketing-popup-text p { font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: 18px; }
+.marketing-popup-cta {
+  display: inline-block;
+  background: var(--secondary);
+  color: var(--primary);
+  padding: 10px 26px;
+  border-radius: 24px;
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
 }
 
 /* =====================

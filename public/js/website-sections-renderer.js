@@ -190,15 +190,88 @@ function renderGallerySection(d) {
   section.className = "admission-section";
   const grid = document.createElement("div");
   grid.className = "ws-gallery-grid";
-  d.images.forEach((url) => {
+  d.images.forEach((url, idx) => {
     const img = document.createElement("img");
     img.src = url;
     img.alt = "";
     img.loading = "lazy";
+    img.style.cursor = "zoom-in";
+    img.addEventListener("click", () => openWsGalleryLightbox(d.images, idx));
     grid.appendChild(img);
   });
   section.appendChild(grid);
   return section;
+}
+
+// Click-to-enlarge popup for Website Builder gallery images above, with
+// left/right arrows (and keyboard Left/Right) to step through the rest of
+// that same gallery's photos without closing and reopening. Reuses the
+// .lightbox/.lightbox-close CSS already in style.css (loaded by both
+// index.html and public/site-page.html). index.html happens to already
+// have a #lightbox element + openLightbox()/closeLightbox() of its own
+// left over from an older static gallery-grid that no longer exists in
+// its HTML, but site-page.html has neither -- so rather than depend on
+// that markup being present, this creates its own on first use (once per
+// page) with distinct names, working the same way on both surfaces.
+let _wsLightboxEl = null;
+let _wsLightboxImages = [];
+let _wsLightboxIndex = 0;
+function ensureWsLightbox() {
+  if (_wsLightboxEl) return _wsLightboxEl;
+  const box = document.createElement("div");
+  box.className = "lightbox";
+  box.addEventListener("click", (e) => { if (e.target === box) closeWsGalleryLightbox(); });
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "lightbox-close";
+  closeBtn.innerHTML = "&#x2715;";
+  closeBtn.addEventListener("click", closeWsGalleryLightbox);
+  const prevBtn = document.createElement("button");
+  prevBtn.className = "lightbox-nav lightbox-prev";
+  prevBtn.innerHTML = "&#10094;";
+  prevBtn.setAttribute("aria-label", "Previous photo");
+  prevBtn.addEventListener("click", () => stepWsGalleryLightbox(-1));
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "lightbox-nav lightbox-next";
+  nextBtn.innerHTML = "&#10095;";
+  nextBtn.setAttribute("aria-label", "Next photo");
+  nextBtn.addEventListener("click", () => stepWsGalleryLightbox(1));
+  const img = document.createElement("img");
+  img.id = "wsLightboxImg";
+  box.appendChild(closeBtn);
+  box.appendChild(prevBtn);
+  box.appendChild(img);
+  box.appendChild(nextBtn);
+  document.body.appendChild(box);
+  _wsLightboxEl = box;
+  document.addEventListener("keydown", (e) => {
+    if (!_wsLightboxEl || !_wsLightboxEl.classList.contains("active")) return;
+    if (e.key === "ArrowLeft") stepWsGalleryLightbox(-1);
+    else if (e.key === "ArrowRight") stepWsGalleryLightbox(1);
+    else if (e.key === "Escape") closeWsGalleryLightbox();
+  });
+  return box;
+}
+function openWsGalleryLightbox(images, index) {
+  const box = ensureWsLightbox();
+  _wsLightboxImages = Array.isArray(images) ? images : [images];
+  _wsLightboxIndex = index || 0;
+  const showNav = _wsLightboxImages.length > 1;
+  box.querySelector(".lightbox-prev").style.display = showNav ? "flex" : "none";
+  box.querySelector(".lightbox-next").style.display = showNav ? "flex" : "none";
+  box.querySelector("#wsLightboxImg").src = _wsLightboxImages[_wsLightboxIndex];
+  box.classList.add("active");
+  document.body.style.overflow = "hidden";
+}
+// direction: -1 for previous, 1 for next. Wraps around at both ends.
+function stepWsGalleryLightbox(direction) {
+  if (!_wsLightboxEl || _wsLightboxImages.length < 2) return;
+  _wsLightboxIndex = (_wsLightboxIndex + direction + _wsLightboxImages.length) % _wsLightboxImages.length;
+  _wsLightboxEl.querySelector("#wsLightboxImg").src = _wsLightboxImages[_wsLightboxIndex];
+}
+function closeWsGalleryLightbox() {
+  if (!_wsLightboxEl) return;
+  _wsLightboxEl.classList.remove("active");
+  document.body.style.overflow = "";
 }
 
 function renderTestimonialsSection(d) {

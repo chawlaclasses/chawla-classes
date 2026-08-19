@@ -6,12 +6,16 @@
  * unauthenticated (routes/marketing.js — GET /api/marketing/banners),
  * same split as recruitment/admissions/enquiries.
  *
- * Two placements a banner can target:
+ * Three placements a banner can target:
  *   'top_bar'  — thin sticky strip at the top of every page (one urgent
  *                message, e.g. "Admissions open for 2027 batch")
  *   'homepage' — a promo card in a dedicated section on index.html
  *                (offers, new batch launches, etc.), several can be active
  *                at once, ordered by `priority` (lower shows first)
+ *   'popup'    — a modal popup shown once per visitor session, a few
+ *                seconds after the homepage loads (index.html only). If
+ *                several popup banners are active, only the highest-
+ *                priority one is shown.
  *
  * Mounted at '/marketing' by routes/adminRoutes.js, under app.js's
  * '/api/admin' + requireApiAdmin. Campaign sending lives in the sibling
