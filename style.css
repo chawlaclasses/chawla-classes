@@ -861,18 +861,29 @@ body {
   transition: .4s;
 }
 .fees-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(11,31,58,.15); }
-.fees-card i  { font-size: 50px; color: #f4b400; margin-bottom: 20px; }
+.fees-card > i  { font-size: 50px; color: #f4b400; margin-bottom: 20px; }
 .fees-card h3 { font-size: 28px; color: #0b1f3a; margin-bottom: 20px; }
 .fees-card p  { line-height: 2; margin-bottom: 15px; color: #555; }
 .fees-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 10px;
-  padding: 12px 25px;
+  padding: 14px 32px;
   background: #f4b400;
-  color: #000;
+  color: #0b1f3a;
   text-decoration: none;
-  border-radius: 30px;
+  border-radius: 50px;
   font-weight: 600;
+  font-size: 15px;
+  transition: transform .3s ease, background .3s ease, color .3s ease, box-shadow .3s ease;
+  box-shadow: 0 4px 15px rgba(244,180,0,.35);
+}
+.fees-btn:hover {
+  background: #0b1f3a;
+  color: #f4b400;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(244,180,0,.55);
 }
 
 /* =====================
@@ -1101,9 +1112,47 @@ body {
 .faq-contact-box h3 { color: #fff; font-size: 30px; margin-bottom: 15px; }
 .faq-contact-box p  { color: #ddd; line-height: 1.8; margin-bottom: 25px; }
 .faq-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-.faq-btn-primary  { background: #f4b400; color: #000; padding: 12px 25px; border-radius: 30px; text-decoration: none; font-weight: 600; transition: transform .3s; }
-.faq-btn-secondary{ border: 2px solid #fff; color: #fff; padding: 12px 25px; border-radius: 30px; text-decoration: none; font-weight: 600; transition: .3s; }
-.faq-btn-primary:hover, .faq-btn-secondary:hover { transform: translateY(-3px); }
+.faq-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f4b400;
+  color: #0b1f3a;
+  padding: 14px 32px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  border: 2px solid transparent;
+  transition: transform .3s ease, background .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease;
+  box-shadow: 0 4px 15px rgba(244,180,0,.35);
+}
+.faq-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid #fff;
+  background: transparent;
+  color: #fff;
+  padding: 14px 32px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: transform .3s ease, background .3s ease, color .3s ease, box-shadow .3s ease;
+}
+.faq-btn-primary:hover {
+  background: #0b1f3a;
+  color: #f4b400;
+  border-color: #f4b400;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(244,180,0,.35);
+}
+.faq-btn-secondary:hover {
+  background: #fff;
+  color: #0b1f3a;
+  transform: translateY(-3px);
+}
 
 /* =====================
    ADMISSION / FEEDBACK FORM
@@ -1678,6 +1727,8 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
 }
 
 .overview-btn-secondary:hover {
+  background: #0b1f3a;
+  color: #ffc400;
   transform: translateY(-3px);
   box-shadow: 0 8px 25px rgba(255,196,0,.55);
 }

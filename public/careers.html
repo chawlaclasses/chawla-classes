@@ -23,14 +23,17 @@
        identical copy for the same reason. If index.html's header/footer
        content changes, mirror the change here too. */
 
-    .hero { background: linear-gradient(135deg, var(--primary), #14335e); color: var(--white); padding: 70px 0 60px; text-align: center; }
-    .hero h1 { font-size: 34px; font-weight: 800; margin-bottom: 12px; }
-    .hero p { font-size: 16px; opacity: 0.9; max-width: 620px; margin: 0 auto 26px; }
-    .hero .btn-apply { display: inline-flex; align-items: center; gap: 8px; background: var(--secondary); color: var(--primary); font-weight: 700; padding: 13px 28px; border-radius: 999px; font-size: 15px; }
-
+    .page-hero { background: linear-gradient(135deg, var(--primary), #14335e); color: var(--white); padding: 90px 0 50px; text-align: center; min-height: auto; height: auto; }
+    .page-hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+    .page-hero p { font-size: 15.5px; opacity: 0.9; max-width: 600px; margin: 0 auto; }
+    .page-hero .btn-apply { display: inline-flex; align-items: center; gap: 8px; background: var(--secondary); color: var(--primary); font-weight: 700; padding: 13px 28px; border-radius: 999px; font-size: 15px; }
+    
     section { padding: 56px 0; }
     section.alt { background: var(--light); }
+    
+    section.alt { background: var(--light); }
     .section-title { font-size: 26px; font-weight: 800; color: var(--primary); text-align: center; margin-bottom: 8px; }
+    .section-title::after { margin-top: 4px !important; }
     .section-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 36px; }
 
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
@@ -94,6 +97,18 @@
     .form-msg.ok { background: #eafaf0; color: #16a34a; border: 1px solid #c8f0d8; }
     .form-msg.err { background: #fdeeee; color: #dc2626; border: 1px solid #f8d2d2; }
     .file-hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+        /* Section divider — hardcoded color (not var(--border)) so it can't
+       accidentally pick up a gold value from the global stylesheet. */
+    section + section {
+    border-top: 1px solid #f4b400;
+    margin-top: -20px;
+    padding-top: 76px;
+}
+.page-hero + section {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 56px;
+}
 </style>
 </head>
 <body>
@@ -120,10 +135,10 @@
       <li class="cat-nav-item"><a href="/#results">Results</a></li>
       <li class="cat-nav-item"><a href="/#fees">Fees &amp; Timings</a></li>
       <li class="cat-nav-item"><a href="/#classes-overview">Classes</a></li>
-      <li class="cat-nav-item"><a href="/#admission">Admission</a></li>
+      <li class="cat-nav-item"><a href="/admission.html">Admission</a></li>
       <li class="cat-nav-item"><a href="/careers.html" class="nav-active">Careers</a></li>
-      <li class="cat-nav-item"><a href="/#feedback">Feedback</a></li>
-      <li class="cat-nav-item"><a href="/#contact">Contact</a></li>
+      <li class="cat-nav-item"><a href="/feedback.html">Feedback</a></li>
+      <li class="cat-nav-item"><a href="/contact.html">Contact</a></li>
       <li class="nav-login-dropdown">
         <a href="javascript:void(0)" class="login-toggle">
           <i class="fas fa-user-circle"></i> Login <i class="fas fa-chevron-down"></i>
@@ -135,7 +150,7 @@
       </li>
     </ul>
 
-    <a href="/#admission" class="call-btn">Admission Open</a>
+    <a href="/admission.html" class="call-btn">Admission Open</a>
   </nav>
 </header>
 
@@ -159,10 +174,10 @@
     <li class="cat-nav-item"><a href="/#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/#classes-overview"><i class="fas fa-layer-group"></i> Classes <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/#admission"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/admission.html"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/careers.html" class="active"><i class="fas fa-user-tie"></i> Careers <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/#feedback"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/#contact"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/feedback.html"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/contact.html"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="drawer-divider"></li>
     <li style="padding: 0 20px;">
       <a href="/student/login.html" style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.15);border-radius:8px;margin-bottom:8px;justify-content:center;color:#F5A623;">
@@ -190,7 +205,7 @@
   </div>
 </div>
 
-<section class="hero">
+<section class="page-hero">
     <div class="wrap">
         <h1>Join Our Faculty Team</h1>
         <p>Chawla Classes has been shaping students' futures in Uttam Nagar since 2002. We're always looking for passionate, subject-strong educators to join us.</p>
@@ -407,9 +422,9 @@
       <a href="/#faculty">Leadership</a><a href="/#results">Results</a>
       <a href="/#fees">Fees &amp; Timings</a>
       <a href="/#classes-overview">Classes</a>
-      <a href="/#admission">Admission</a>
+      <a href="/admission.html">Admission</a>
       <a href="/careers.html">Careers</a>
-      <a href="/#feedback">Feedback</a><a href="/#contact">Contact</a><a href="/#faq">FAQ</a>
+      <a href="/feedback.html">Feedback</a><a href="/contact.html">Contact</a><a href="/#faq">FAQ</a>
     </div>
     <div class="footer-box">
       <h3>Contact Info</h3>
