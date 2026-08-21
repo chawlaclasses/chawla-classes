@@ -141,6 +141,28 @@ class JsonDB {
     };
   }
 
+  // NEW (production audit, 2026-08-21): generic, reusable way for a
+  // caller (see server.js) to assert a collection's indexes exist at
+  // boot. Used for the reviews.email/reviews.phone uniqueness backstop —
+  // "one review per identity" previously lived only in application code
+  // (routes/reviews.js), safe within a single process but with no guard
+  // at all the moment this app ever runs more than one instance.
+  // createIndexes() is idempotent (a no-op if an identically-named/
+  // specced index already exists), so this is safe to call on every
+  // boot. Deliberately does NOT throw: if a unique index fails to build
+  // because existing data already violates it, that must not crash
+  // server startup — the caller logs the failure and the app keeps
+  // running on its existing app-level guard, same as before this
+  // existed.
+  async ensureIndexes(collectionName, indexSpecs) {
+    try {
+      await this.db.collection(collectionName).createIndexes(indexSpecs);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error };
+    }
+  }
+
   // FIX (audit 2026-08, issues #1/#2): collections whose name starts with
   // "_" are reserved for this app's own internal bookkeeping (backup
   // snapshots, backup metadata, restore staging — see

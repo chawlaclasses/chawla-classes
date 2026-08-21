@@ -73,9 +73,37 @@ const CSRF_ENFORCE = process.env.CSRF_ENFORCE === 'true';
 // careers/faculty application form (multipart upload — req.body isn't
 // even JSON-parsed for this one by the time this middleware runs, so a
 // token couldn't be read out of it reliably anyway), and the public
-// review-submission form (routes/reviews.js). Each already has its own
-// rate limiting (authRateLimiter / createSubmissionRateLimiter) at the
-// route level — this allowlist only removes the CSRF check, nothing else.
+// review-submission form (routes/reviews.js) along with its two email-
+// verification steps (send-otp/verify-otp) that run before it — same
+// reasoning applies to those two: no ambient cookie credential, no JWT
+// yet at that point in the flow, already rate-limited at the route level.
+// Each already has its own rate limiting (authRateLimiter /
+// createSubmissionRateLimiter) at the route level — this allowlist only
+// removes the CSRF check, nothing else.
+// Real public, unauthenticated write endpoints — enumerated by reading
+// app.js's actual route mounts (not guessed): admin/student login (no
+// token exists yet at login time), the public enquiry form, the
+// careers/faculty application form (multipart upload — req.body isn't
+// even JSON-parsed for this one by the time this middleware runs, so a
+// token couldn't be read out of it reliably anyway), and the public
+// review-submission form (routes/reviews.js) along with its two email-
+// verification steps (send-otp/verify-otp) that run before it, plus its
+// self-service edit flow (GET/PUT /edit/:token and resend-edit-link) —
+// same reasoning applies to all of these: no ambient cookie credential,
+// no JWT yet at that point in the flow, already rate-limited at the
+// route level.
+// Each already has its own rate limiting (authRateLimiter /
+// createSubmissionRateLimiter) at the route level — this allowlist only
+// removes the CSRF check, nothing else.
+//
+// FIX (production-readiness audit, 2026-08-21): PUT /api/reviews/edit/:token
+// has a dynamic :token segment, so it can never satisfy an exact-string
+// .includes() match against req.originalUrl — every real edit-save and
+// resend-link request was being rejected with 403 "CSRF token missing or
+// invalid" even though the route itself was otherwise correct. Exact
+// matches stay in PUBLIC_UNAUTHENTICATED_WRITE_PATHS; anything with a
+// dynamic segment goes in PUBLIC_UNAUTHENTICATED_WRITE_PREFIXES instead
+// and is matched with startsWith().
 const PUBLIC_UNAUTHENTICATED_WRITE_PATHS = [
   '/api/admin/login',
   '/api/student/login',
@@ -83,10 +111,19 @@ const PUBLIC_UNAUTHENTICATED_WRITE_PATHS = [
   '/api/enquiry/admission',
   '/api/careers/apply',
   '/api/reviews',
+  '/api/reviews/send-otp',
+  '/api/reviews/verify-otp',
+  '/api/reviews/resend-edit-link',
+];
+
+const PUBLIC_UNAUTHENTICATED_WRITE_PREFIXES = [
+  '/api/reviews/edit/', // PUT /api/reviews/edit/:token — dynamic token segment
 ];
 
 function isPublicUnauthenticatedWrite(req) {
-  return PUBLIC_UNAUTHENTICATED_WRITE_PATHS.includes(req.originalUrl.split('?')[0]);
+  const path = req.originalUrl.split('?')[0];
+  if (PUBLIC_UNAUTHENTICATED_WRITE_PATHS.includes(path)) return true;
+  return PUBLIC_UNAUTHENTICATED_WRITE_PREFIXES.some(prefix => path.startsWith(prefix));
 }
 
 function verifyCsrfToken(req, res, next) {

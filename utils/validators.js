@@ -546,7 +546,54 @@ const validators = {
 
   // ── Reviews (public website "Student Feedback & Rating" form + admin ────
   // manual entry) — routes/reviews.js (public) and routes/admin/reviews.js.
+  // email/phone/verifyToken are only required on the PUBLIC submit path —
+  // an admin typing in a verbal/WhatsApp testimonial (routes/admin/reviews.js)
+  // doesn't go through OTP verification, so those routes only send
+  // studentName/studentClass/rating/feedback and skip this validator.
   submitReview: [
+    body("studentName").trim().notEmpty().withMessage("Name is required").isLength({ min: 2, max: 100 }).withMessage("Name must be 2–100 characters"),
+    body("studentClass").trim().notEmpty().withMessage("Class is required").isLength({ max: 60 }),
+    body("rating").notEmpty().withMessage("Rating is required").isInt({ min: 1, max: 5 }).withMessage("Rating must be between 1 and 5").toInt(),
+    body("feedback").trim().notEmpty().withMessage("Feedback is required").isLength({ min: 5, max: 1000 }).withMessage("Feedback must be 5–1000 characters"),
+    body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Enter a valid email address").isLength({ max: 150 }),
+    body("phone").trim().notEmpty().withMessage("Mobile number is required").matches(/^[6-9]\d{9}$/).withMessage("Enter a valid 10-digit mobile number"),
+    body("verifyToken").trim().notEmpty().withMessage("Please verify your email before submitting"),
+  ],
+
+  // One-time-email/phone verification for the review form (routes/reviews.js).
+  sendReviewOtp: [
+    body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Enter a valid email address").isLength({ max: 150 }),
+    body("phone").trim().notEmpty().withMessage("Mobile number is required").matches(/^[6-9]\d{9}$/).withMessage("Enter a valid 10-digit mobile number"),
+  ],
+  verifyReviewOtp: [
+    body("email").trim().notEmpty().isEmail().withMessage("Enter a valid email address"),
+    body("phone").trim().notEmpty().matches(/^[6-9]\d{9}$/).withMessage("Enter a valid 10-digit mobile number"),
+    body("otp").trim().notEmpty().withMessage("Enter the code we emailed you").isLength({ min: 6, max: 6 }).withMessage("Code must be 6 digits").isNumeric().withMessage("Code must be numeric"),
+  ],
+
+  // "Lost your edit link?" (routes/reviews.js POST /resend-edit-link) --
+  // same shape as sendReviewOtp, no OTP field since no code is issued here.
+  resendEditLink: [
+    body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Enter a valid email address").isLength({ max: 150 }),
+    body("phone").trim().notEmpty().withMessage("Mobile number is required").matches(/^[6-9]\d{9}$/).withMessage("Enter a valid 10-digit mobile number"),
+  ],
+
+  // Admin manual entry (routes/admin/reviews.js) -- same core fields as
+  // submitReview above, but WITHOUT email/phone/verifyToken: an admin
+  // typing in a verbal/WhatsApp testimonial never goes through the public
+  // OTP flow, so there's no verified identity to require here.
+  adminSubmitReview: [
+    body("studentName").trim().notEmpty().withMessage("Name is required").isLength({ min: 2, max: 100 }).withMessage("Name must be 2–100 characters"),
+    body("studentClass").trim().notEmpty().withMessage("Class is required").isLength({ max: 60 }),
+    body("rating").notEmpty().withMessage("Rating is required").isInt({ min: 1, max: 5 }).withMessage("Rating must be between 1 and 5").toInt(),
+    body("feedback").trim().notEmpty().withMessage("Feedback is required").isLength({ min: 5, max: 1000 }).withMessage("Feedback must be 5–1000 characters"),
+  ],
+
+  // Public self-service edit (routes/reviews.js PUT /edit/:token) -- the
+  // reviewer's own edit-link flow, not the admin panel. Same required
+  // fields as adminSubmitReview (no email/phone/verifyToken here either --
+  // the token in the URL already proves identity, see routes/reviews.js).
+  editReview: [
     body("studentName").trim().notEmpty().withMessage("Name is required").isLength({ min: 2, max: 100 }).withMessage("Name must be 2–100 characters"),
     body("studentClass").trim().notEmpty().withMessage("Class is required").isLength({ max: 60 }),
     body("rating").notEmpty().withMessage("Rating is required").isInt({ min: 1, max: 5 }).withMessage("Rating must be between 1 and 5").toInt(),
