@@ -28,6 +28,7 @@ const { ensureAdminAccount } = require("./services/auth");
 
 const db = require("./services/jsonDb");
 const mongoBackup = require("./services/mongoBackup");
+const { ensureReviewOtpTtlIndex } = require("./services/reviewOtpCleanup");
 const { createGracefulShutdown } = require("./utils/gracefulShutdown");
 
 
@@ -54,6 +55,41 @@ let httpServer = null;
 // instead, which is worse than refusing to start.
 db.connect()
   .then(() => {
+    // Housekeeping index for the public review-submission flow's OTP
+    // records (see services/reviewOtpCleanup.js). Failure here is logged
+    // internally by the function itself and never throws, so it can't
+    // block startup -- it's cleanup, not a request-path dependency.
+    ensureReviewOtpTtlIndex(db.db);
+
+    // NEW (production audit, 2026-08-21, priority item #2): DB-level
+    // backstop for "one review per email/phone" — previously enforced
+    // only in routes/reviews.js application code (safe within this one
+    // process, no guard at all if the app is ever scaled to more than
+    // one instance). Partial indexes deliberately: admin-entered reviews
+    // (routes/admin/reviews.js POST /, source:'admin') never set an
+    // email or phone field at all — a plain unique index would treat
+    // every one of those as an implicit `email: null` and reject every
+    // admin-entered review after the first. Restricting to documents
+    // that actually have a real string email/phone (every
+    // website-submitted review always has one) keeps admin-entered
+    // reviews outside the index entirely. Fire-and-forget alongside the
+    // OTP TTL index above — same reasoning: a data-integrity backstop,
+    // not something requests depend on to function, so it doesn't need
+    // to block the server from accepting requests. A failure (e.g.
+    // duplicate reviews already existing in production data from before
+    // this index existed) is logged; check the reason and de-duplicate
+    // manually if it ever happens.
+    db.ensureIndexes("reviews", [
+      { key: { email: 1 }, unique: true, partialFilterExpression: { email: { $type: "string" } }, name: "uniq_review_email" },
+      { key: { phone: 1 }, unique: true, partialFilterExpression: { phone: { $type: "string" } }, name: "uniq_review_phone" },
+    ]).then(result => {
+      if (result.ok) {
+        logger.info("✅ Indexes ensured: reviews (email/phone uniqueness)");
+      } else {
+        logger.error(`❌ Failed to ensure reviews email/phone uniqueness indexes: ${result.error.message}`);
+      }
+    });
+
     // FIX (login self-heal): guarantees the ADMIN_EMAIL/ADMIN_PASSWORD
     // account exists, is unlocked, and is active on every boot — see
     // services/auth.js#ensureAdminAccount for the full reasoning. Runs

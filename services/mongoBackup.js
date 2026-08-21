@@ -129,17 +129,35 @@ async function copyCollection(mongoDb, sourceName, destName) {
 // Captures a collection's non-default indexes so they can be rebuilt on
 // restore. Every collection gets an automatic _id_ index; recreating it
 // explicitly would error, so it's excluded.
+//
+// FIX (2026-08-21, alongside reviewOtps TTL cleanup): expireAfterSeconds
+// wasn't captured, so any TTL index (e.g. services/reviewOtpCleanup.js's
+// index on reviewOtps.cleanupAt) would silently lose its expiry setting
+// on restore -- the index itself would come back, just as a permanent
+// one instead of a TTL one, with no error to notice it by.
 async function captureIndexes(mongoDb, collectionName) {
   const indexes = await mongoDb.collection(collectionName).listIndexes().toArray();
   return indexes
     .filter((ix) => ix.name !== "_id_")
-    .map((ix) => ({ key: ix.key, name: ix.name, unique: !!ix.unique, sparse: !!ix.sparse }));
+    .map((ix) => ({
+      key: ix.key,
+      name: ix.name,
+      unique: !!ix.unique,
+      sparse: !!ix.sparse,
+      ...(typeof ix.expireAfterSeconds === "number" ? { expireAfterSeconds: ix.expireAfterSeconds } : {}),
+    }));
 }
 
 async function applyIndexes(mongoDb, collectionName, indexes) {
   if (!indexes || !indexes.length) return;
   await mongoDb.collection(collectionName).createIndexes(
-    indexes.map((ix) => ({ key: ix.key, name: ix.name, unique: ix.unique, sparse: ix.sparse }))
+    indexes.map((ix) => ({
+      key: ix.key,
+      name: ix.name,
+      unique: ix.unique,
+      sparse: ix.sparse,
+      ...(typeof ix.expireAfterSeconds === "number" ? { expireAfterSeconds: ix.expireAfterSeconds } : {}),
+    }))
   );
 }
 
