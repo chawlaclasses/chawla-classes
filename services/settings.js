@@ -29,6 +29,20 @@ const DEFAULTS = {
     socialLinks: {
         instagram: '', googlePhotos: ''
     },
+    // Google Business Profile — deliberately NOT the Places API (no key,
+    // no billing, no ongoing dependency, no reviews stored in our DB).
+    // profileUrl (the Google Maps listing URL) is now the primary,
+    // required-to-function config value — no manual Place ID entry needed.
+    // rating + reviewCount are typed in here by whoever's updating this
+    // and shown as-is on the public site, refreshed manually whenever the
+    // admin wants — see public/js/googleReviews.js, public/reviews.html,
+    // and index.html's Google Reviews block.
+    // placeId is legacy/optional, kept only for backward compatibility
+    // with installs configured before profileUrl existed (see
+    // buildWriteReviewUrl() in public/js/googleReviews.js).
+    googleReviews: {
+        enabled: false, profileUrl: '', rating: null, reviewCount: null, placeId: '', updatedAt: null
+    },
     maintenanceMode: false,
     maintenanceMessage: 'We are performing scheduled maintenance. Please check back soon.'
 };
@@ -48,7 +62,8 @@ function getSettings() {
         email: { ...DEFAULTS.email, ...(existing.email || {}) },
         whatsapp: { ...DEFAULTS.whatsapp, ...(existing.whatsapp || {}) },
         backup: { ...DEFAULTS.backup, ...(existing.backup || {}) },
-        socialLinks: { ...DEFAULTS.socialLinks, ...(existing.socialLinks || {}) }
+        socialLinks: { ...DEFAULTS.socialLinks, ...(existing.socialLinks || {}) },
+        googleReviews: { ...DEFAULTS.googleReviews, ...(existing.googleReviews || {}) }
     };
 }
 
@@ -60,7 +75,8 @@ function updateSettings(patch) {
         email: { ...current.email, ...(patch.email || {}) },
         whatsapp: { ...current.whatsapp, ...(patch.whatsapp || {}) },
         backup: { ...current.backup, ...(patch.backup || {}) },
-        socialLinks: { ...current.socialLinks, ...(patch.socialLinks || {}) }
+        socialLinks: { ...current.socialLinks, ...(patch.socialLinks || {}) },
+        googleReviews: { ...current.googleReviews, ...(patch.googleReviews || {}) }
     };
     delete merged._id;
     const existing = db.findById('app-settings', SETTINGS_ID);
@@ -81,7 +97,8 @@ function getPublicSettings() {
         faviconUrl: s.faviconUrl,
         maintenanceMode: s.maintenanceMode,
         maintenanceMessage: s.maintenanceMessage,
-        socialLinks: s.socialLinks
+        socialLinks: s.socialLinks,
+        googleReviews: s.googleReviews
     };
 }
 

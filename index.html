@@ -514,13 +514,115 @@
     <div id="marketingPopupContent"></div>
   </div>
 </div>
+<style>
+  #testimonialSwiper { padding: 6px 54px 46px; }
+  #testimonialSwiper .swiper-slide { height: auto; display: flex; }
+  #testimonialSwiper .swiper-slide .testimonial-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 22px 20px !important;
+    border-radius: 10px;
+  }
+  #testimonialSwiper .testimonial-card p {
+    font-size: 14.5px !important;
+    line-height: 1.55 !important;
+    margin: 0;
+  }
+  #testimonialSwiper .testimonial-card h4 {
+    font-size: 13.5px !important;
+    margin: 0;
+  }
+  #testimonialSwiper .swiper-button-prev,
+  #testimonialSwiper .swiper-button-next {
+    display: flex !important;
+    color: #F5A623 !important;
+    background: rgba(255,255,255,0.12);
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    top: 50%;
+    margin-top: -30px;
+  }
+  #testimonialSwiper .swiper-button-prev::after,
+  #testimonialSwiper .swiper-button-next::after {
+    font-size: 17px;
+    font-weight: 900;
+  }
+  #testimonialSwiper .swiper-button-prev { left: 4px; }
+  #testimonialSwiper .swiper-button-next { right: 4px; }
+  #testimonialSwiper .swiper-button-prev.swiper-button-disabled,
+  #testimonialSwiper .swiper-button-next.swiper-button-disabled {
+    opacity: 0.35;
+  }
+  #testimonialSwiper .swiper-pagination-bullet {
+    background: #ffffff;
+    opacity: 0.45;
+  }
+  #testimonialSwiper .swiper-pagination-bullet-active {
+    background: #F5A623;
+    opacity: 1;
+  }
+  .view-all-reviews-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #F5A623;
+    color: #0b1f3a;
+    font-weight: 700;
+    font-size: 14.5px;
+    padding: 12px 26px;
+    border-radius: 30px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 6px 18px rgba(245,166,35,0.25);
+  }
+  .view-all-reviews-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(245,166,35,0.35);
+  }
 
+  /* Google Reviews block -- rendered by public/js/googleReviews.js
+     (shared with public/reviews.html) from settings.googleReviews
+     (Admin -> Settings -> Google Reviews). Hidden entirely unless
+     enabled + a Google Business Profile URL has been set; class names
+     below (grw-*) are what the shared widget script builds, styled here
+     to match the homepage's dark/gold design system. Sits directly
+     under the existing Student Reviews carousel -- it does not replace
+     it. */
+  .google-reviews-block { background: rgba(255,255,255,0.05); border: 1px solid rgba(245,166,35,0.25); border-radius: 16px; padding: 26px 30px; margin: 34px auto 0; max-width: 720px; display: none; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; }
+  .google-reviews-block .grw-rating-block { display: flex; align-items: center; gap: 16px; }
+  .google-reviews-block .grw-rating-number { font-size: 32px; font-weight: 800; color: #F5A623; line-height: 1; }
+  .google-reviews-block .grw-stars { color: #F5A623; font-size: 17px; letter-spacing: 2px; display: inline-block; margin-bottom: 3px; }
+  .google-reviews-block .grw-rating-meta { color: #cdd6e3; font-size: 12.5px; display: block; }
+  .google-reviews-block .grw-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .google-reviews-block .grw-btn { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 13px; padding: 9px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.3); color: #fff; }
+  .google-reviews-block .grw-btn-primary { background: #F5A623; color: #0b1f3a; border-color: #F5A623; }
+  @media (max-width: 600px) {
+    .google-reviews-block { justify-content: center; text-align: center; padding: 22px; }
+    .google-reviews-block .grw-rating-block { flex-direction: column; gap: 8px; }
+  }
+</style>
 <!-- TESTIMONIALS -->
 <section class="testimonial-section">
   <h2 class="section-title">Student Reviews</h2>
-  <div id="feedbackContainer" class="testimonial-grid">
-    <p style="color:#ddd;text-align:center;">Loading reviews...</p>
+  <div class="swiper testimonialSwiper" id="testimonialSwiper">
+    <div class="swiper-wrapper" id="feedbackContainer">
+      <p style="color:#ddd;text-align:center;">Loading reviews...</p>
+    </div>
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
+    <div class="swiper-pagination"></div>
   </div>
+  <div style="text-align:center;margin-top:26px;">
+    <a href="/reviews.html" class="view-all-reviews-btn">View All Reviews <i class="fas fa-arrow-right"></i></a>
+  </div>
+  <!-- Google Reviews -- see public/js/googleReviews.js; stays hidden
+       unless Admin -> Settings -> Google Reviews is enabled with a
+       profile URL set. -->
+  <div class="google-reviews-block" id="googleReviewsWidget"></div>
 </section>
 
 <!-- FAQ -->
