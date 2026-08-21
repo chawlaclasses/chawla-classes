@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Reviews | Chawla Classes</title>
+<meta name="description" content="Read what students and parents say about their experience at Chawla Classes, Uttam Nagar's trusted coaching institute since 2002.">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root { --primary: #0b1f3a; --secondary: #f4b400; --white: #ffffff; --light: #f7f9fc; --text: #333333; --muted: #6b7280; --border: #e5e7eb; --radius: 14px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: var(--text); background: var(--white); line-height: 1.6; }
+    a { text-decoration: none; color: inherit; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Header/nav/mobile-drawer/footer below are copied verbatim from
+       index.html (same markup, same classes, same style.css rules, same
+       behavior) so this page automatically looks and acts exactly like
+       the homepage's chrome -- see public/feedback.html, which uses the
+       identical copy for the same reason. If index.html's header/footer
+       content changes, mirror the change here too. */
+
+    .hero { background: linear-gradient(135deg, var(--primary), #14335e); color: var(--white); padding: 90px 0 50px; text-align: center; min-height: auto; height: auto; }
+    .hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+    .hero p { font-size: 15.5px; opacity: 0.9; max-width: 600px; margin: 0 auto; }
+
+    /* All-reviews grid -- reads the same /api/reviews/approved endpoint
+       as the homepage's testimonial carousel (routes/reviews.js), just
+       renders every result at once instead of a limited swiper. */
+    .reviews-section { padding: 60px 0 80px; background: var(--light); min-height: 40vh; }
+    .reviews-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+    .reviews-count { color: var(--muted); font-size: 14px; font-weight: 500; }
+    .reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
+    .review-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 12px; }
+    .review-card .stars { color: #F5A623; font-size: 16px; letter-spacing: 2px; }
+    .review-card .review-text { color: var(--text); font-size: 14.5px; flex: 1; }
+    .review-card .review-meta { font-weight: 700; font-size: 14px; color: var(--primary); border-top: 1px solid var(--border); padding-top: 10px; }
+    .review-card .review-meta span { display: block; font-weight: 500; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+    .featured-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(245,166,35,0.12); color: #b06a00; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px; width: fit-content; }
+    .reviews-empty, .reviews-error { text-align: center; color: var(--muted); padding: 40px 0; grid-column: 1 / -1; }
+    .back-to-home-link { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+    .write-review-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--primary); color: var(--white); font-weight: 700; font-size: 13.5px; padding: 10px 20px; border-radius: 30px; }
+
+    /* Google Reviews badge -- rendered by public/js/googleReviews.js
+       (shared with index.html) from settings.googleReviews (admin-set
+       under Admin -> Settings -> Google Reviews, no API key/billing
+       involved, nothing stored in our DB) via the same public,
+       unauthenticated /api/public-settings endpoint gallery.html already
+       uses for social links. Hidden entirely unless enabled + a Google
+       Business Profile URL has been set -- class names below (grw-*) are
+       what the shared widget script builds, styled here to match this
+       page's design system. */
+    .google-badge { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 2px 10px rgba(0,0,0,0.04); padding: 22px 26px; margin: 0 0 6px; display: none; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px; }
+    .google-badge .grw-rating-block { display: flex; align-items: center; gap: 14px; }
+    .google-badge .grw-rating-number { font-size: 30px; font-weight: 800; color: var(--primary); line-height: 1; }
+    .google-badge .grw-stars { color: #F5A623; font-size: 17px; letter-spacing: 2px; display: inline-block; margin-bottom: 2px; }
+    .google-badge .grw-rating-meta { color: var(--muted); font-size: 12.5px; }
+    .google-badge .grw-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .google-badge .grw-btn { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 13px; padding: 9px 16px; border-radius: 30px; border: 1px solid var(--border); color: var(--text); }
+    .google-badge .grw-btn-primary { background: var(--primary); color: var(--white); border-color: var(--primary); }
+    @media (max-width: 560px) {
+        .google-badge { padding: 20px; justify-content: center; text-align: center; }
+        .google-badge .grw-rating-block { flex-direction: column; gap: 8px; }
+        .google-badge .grw-actions { justify-content: center; }
+    }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="navbar">
+    <div class="logo-area">
+      <img src="/images/logo.png" alt="Chawla Classes Logo">
+      <div class="logo-text">
+        <h2>CHAWLA CLASSES</h2>
+        <p>Since 2002</p>
+      </div>
+    </div>
+
+    <div class="menu-toggle" id="menuToggle" aria-label="Toggle Menu" role="button" tabindex="0">
+      <span></span><span></span><span></span>
+    </div>
+
+    <ul class="nav-links" id="navLinks">
+      <li class="cat-nav-item"><a href="/#home">Home</a></li>
+      <li class="cat-nav-item"><a href="/#about">About</a></li>
+      <li class="cat-nav-item"><a href="/#courses">Courses</a></li>
+      <li class="cat-nav-item"><a href="/#faculty">Leadership</a></li>
+      <li class="cat-nav-item"><a href="/#results">Results</a></li>
+      <li class="cat-nav-item"><a href="/#fees">Fees &amp; Timings</a></li>
+      <li class="cat-nav-item"><a href="/#classes-overview">Classes</a></li>
+      <li class="cat-nav-item"><a href="/admission.html">Admission</a></li>
+      <li class="cat-nav-item"><a href="/careers.html">Careers</a></li>
+      <li class="cat-nav-item"><a href="/feedback.html">Feedback</a></li>
+      <li class="cat-nav-item"><a href="/contact.html">Contact</a></li>
+      <li class="nav-login-dropdown">
+        <a href="javascript:void(0)" class="login-toggle">
+          <i class="fas fa-user-circle"></i> Login <i class="fas fa-chevron-down"></i>
+        </a>
+        <div class="login-dropdown-menu">
+          <a href="/student/login.html"><i class="fas fa-user-graduate"></i> Student Login</a>
+          <a href="/admin/login.html"><i class="fas fa-shield-alt"></i> Admin Login</a>
+        </div>
+      </li>
+    </ul>
+
+    <a href="/admission.html" class="call-btn">Admission Open</a>
+  </nav>
+</header>
+
+<div class="mobile-overlay" id="mobileOverlay"></div>
+<div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation Menu">
+  <div class="drawer-header">
+    <div class="drawer-logo">
+      <img src="/images/logo.png" alt="Chawla Classes Logo" class="drawer-logo-img">
+      <div class="drawer-logo-text">
+        <h4>CHAWLA CLASSES</h4>
+        <p>Since 2002 · Uttam Nagar</p>
+      </div>
+    </div>
+    <button class="drawer-close" id="drawerClose" aria-label="Close Menu">&#x2715;</button>
+  </div>
+  <ul class="drawer-nav" id="drawerNav">
+    <li class="cat-nav-item"><a href="/#home"><i class="fas fa-home"></i> Home <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/#about"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/#courses"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/#faculty"><i class="fas fa-users"></i> Leadership <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/#classes-overview"><i class="fas fa-layer-group"></i> Classes <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/admission.html"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/careers.html"><i class="fas fa-user-tie"></i> Careers <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/feedback.html"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/contact.html"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="drawer-divider"></li>
+    <li style="padding: 0 20px;">
+      <a href="/student/login.html" style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.15);border-radius:8px;margin-bottom:8px;justify-content:center;color:#F5A623;">
+        <i class="fas fa-user-graduate"></i> Student Login <i class="fas fa-chevron-right arrow"></i>
+      </a>
+      <a href="/admin/login.html" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;justify-content:center;">
+        <i class="fas fa-user-shield"></i> Admin Login <i class="fas fa-chevron-right arrow"></i>
+      </a>
+    </li>
+  </ul>
+  <div class="drawer-footer">
+    <a href="tel:9717914003" class="drawer-call-cta">
+      <div class="drawer-call-icon"><i class="fas fa-phone-alt"></i></div>
+      <div class="drawer-call-text">
+        <h5>Call: 9717914003</h5>
+        <p>Mon–Sat · 9am – 8:30pm</p>
+      </div>
+    </a>
+    <div class="drawer-bottom-row">
+      <a href="https://wa.me/919717914003" target="_blank" rel="noopener" class="drawer-wa-btn">
+        <i class="fab fa-whatsapp"></i> <span>WhatsApp</span>
+      </a>
+      <div class="drawer-since"><span>Since 2002<br>24+ Years</span></div>
+    </div>
+  </div>
+</div>
+
+<section class="hero">
+    <div class="wrap">
+        <h1>Student Reviews</h1>
+        <p>See what our students and parents have to say about their experience at Chawla Classes.</p>
+    </div>
+</section>
+
+<section class="reviews-section">
+  <div class="wrap">
+    <a href="/#home" class="back-to-home-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+
+    <div class="google-badge" id="googleReviewsWidget"></div>
+
+    <div class="reviews-toolbar">
+      <span class="reviews-count" id="reviewsCount"></span>
+      <a href="/feedback.html" class="write-review-btn"><i class="fas fa-pen"></i> Write a Review</a>
+    </div>
+    <div class="reviews-grid" id="allReviewsGrid">
+      <p style="color:var(--muted);text-align:center;grid-column:1/-1;">Loading reviews...</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-container">
+    <div class="footer-box">
+      <img src="/images/logo.png" alt="Chawla Classes Logo" class="footer-logo">
+      <h2>CHAWLA CLASSES</h2>
+      <p>Since 2002 | Excellence in Education</p>
+      <p>Classes 1st–12th | Commerce & Arts Specialists</p>
+      <p>B.Com | BBA | B.A. | CUET | SSC | Olympiad | KVPY</p>
+      <p class="footer-tagline">"Step Towards Success"</p>
+    </div>
+    <div class="footer-box">
+      <h3>Quick Links</h3>
+      <a href="/#home">Home</a><a href="/#about">About</a><a href="/#courses">Courses</a>
+      <a href="/#faculty">Leadership</a><a href="/#results">Results</a>
+      <a href="/#fees">Fees &amp; Timings</a>
+      <a href="/#classes-overview">Classes</a>
+      <a href="/admission.html">Admission</a>
+      <a href="/careers.html">Careers</a>
+      <a href="/feedback.html">Feedback</a><a href="/contact.html">Contact</a><a href="/#faq">FAQ</a>
+    </div>
+    <div class="footer-box">
+      <h3>Contact Info</h3>
+      <p><a href="tel:9210660809" style="color:#ddd;text-decoration:none;"><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9210660809</a></p>
+      <p><a href="tel:9717914003" style="color:#ddd;text-decoration:none;"><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9717914003</a></p>
+      <p><i class="fas fa-envelope" style="color:#ffc400;margin-right:6px;"></i> 4chawlaclasses@gmail.com</p>
+      <p><i class="fas fa-map-marker-alt" style="color:#ffc400;margin-right:6px;"></i> Shop 72, Hastsal Road, Opp. Sabji Mandi, Near Metro Pillar 657, Uttam Nagar, New Delhi - 110059</p>
+      <a href="https://www.google.com/maps/place/Chawla+Classes/@28.6250389,77.0596209,17z" target="_blank" rel="noopener" class="map-link">
+        <i class="fas fa-map-marker-alt"></i> View on Google Maps
+      </a>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; <span id="yr"></span> Chawla Classes | All Rights Reserved</div>
+</footer>
+
+<button class="scroll-top" id="scrollTop" aria-label="Scroll to top"><i class="fas fa-chevron-up"></i></button>
+<a href="tel:9717914003" class="call-floating-btn"><i class="fas fa-phone"></i></a>
+<a href="https://wa.me/919717914003" class="whatsapp-btn" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
+
+<script src="/js/googleReviews.js"></script>
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+// ===== Mobile Drawer (copied from index.html / feedback.html) =====
+const menuToggle    = document.getElementById("menuToggle");
+const mobileDrawer  = document.getElementById("mobileDrawer");
+const mobileOverlay = document.getElementById("mobileOverlay");
+const drawerClose   = document.getElementById("drawerClose");
+
+function openDrawer()  { mobileDrawer.classList.add("active"); mobileOverlay.classList.add("active"); menuToggle.classList.add("open"); document.body.style.overflow="hidden"; }
+function closeDrawer() { mobileDrawer.classList.remove("active"); mobileOverlay.classList.remove("active"); menuToggle.classList.remove("open"); document.body.style.overflow=""; }
+
+menuToggle.addEventListener("click", () => mobileDrawer.classList.contains("active") ? closeDrawer() : openDrawer());
+drawerClose.addEventListener("click", closeDrawer);
+mobileOverlay.addEventListener("click", closeDrawer);
+document.querySelectorAll(".drawer-nav a").forEach(link => {
+    link.addEventListener("click", () => {
+        document.querySelectorAll(".drawer-nav a").forEach(l => l.classList.remove("active"));
+        link.classList.add("active");
+        closeDrawer();
+    });
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+// ===== Login dropdown (copied from index.html / feedback.html) =====
+(function() {
+    const dropdown = document.querySelector(".nav-login-dropdown");
+    const toggle = dropdown?.querySelector(".login-toggle");
+    if (!dropdown || !toggle) return;
+    toggle.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropdown.classList.toggle("active");
+    });
+    document.addEventListener("click", function(e) {
+        if (!dropdown.contains(e.target)) dropdown.classList.remove("active");
+    });
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") dropdown.classList.remove("active");
+    });
+})();
+
+// ===== Scroll-to-top button (copied from index.html / feedback.html) =====
+const scrollTopBtn = document.getElementById("scrollTop");
+if (scrollTopBtn) {
+    window.addEventListener("scroll", () => {
+        scrollTopBtn.classList.toggle("show", window.scrollY > 400);
+    });
+    scrollTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+}
+
+// ===== Navbar categories (Admin -> Categories) -- same dynamic nav as
+// index.html/feedback.html, so this page shows the exact same navbar
+// items as the homepage, in the same order. =====
+async function loadNavCategories() {
+    try {
+        const res = await fetch("/api/categories");
+        const json = await res.json();
+        const categories = json?.data || [];
+        if (!Array.isArray(categories) || categories.length === 0) return;
+        renderNavCategoriesInto(document.getElementById("navLinks"), categories, false);
+        renderNavCategoriesInto(document.getElementById("drawerNav"), categories, true);
+    } catch (err) { /* keep the static fallback nav above */ }
+}
+function findActiveCategoryIndex(categories) {
+    const herePath = window.location.pathname.replace(/\/index\.html$/, "/") || "/";
+    return categories.findIndex(c => {
+        try {
+            const target = new URL(c.url, window.location.origin);
+            const targetPath = target.pathname.replace(/\/index\.html$/, "/") || "/";
+            return targetPath === herePath;
+        } catch (err) { return false; }
+    });
+}
+function renderNavCategoriesInto(list, categories, isDrawer) {
+    if (!list) return;
+    const boundary = isDrawer ? list.querySelector(".drawer-divider") : list.querySelector(".nav-login-dropdown");
+    list.querySelectorAll(".cat-nav-item").forEach(el => el.remove());
+    const activeIdx = findActiveCategoryIndex(categories);
+    const frag = document.createDocumentFragment();
+    categories.forEach((c, idx) => {
+        const li = document.createElement("li");
+        li.className = "cat-nav-item";
+        const a = document.createElement("a");
+        a.href = c.url.startsWith("#") ? "/" + c.url : c.url;
+        if (idx === activeIdx) a.className = isDrawer ? "active" : "nav-active";
+        if (isDrawer) {
+            const icon = document.createElement("i");
+            icon.className = "fas " + (c.icon || "fa-circle");
+            a.appendChild(icon);
+            a.appendChild(document.createTextNode(" " + c.name + " "));
+            const arrow = document.createElement("i");
+            arrow.className = "fas fa-chevron-right arrow";
+            a.appendChild(arrow);
+            a.addEventListener("click", () => {
+                list.querySelectorAll("a").forEach(l => l.classList.remove("active"));
+                a.classList.add("active");
+                closeDrawer();
+            });
+        } else {
+            a.textContent = c.name;
+        }
+        li.appendChild(a);
+        frag.appendChild(li);
+    });
+    if (boundary) list.insertBefore(frag, boundary); else list.appendChild(frag);
+}
+loadNavCategories();
+
+// ===== All reviews grid -- reads the same admin-approved-only endpoint
+// (/api/reviews/approved, routes/reviews.js) as the homepage's
+// testimonial carousel, but renders every review at once instead of a
+// limited swiper. Same XSS-safe DOM-based rendering (no innerHTML on
+// user-submitted text). =====
+async function loadAllReviews() {
+    const grid = document.getElementById("allReviewsGrid");
+    const countEl = document.getElementById("reviewsCount");
+    try {
+        const response = await fetch("/api/reviews/approved");
+        const result = await response.json();
+        const reviews = (result && result.success) ? result.data : [];
+        grid.innerHTML = "";
+
+        if (!reviews || reviews.length === 0) {
+            countEl.textContent = "";
+            const msg = document.createElement("p");
+            msg.className = "reviews-empty";
+            msg.textContent = "No reviews yet. Be the first to share your experience!";
+            grid.appendChild(msg);
+            return;
+        }
+
+        countEl.textContent = reviews.length + (reviews.length === 1 ? " review" : " reviews");
+
+        reviews.forEach(item => {
+            const card = document.createElement("div");
+            card.className = "review-card";
+
+            if (item.isFeatured) {
+                const badge = document.createElement("span");
+                badge.className = "featured-badge";
+                badge.innerHTML = '<i class="fas fa-star"></i> Featured';
+                card.appendChild(badge);
+            }
+
+            const stars = document.createElement("div");
+            stars.className = "stars";
+            stars.textContent = "\u2605".repeat(item.rating || 0) + "\u2606".repeat(5 - (item.rating || 0));
+            card.appendChild(stars);
+
+            const p = document.createElement("p");
+            p.className = "review-text";
+            p.textContent = "\u201C" + item.feedback + "\u201D";
+            card.appendChild(p);
+
+            const meta = document.createElement("div");
+            meta.className = "review-meta";
+            meta.textContent = item.studentName;
+            const classSpan = document.createElement("span");
+            classSpan.textContent = item.studentClass;
+            meta.appendChild(classSpan);
+            card.appendChild(meta);
+
+            grid.appendChild(card);
+        });
+    } catch (err) {
+        countEl.textContent = "";
+        grid.innerHTML = "";
+        const msg = document.createElement("p");
+        msg.className = "reviews-error";
+        msg.textContent = "Reviews could not be loaded. Please try again later.";
+        grid.appendChild(msg);
+    }
+}
+loadAllReviews();
+
+// Google Reviews badge -- rendering logic lives in the shared
+// public/js/googleReviews.js module (also used by index.html) so the
+// settings fetch, URL derivation, and safe DOM rendering aren't
+// duplicated per page. Fails quiet on any error, same as gallery.html's
+// loadSocialLinks -- a slow/failed fetch just leaves the badge hidden,
+// it never breaks the rest of this page.
+GoogleReviewsWidget.renderInto(document.getElementById("googleReviewsWidget"));
+</script>
+
+</body>
+</html>

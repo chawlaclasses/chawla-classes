@@ -61,14 +61,45 @@ router.get('/', requirePermission('settings:view'), (req, res) => {
     }
 });
 
+// Accepts a real Google Maps URL for the business listing (the value the
+// admin pastes as "Google Business Profile URL") — google.com/maps/...,
+// a bare maps.google.com link, or a goo.gl/maps.app.goo.gl short link.
+// Kept intentionally permissive about path shape since Google's own Maps
+// URLs vary a lot; the host is what actually matters here.
+const GOOGLE_MAPS_URL_RE = /^https:\/\/((www\.)?google\.[a-z.]{2,24}\/maps\/|maps\.google\.[a-z.]{2,24}\/|maps\.app\.goo\.gl\/|goo\.gl\/maps\/)/i;
+
+function validateGoogleReviewsPatch(gr) {
+    if (gr.profileUrl !== undefined && gr.profileUrl !== '' && !GOOGLE_MAPS_URL_RE.test(gr.profileUrl)) {
+        return 'Google Business Profile URL must be a valid Google Maps link (e.g. https://www.google.com/maps/place/...)';
+    }
+    if (gr.rating !== undefined && gr.rating !== null) {
+        const r = Number(gr.rating);
+        if (Number.isNaN(r) || r < 0 || r > 5) return 'Google Rating must be a number between 0 and 5';
+    }
+    if (gr.reviewCount !== undefined && gr.reviewCount !== null) {
+        const c = Number(gr.reviewCount);
+        if (!Number.isInteger(c) || c < 0) return 'Google Review Count must be 0 or a positive whole number';
+    }
+    if (gr.enabled !== undefined && typeof gr.enabled !== 'boolean') {
+        return 'Google Reviews "enabled" must be true or false';
+    }
+    return null;
+}
+
 // Update settings
 router.put('/', requirePermission('settings:edit'), (req, res) => {
     try {
         const allowed = ['instituteName', 'academicSession', 'passingCriteria', 'themeColor',
-            'email', 'whatsapp', 'backup', 'socialLinks', 'maintenanceMode', 'maintenanceMessage'];
+            'email', 'whatsapp', 'backup', 'socialLinks', 'googleReviews', 'maintenanceMode', 'maintenanceMessage'];
         const patch = {};
         for (const key of allowed) {
             if (req.body[key] !== undefined) patch[key] = req.body[key];
+        }
+        if (patch.googleReviews) {
+            const validationError = validateGoogleReviewsPatch(patch.googleReviews);
+            if (validationError) {
+                return res.status(400).json({ success: false, message: validationError });
+            }
         }
         const updated = settingsService.updateSettings(patch);
         logAudit(req, 'edit', 'settings', null, 'Updated application settings');

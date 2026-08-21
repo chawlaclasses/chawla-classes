@@ -108,6 +108,31 @@ function renderSettings() {
                 <button class="btn btn-gold" onclick="saveSocialLinks()"><i class="fas fa-save"></i> Save</button>
             `)}
 
+            ${settingsCard('Google Reviews', '⭐', `
+                <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">
+                    Shown as a rating badge on the homepage and the Student Reviews page, linking out to your real Google Business listing. No API key/billing involved, and no reviews are stored on this site — rating and review count are typed in here and shown as-is, so refresh them from your Google Business Profile whenever you'd like the number to update.
+                </p>
+                <div class="form-group">
+                    <label>Google Business Profile URL</label>
+                    <input type="text" id="setGoogleProfileUrl" placeholder="https://www.google.com/maps/place/..." value="${escapeHtml(s.googleReviews?.profileUrl || '')}">
+                    <p style="color:var(--muted);font-size:11px;margin-top:4px;">Paste the URL from your browser's address bar when viewing your business on Google Maps (Share → Copy link also works). This is the only thing "Read Our Google Reviews" and "Write a Review on Google" need — no Place ID lookup required.</p>
+                </div>
+                <div class="form-group"><label>Google Rating (out of 5)</label><input type="number" id="setGoogleRating" step="0.1" min="0" max="5" value="${s.googleReviews?.rating ?? ''}"></div>
+                <div class="form-group"><label>Google Review Count</label><input type="number" id="setGoogleReviewCount" min="0" step="1" value="${s.googleReviews?.reviewCount ?? ''}"></div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="setGoogleReviewsEnabled" ${s.googleReviews?.enabled ? 'checked' : ''} style="width:auto;margin-right:8px;"> Show Google Reviews on the website</label>
+                </div>
+                <details style="margin-bottom:12px;">
+                    <summary style="color:var(--muted);font-size:12px;cursor:pointer;">Advanced: legacy Place ID (optional)</summary>
+                    <div class="form-group" style="margin-top:8px;">
+                        <label>Google Place ID <span style="font-weight:400;color:var(--muted);">(optional — only needed if you had this set up before the Profile URL field existed)</span></label>
+                        <input type="text" id="setGooglePlaceId" placeholder="e.g. ChIJ..." value="${escapeHtml(s.googleReviews?.placeId || '')}">
+                    </div>
+                </details>
+                ${s.googleReviews?.updatedAt ? `<p style="color:var(--muted);font-size:11px;margin-bottom:12px;">Last updated: ${new Date(s.googleReviews.updatedAt).toLocaleString()}</p>` : ''}
+                <button class="btn btn-gold" onclick="saveGoogleReviewsSettings()"><i class="fas fa-save"></i> Save</button>
+            `)}
+
             ${settingsCard('Backup Settings', '💾', `
                 <div class="form-group">
                     <label><input type="checkbox" id="setAutoBackup" ${s.backup?.autoBackupEnabled ? 'checked' : ''} style="width:auto;margin-right:8px;"> Enable automatic backups</label>
@@ -191,6 +216,37 @@ async function saveSocialLinks() {
     const result = await apiCall('/settings', { method: 'PUT', body: JSON.stringify({ socialLinks }) });
     if (!result || !result.success) { showToast('Error', result?.message || 'Failed to save', 'error'); return; }
     showToast('Success', 'Social links saved', 'success');
+    loadSettings();
+}
+
+async function saveGoogleReviewsSettings() {
+    const profileUrl = document.getElementById('setGoogleProfileUrl').value.trim();
+    const ratingRaw = document.getElementById('setGoogleRating').value;
+    const countRaw = document.getElementById('setGoogleReviewCount').value;
+    const enabled = document.getElementById('setGoogleReviewsEnabled').checked;
+
+    // Same host allow-list as the public widget (public/js/googleReviews.js)
+    // — catch an obviously-wrong URL before it ever reaches the server.
+    if (profileUrl && !/^https:\/\/((www\.)?google\.[a-z.]{2,24}\/maps\/|maps\.google\.[a-z.]{2,24}\/|maps\.app\.goo\.gl\/|goo\.gl\/maps\/)/i.test(profileUrl)) {
+        showToast('Error', 'Please paste a valid Google Maps URL (e.g. https://www.google.com/maps/place/...)', 'error');
+        return;
+    }
+    if (enabled && !profileUrl) {
+        showToast('Error', 'Add your Google Business Profile URL before enabling Google Reviews', 'error');
+        return;
+    }
+
+    const googleReviews = {
+        profileUrl,
+        placeId: document.getElementById('setGooglePlaceId').value.trim(),
+        rating: ratingRaw === '' ? null : Math.min(5, Math.max(0, parseFloat(ratingRaw))),
+        reviewCount: countRaw === '' ? null : Math.max(0, parseInt(countRaw, 10) || 0),
+        enabled,
+        updatedAt: new Date().toISOString()
+    };
+    const result = await apiCall('/settings', { method: 'PUT', body: JSON.stringify({ googleReviews }) });
+    if (!result || !result.success) { showToast('Error', result?.message || 'Failed to save', 'error'); return; }
+    showToast('Success', 'Google Reviews settings saved', 'success');
     loadSettings();
 }
 
