@@ -13,7 +13,7 @@
 const nodemailer = require("nodemailer");
 const logger = require("./logger");
 const { sendViaBrevoApi } = require("./brevoMailer");
-const settingsService = require("./settings");
+const settingsService = require("../services/settings");
 
 let _transporter = null;
 let _checkedConfig = false;
