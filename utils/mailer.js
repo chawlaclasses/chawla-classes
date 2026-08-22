@@ -13,6 +13,7 @@
 const nodemailer = require("nodemailer");
 const logger = require("./logger");
 const { sendViaBrevoApi } = require("./brevoMailer");
+const settingsService = require("./settings");
 
 let _transporter = null;
 let _checkedConfig = false;
@@ -30,6 +31,29 @@ function parseFrom(raw) {
   if (quoted) return { name: quoted[1].trim(), email: quoted[2].trim() };
   if (/^[^<>\s]+@[^<>\s]+$/.test(raw.trim())) return { name: "Chawla Classes", email: raw.trim() };
   return null;
+}
+
+// FIX: this used to only look at the SMTP_FROM/SMTP_USER *env vars*, which
+// aren't necessarily the same address that's actually verified as a sender
+// in Brevo (or authorized to relay via the SMTP account). Admin ->
+// Settings -> Email Configuration writes a *different*, DB-stored address
+// (settingsService's `email.fromAddress`/`user`) that routes/settings.js's
+// /test-email already sends from successfully. Prefer that DB-configured,
+// known-working address; fall back to the env vars only if the admin
+// hasn't configured one, so this stays backward compatible with
+// env-var-only installs.
+function resolveFrom() {
+  try {
+    const { email } = settingsService.getSettings();
+    const dbAddress = email && (email.fromAddress || email.user);
+    if (dbAddress) {
+      return { name: (email && email.fromName) || "Chawla Classes", email: dbAddress };
+    }
+  } catch (err) {
+    // Settings not readable for some reason -- fall through to env vars
+    // below rather than failing the send entirely.
+  }
+  return parseFrom(process.env.SMTP_FROM) || { name: "Chawla Classes", email: process.env.SMTP_USER };
 }
 
 function getTransporter() {
@@ -68,7 +92,7 @@ async function sendMail({ to, subject, html, text }) {
   // it isn't affected by hosts (like Render's free tier) that block outbound
   // SMTP ports. Falls through to SMTP below if BREVO_API_KEY isn't set.
   if (process.env.BREVO_API_KEY) {
-    const from = parseFrom(process.env.SMTP_FROM) || { name: "Chawla Classes", email: process.env.SMTP_USER };
+    const from = resolveFrom();
     try {
       await sendViaBrevoApi({
         to,
@@ -90,8 +114,9 @@ async function sendMail({ to, subject, html, text }) {
   if (!transporter) return { sent: false, reason: "SMTP not configured" };
 
   try {
+    const from = resolveFrom();
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || `"Chawla Classes" <${process.env.SMTP_USER}>`,
+      from: `"${from.name}" <${from.email}>`,
       to,
       subject,
       html,
