@@ -1231,6 +1231,13 @@ body {
   font-size: 16px;
   font-family: 'Poppins', sans-serif;
   transition: border-color .3s;
+  /* FIX: without this, padding adds on top of the element's own width
+     instead of being included in it -- harmless for direct children of
+     the flex-column form (they stretch via flex regardless), but any
+     input nested inside a wrapper div (e.g. feedback.html's verify-box)
+     needs width:100%+border-box together or it overflows its container
+     on narrow screens. */
+  box-sizing: border-box;
 }
 .admission-form-box input:focus,
 .admission-form-box select:focus,
