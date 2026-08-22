@@ -499,6 +499,16 @@
     font-size: 14.5px !important;
     line-height: 1.55 !important;
     margin: 0;
+    /* FIX: long reviews (this site takes reviews verbatim from students,
+       so length varies a lot) had no cap, so a single long one made the
+       whole card -- and on mobile, the whole carousel section -- balloon
+       tall. Clamp to a consistent preview length instead; "View All
+       Reviews" right below the carousel already links to the full,
+       untruncated text on reviews.html. */
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   #testimonialSwiper .testimonial-card h4 {
     font-size: 13.5px !important;
@@ -533,6 +543,9 @@
   #testimonialSwiper .swiper-pagination-bullet-active {
     background: #F5A623;
     opacity: 1;
+  }
+  @media (max-width: 600px) {
+    #testimonialSwiper .testimonial-card p { -webkit-line-clamp: 5; }
   }
   .view-all-reviews-btn {
     display: inline-flex;
@@ -637,13 +650,15 @@
     </div>
     <div class="footer-box">
       <h3>Quick Links</h3>
-      <a href="#home">Home</a><a href="#about">About</a><a href="#courses">Courses</a>
-      <a href="#faculty">Leadership</a><a href="#results">Results</a>
-      <a href="#fees">Fees &amp; Timings</a>
-      <a href="#classes-overview">Classes</a>
-      <a href="/admission.html">Admission</a>
-      <a href="/careers.html">Careers</a>
-      <a href="/feedback.html">Feedback</a><a href="/contact.html">Contact</a><a href="#faq">FAQ</a>
+      <div class="footer-links-grid">
+        <a href="#home">Home</a><a href="#about">About</a><a href="#courses">Courses</a>
+        <a href="#faculty">Leadership</a><a href="#results">Results</a>
+        <a href="#fees">Fees &amp; Timings</a>
+        <a href="#classes-overview">Classes</a>
+        <a href="/admission.html">Admission</a>
+        <a href="/careers.html">Careers</a>
+        <a href="/feedback.html">Feedback</a><a href="/contact.html">Contact</a><a href="#faq">FAQ</a>
+      </div>
     </div>
     <div class="footer-box">
       <h3>Contact Info</h3>
