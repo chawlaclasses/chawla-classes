@@ -36,7 +36,13 @@
        Verify Email / Confirm / Send Edit Link should stay small,
        secondary-looking actions, not full-size CTAs. */
     .verify-box { background: var(--light); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin: 4px 0 10px; }
-    .verify-box input[type="email"], .verify-box input[type="tel"] { margin-bottom: 10px; }
+    /* FIX: these two inputs sit inside .verify-box (a plain block div),
+       not as direct children of .admission-form-box form's flex column --
+       so they never got the flex "stretch" that makes Student Name/Select
+       Class/Feedback fill the width automatically. Missing width:100% +
+       box-sizing left them at the browser's intrinsic input width, which
+       overflowed off the right edge on narrow mobile screens. */
+    .verify-box input[type="email"], .verify-box input[type="tel"] { width: 100%; box-sizing: border-box; margin-bottom: 10px; }
     .admission-form-box .btn-verify { background: var(--primary); color: var(--white); border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; width: auto; transform: none; }
     .admission-form-box .btn-verify:hover { transform: none; opacity: 0.9; }
     .admission-form-box .btn-verify:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -51,7 +57,7 @@
     .admission-form-box .lost-link-toggle:hover { color: var(--primary); transform: none; }
     .lost-link-box { background: var(--light); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: left; }
     .lost-link-hint { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
-    .lost-link-box input { margin-bottom: 10px; }
+    .lost-link-box input { width: 100%; box-sizing: border-box; margin-bottom: 10px; }
     .admission-form-box .lost-link-box .btn-verify { padding: 8px 14px; }
 </style>
 </head>
