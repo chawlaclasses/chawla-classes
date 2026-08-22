@@ -141,7 +141,7 @@ function renderRecruitmentTable() {
                     ${list.map(a => `
                         <tr>
                             <td><div style="width:32px;height:32px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;overflow:hidden;">${a.photo ? `<img src="/api/admin/recruitment/${a._id}/files/photo" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove()">` : '<i class="fas fa-user"></i>'}</div></td>
-                            <td><strong>${escapeHtml(a.fullName)}</strong></td>
+                            <td><strong>${escapeHtml(a.fullName)}</strong>${renderFlagBadges(a)}</td>
                             <td>${a.positionTitle ? escapeHtml(a.positionTitle) : '<span style="color:var(--muted);">—</span>'}</td>
                             <td>${escapeHtml(a.preferredSubjects || '—')}</td>
                             <td>${escapeHtml(a.qualification || '—')}</td>

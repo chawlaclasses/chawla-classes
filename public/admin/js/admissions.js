@@ -39,7 +39,7 @@ function renderAdmissions() {
                     <tbody>
                         ${list.map(a => { const s = statusStyle[a.status] || statusStyle.new; return `
                             <tr>
-                                <td><strong>${escapeHtml(a.studentName)}</strong></td>
+                                <td><strong>${escapeHtml(a.studentName)}</strong>${renderFlagBadges(a)}</td>
                                 <td>${escapeHtml(a.parentName || '—')}</td>
                                 <td>${escapeHtml(a.phone)}</td>
                                 <td>${escapeHtml(a.interestedClass || '—')}</td>

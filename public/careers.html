@@ -109,6 +109,27 @@
     margin-top: 0;
     padding-top: 56px;
 }
+
+/* Honeypot anti-bot field (routes/recruitment.js's honeypotGuard) —
+   invisible and unreachable to a real visitor, but a bot that blindly
+   fills every input on the page will still fill this one in. */
+.hp-field { position: absolute !important; left: -9999px !important; top: -9999px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
+
+/* Email OTP verification panel — shown as the LAST step, right when the
+   candidate clicks Submit, not while they're still filling the form in. */
+.otp-panel { display: none; margin: 18px 0; padding: 16px; background: var(--light); border: 1px solid var(--border); border-radius: 10px; }
+.otp-panel.active { display: block; }
+.otp-panel p.otp-hint { font-size: 13.5px; color: var(--muted); margin-bottom: 10px; }
+.otp-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.otp-row input[type="text"] { flex: 1 1 140px; letter-spacing: 4px; font-weight: 700; text-align: center; padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; }
+.otp-row button { flex: 0 0 auto; white-space: nowrap; padding: 0 18px; border-radius: 8px; border: none; background: var(--primary); color: var(--white); font-weight: 600; cursor: pointer; }
+.otp-row button:disabled { opacity: 0.6; cursor: not-allowed; }
+.otp-status { margin-top: 8px; font-size: 13px; min-height: 18px; }
+.otp-status.error { color: #dc2626; }
+.otp-status.success { color: #16a34a; }
+.otp-resend { margin-top: 8px; font-size: 12.5px; }
+.otp-resend button { background: none; border: none; padding: 0; color: var(--primary); font-weight: 600; text-decoration: underline; cursor: pointer; }
+.otp-resend button:disabled { color: var(--muted); text-decoration: none; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -312,6 +333,16 @@
             <div id="formMsg" class="form-msg"></div>
             <form id="careerForm">
 
+                <!-- Honeypot: real applicants never see or fill this in
+                     (see .hp-field CSS above). Hidden label + tabindex=-1
+                     + aria-hidden keep it unreachable via keyboard/screen-
+                     reader too, not just visually. -->
+                <div class="hp-field" aria-hidden="true">
+                    <label for="careerWebsite">Leave this field empty</label>
+                    <input type="text" id="careerWebsite" name="website" autocomplete="off" tabindex="-1">
+                </div>
+                <input type="hidden" name="verifyToken" id="careerVerifyToken" value="">
+
                 <div class="form-section-label">Personal Details</div>
                 <div class="form-row2">
                     <div class="fgroup"><label>Full Name *</label><input type="text" name="fullName" required></div>
@@ -399,6 +430,19 @@
                     <input type="checkbox" name="declaration" required>
                     I declare that the information provided above is true to the best of my knowledge, and I consent to Chawla Classes contacting me regarding this application.
                 </label>
+
+                <!-- Email verification — appears only once the candidate
+                     tries to submit (see script below), not while they're
+                     still filling the form in. -->
+                <div class="otp-panel" id="careerOtpPanel">
+                    <p class="otp-hint" id="careerOtpHint">We've sent a 6-digit verification code to your email. Enter it below to confirm your application.</p>
+                    <div class="otp-row">
+                        <input type="text" id="careerOtpCode" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code">
+                        <button type="button" id="careerVerifyOtpBtn">Verify &amp; Submit</button>
+                    </div>
+                    <div class="otp-status" id="careerOtpStatus"></div>
+                    <div class="otp-resend"><button type="button" id="careerResendOtpBtn">Resend code</button></div>
+                </div>
 
                 <button type="submit" class="btn-submit" id="submitBtn"><i class="fas fa-paper-plane"></i> Submit Application</button>
             </form>
@@ -615,39 +659,154 @@ function escapeHtmlCareers(str) {
     return div.innerHTML;
 }
 
-document.getElementById('careerForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const form = e.target;
-    const btn = document.getElementById('submitBtn');
-    const msg = document.getElementById('formMsg');
-    msg.className = 'form-msg';
+// ===== Career application form submit =====
+// UPDATED (2026-08 anti-spam hardening): email OTP verification is now
+// required before the real application goes through — see
+// routes/recruitment.js (POST /send-otp, /verify-otp, /apply). The OTP
+// panel only appears once the candidate tries to submit the (already
+// fully filled, files attached) form — not while they're still typing
+// their email — per how this was scoped.
+const careerForm        = document.getElementById("careerForm");
+const careerSubmitBtn   = document.getElementById("submitBtn");
+const careerFormMsg     = document.getElementById("formMsg");
+const careerOtpPanel    = document.getElementById("careerOtpPanel");
+const careerOtpStatus   = document.getElementById("careerOtpStatus");
+const careerOtpCodeInput= document.getElementById("careerOtpCode");
+const careerVerifyBtn   = document.getElementById("careerVerifyOtpBtn");
+const careerResendBtn   = document.getElementById("careerResendOtpBtn");
+const careerVerifyTokenInput = document.getElementById("careerVerifyToken");
+
+let careerVerifiedEmail = null;
+let careerResendTimer = null;
+
+function careerSetOtpStatus(message, kind) {
+    careerOtpStatus.textContent = message || "";
+    careerOtpStatus.className = "otp-status" + (kind ? " " + kind : "");
+}
+
+function careerStartResendCooldown(seconds) {
+    let remaining = seconds;
+    careerResendBtn.disabled = true;
+    careerResendBtn.textContent = `Resend code (${remaining}s)`;
+    clearInterval(careerResendTimer);
+    careerResendTimer = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+            clearInterval(careerResendTimer);
+            careerResendBtn.disabled = false;
+            careerResendBtn.textContent = "Resend code";
+        } else {
+            careerResendBtn.textContent = `Resend code (${remaining}s)`;
+        }
+    }, 1000);
+}
+
+async function careerSendOtp(email) {
+    careerSetOtpStatus("Sending verification code…", "");
+    try {
+        const res = await fetch("/api/careers/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, website: document.getElementById("careerWebsite").value }),
+        });
+        const json = await res.json().catch(() => ({}));
+        careerSetOtpStatus(json.message || (json.success ? "Code sent." : "Something went wrong."), json.success ? "success" : "error");
+        if (json.success) careerStartResendCooldown(60);
+        return Boolean(json.success);
+    } catch (err) {
+        careerSetOtpStatus("Couldn't send the code. Check your connection and try again.", "error");
+        return false;
+    }
+}
+
+async function careerVerifyOtpAndSubmit() {
+    const email = document.querySelector('#careerForm [name="email"]').value.trim();
+    const otp = careerOtpCodeInput.value.trim();
+    if (!otp) { careerSetOtpStatus("Enter the 6-digit code we emailed you.", "error"); return; }
+
+    careerVerifyBtn.disabled = true;
+    try {
+        const res = await fetch("/api/careers/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, otp }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!json.success) {
+            careerSetOtpStatus(json.message || "Incorrect code.", "error");
+            return;
+        }
+        careerVerifiedEmail = email;
+        careerVerifyTokenInput.value = json.data.verifyToken;
+        careerSetOtpStatus("Email verified! Submitting your application…", "success");
+        await careerSubmitApplication();
+    } catch (err) {
+        careerSetOtpStatus("Couldn't verify the code. Check your connection and try again.", "error");
+    } finally {
+        careerVerifyBtn.disabled = false;
+    }
+}
+
+async function careerSubmitApplication() {
+    const form = careerForm;
+    const btn = careerSubmitBtn;
+    const msg = careerFormMsg;
+    msg.className = "form-msg";
 
     const skillsChecked = Array.from(form.querySelectorAll('input[name="skills"]:checked')).map(el => el.value);
     const fd = new FormData(form);
-    fd.delete('skills');
-    fd.append('skills', JSON.stringify(skillsChecked));
+    fd.delete("skills");
+    fd.append("skills", JSON.stringify(skillsChecked));
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
 
     try {
-        const res = await fetch('/api/careers/apply', { method: 'POST', body: fd });
+        const res = await fetch("/api/careers/apply", { method: "POST", body: fd });
         const data = await res.json();
         if (!res.ok || !data.success) {
-            throw new Error(data.message || (data.errors && data.errors[0] && data.errors[0].msg) || 'Something went wrong. Please check the form and try again.');
+            throw new Error(data.message || (data.errors && data.errors[0] && data.errors[0].msg) || "Something went wrong. Please check the form and try again.");
         }
-        msg.textContent = data.message || 'Application submitted successfully!';
-        msg.className = 'form-msg ok show';
+        msg.textContent = data.message || "Application submitted successfully!";
+        msg.className = "form-msg ok show";
         form.reset();
-        window.scrollTo({ top: document.getElementById('formMsg').offsetTop - 100, behavior: 'smooth' });
+        careerVerifiedEmail = null;
+        careerVerifyTokenInput.value = "";
+        careerOtpPanel.classList.remove("active");
+        careerSetOtpStatus("", "");
+        window.scrollTo({ top: document.getElementById("formMsg").offsetTop - 100, behavior: "smooth" });
     } catch (err) {
         msg.textContent = err.message;
-        msg.className = 'form-msg err show';
+        msg.className = "form-msg err show";
+        careerSetOtpStatus(err.message, "error");
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
     }
+}
+
+careerForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const email = document.querySelector('#careerForm [name="email"]').value.trim();
+
+    // Already verified this exact email in this session? Skip straight to
+    // the real submission — no need to make them verify twice.
+    if (careerVerifiedEmail === email && careerVerifyTokenInput.value) {
+        await careerSubmitApplication();
+        return;
+    }
+
+    // Last step before the real submit: reveal the OTP panel and send the
+    // code automatically, so it's one fewer click for a genuine candidate.
+    careerOtpPanel.classList.add("active");
+    careerOtpPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+    careerOtpCodeInput.value = "";
+    await careerSendOtp(email);
 });
+
+careerVerifyBtn.addEventListener("click", careerVerifyOtpAndSubmit);
+careerOtpCodeInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); careerVerifyOtpAndSubmit(); } });
+careerResendBtn.addEventListener("click", () => careerSendOtp(document.querySelector('#careerForm [name="email"]').value.trim()));
 </script>
 
 </body>

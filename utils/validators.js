@@ -11,6 +11,33 @@
 "use strict";
 
 const { body } = require("express-validator");
+const { isValidIndianMobile, isBlockedEmailDomain } = require("./spamDetection");
+
+// ── Shared anti-spam field validators (Admission Form + Career Form) ───────
+// Both public/admission.html and public/careers.html now require a real,
+// verifiable Indian mobile number and a real (non-disposable) email
+// before an OTP is even sent — see utils/spamDetection.js for the actual
+// pattern/domain-list logic this wraps.
+function strictIndianMobile(field = "phone") {
+  return body(field).trim().notEmpty().withMessage("Mobile number is required")
+    .custom(value => {
+      if (!isValidIndianMobile(value)) {
+        throw new Error("Enter a valid 10-digit Indian mobile number");
+      }
+      return true;
+    });
+}
+
+function nonDisposableEmail(field = "email") {
+  return body(field).trim().notEmpty().withMessage("Email is required")
+    .isEmail().withMessage("Enter a valid email address").normalizeEmail()
+    .custom(value => {
+      if (isBlockedEmailDomain(value)) {
+        throw new Error("Please use a permanent email address — temporary/disposable email addresses are not accepted");
+      }
+      return true;
+    });
+}
 
 // FIX (security audit 2026-08): marketing banner ctaLink/imageUrl are
 // admin-entered but rendered on the PUBLIC site (routes/marketing.js
@@ -466,8 +493,15 @@ const validators = {
   // bounce over an optional field.
   submitFacultyApplication: [
     body("fullName").trim().notEmpty().withMessage("Full name is required").isLength({ min: 2, max: 100 }),
-    body("phone").trim().notEmpty().withMessage("Mobile number is required").matches(/^[0-9+\-\s()]{10,15}$/).withMessage("Enter a valid mobile number"),
+    strictIndianMobile("phone"),
+    // NOTE: nonDisposableEmail() is intentionally NOT applied again here —
+    // the disposable-domain check already ran once at send-otp time (see
+    // sendCareerOtp below), and by the time a request reaches this final
+    // submit validator it must already carry a verifyToken proving that
+    // exact email was OTP-verified. Re-running the full check here just
+    // duplicates work; this only re-validates format + presence.
     body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Enter a valid email").normalizeEmail(),
+    body("verifyToken").trim().notEmpty().withMessage("Please verify your email before submitting"),
     body("gender").optional().trim().isIn(["male", "female", "other"]).withMessage("Invalid gender"),
     body("dob").optional().isISO8601().withMessage("Date of birth must be a valid date"),
     body("qualification").trim().notEmpty().withMessage("Highest qualification is required").isLength({ max: 150 }),
@@ -478,6 +512,19 @@ const validators = {
     body("employmentType").optional({ checkFalsy: true }).trim().isIn(["full_time", "part_time", "online", "offline", "hybrid"]).withMessage("Invalid employment type"),
     body("joiningDate").optional({ checkFalsy: true }).isISO8601().withMessage("Joining date must be a valid date"),
     body("declaration").custom(v => v === true || v === "true" || v === "on").withMessage("You must accept the declaration to apply"),
+  ],
+
+  // OTP verification for the public Career/Faculty Recruitment form
+  // (routes/recruitment.js POST /send-otp, /verify-otp) — mirrors
+  // sendReviewOtp/verifyReviewOtp below, but the disposable-domain check
+  // lives here (not on submitFacultyApplication) since this is the point
+  // where it actually matters: before an OTP email is ever sent.
+  sendCareerOtp: [
+    nonDisposableEmail("email"),
+  ],
+  verifyCareerOtp: [
+    body("email").trim().notEmpty().isEmail().withMessage("Enter a valid email address").normalizeEmail(),
+    body("otp").trim().notEmpty().withMessage("Enter the code we emailed you").isLength({ min: 6, max: 6 }).withMessage("Code must be 6 digits").isNumeric().withMessage("Code must be numeric"),
   ],
 
   // ── Job Positions (admin-managed, feed both the admin dropdown/filter
@@ -493,6 +540,11 @@ const validators = {
   ],
 
   // ── Public website admission form (index.html's "Admission Form") ─────
+  // Used by routes/admin/admissions.js's staff "Log Admission Enquiry"
+  // (walk-in/phone) action too — deliberately left EXACTLY as it was
+  // (loose phone format, optional email) since that's an internally
+  // trusted, non-public action with no spam exposure and no OTP step.
+  // The public website submission uses submitAdmissionWebsite below.
   submitPublicAdmission: [
     body("studentName").trim().notEmpty().withMessage("Student name is required").isLength({ min: 2, max: 100 }),
     body("parentName").trim().notEmpty().withMessage("Parent's name is required").isLength({ max: 100 }),
@@ -501,6 +553,36 @@ const validators = {
     body("school").optional().trim().isLength({ max: 150 }),
     body("interestedClass").trim().notEmpty().withMessage("Class is required").isLength({ max: 60 }),
     body("address").optional().trim().isLength({ max: 500 }),
+  ],
+
+  // ── Public website admission form — actual internet-facing submission
+  // (routes/publicEnquiry.js POST /admission). Stricter than
+  // submitPublicAdmission above: real Indian mobile format (no sequential/
+  // repeated-digit fakes), required email, and a verifyToken proving that
+  // email was just OTP-verified (see sendAdmissionOtp/verifyAdmissionOtp
+  // below).
+  submitAdmissionWebsite: [
+    body("studentName").trim().notEmpty().withMessage("Student name is required").isLength({ min: 2, max: 100 }),
+    body("parentName").trim().notEmpty().withMessage("Parent's name is required").isLength({ max: 100 }),
+    strictIndianMobile("phone"),
+    // Format/presence only here — the disposable-domain block already ran
+    // once at send-otp time (sendAdmissionOtp), same reasoning as
+    // submitFacultyApplication above.
+    body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Enter a valid email").normalizeEmail(),
+    body("verifyToken").trim().notEmpty().withMessage("Please verify your email before submitting"),
+    body("school").optional().trim().isLength({ max: 150 }),
+    body("interestedClass").trim().notEmpty().withMessage("Class is required").isLength({ max: 60 }),
+    body("address").optional().trim().isLength({ max: 500 }),
+  ],
+
+  // OTP verification for the public Admission Form (routes/publicEnquiry.js
+  // POST /admission/send-otp, /admission/verify-otp).
+  sendAdmissionOtp: [
+    nonDisposableEmail("email"),
+  ],
+  verifyAdmissionOtp: [
+    body("email").trim().notEmpty().isEmail().withMessage("Enter a valid email address").normalizeEmail(),
+    body("otp").trim().notEmpty().withMessage("Enter the code we emailed you").isLength({ min: 6, max: 6 }).withMessage("Code must be 6 digits").isNumeric().withMessage("Code must be numeric"),
   ],
 
   createPosition: [

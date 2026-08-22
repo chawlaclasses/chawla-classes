@@ -29,6 +29,7 @@ const { ensureAdminAccount } = require("./services/auth");
 const db = require("./services/jsonDb");
 const mongoBackup = require("./services/mongoBackup");
 const { ensureReviewOtpTtlIndex } = require("./services/reviewOtpCleanup");
+const { ensureFormOtpTtlIndex } = require("./services/formOtpCleanup");
 const { createGracefulShutdown } = require("./utils/gracefulShutdown");
 
 
@@ -60,6 +61,11 @@ db.connect()
     // internally by the function itself and never throws, so it can't
     // block startup -- it's cleanup, not a request-path dependency.
     ensureReviewOtpTtlIndex(db.db);
+
+    // Same housekeeping as above, for the Admission Form + Career Form's
+    // shared email-OTP flow (see services/formOtpService.js /
+    // services/formOtpCleanup.js — this hardening pass, 2026-08).
+    ensureFormOtpTtlIndex(db.db);
 
     // NEW (production audit, 2026-08-21, priority item #2): DB-level
     // backstop for "one review per email/phone" — previously enforced

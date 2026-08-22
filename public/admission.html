@@ -27,6 +27,29 @@
     .page-hero { background: linear-gradient(135deg, var(--primary), #14335e); color: var(--white); padding: 90px 0 50px; text-align: center; min-height: auto; height: auto; }
     .page-hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
     .page-hero p { font-size: 15.5px; opacity: 0.9; max-width: 600px; margin: 0 auto; }
+
+    /* Honeypot anti-bot field (routes/publicEnquiry.js's honeypotGuard) —
+       invisible and unreachable to a real visitor (off-screen, no tab
+       stop, hidden from screen readers), but a bot that blindly fills
+       every input on the page will still fill this one in. */
+    .hp-field { position: absolute !important; left: -9999px !important; top: -9999px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
+
+    /* Email OTP verification panel — shown as the LAST step, right when
+       the visitor clicks Submit, not while they're still typing their
+       email. See the submit handler in the <script> block below. */
+    .otp-panel { display: none; margin-top: 14px; padding: 16px; background: var(--light); border: 1px solid var(--border); border-radius: 10px; }
+    .otp-panel.active { display: block; }
+    .otp-panel p.otp-hint { font-size: 13.5px; color: var(--muted); margin-bottom: 10px; }
+    .otp-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .otp-row input[type="text"] { flex: 1 1 140px; letter-spacing: 4px; font-weight: 700; text-align: center; }
+    .otp-row button { flex: 0 0 auto; white-space: nowrap; padding: 0 18px; border-radius: 8px; border: none; background: var(--primary); color: var(--white); font-weight: 600; cursor: pointer; }
+    .otp-row button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .otp-status { margin-top: 8px; font-size: 13px; min-height: 18px; }
+    .otp-status.error { color: #dc2626; }
+    .otp-status.success { color: #16a34a; }
+    .otp-resend { margin-top: 8px; font-size: 12.5px; }
+    .otp-resend button { background: none; border: none; padding: 0; color: var(--primary); font-weight: 600; text-decoration: underline; cursor: pointer; }
+    .otp-resend button:disabled { color: var(--muted); text-decoration: none; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -132,12 +155,12 @@
 <section id="admission" class="admission-section">
   <div class="admission-form-box">
     <form id="admissionForm">
-      <input type="text" placeholder="Student Name" required>
-      <input type="text" placeholder="Parents Name" required>
-      <input type="tel" placeholder="Mobile Number" required>
-      <input type="email" placeholder="Email Address">
-      <input type="text" placeholder="School Name">
-      <select required>
+      <input type="text" id="admStudentName" placeholder="Student Name" required>
+      <input type="text" id="admParentName" placeholder="Parents Name" required>
+      <input type="tel" id="admPhone" placeholder="Mobile Number" required>
+      <input type="email" id="admEmail" placeholder="Email Address" required>
+      <input type="text" id="admSchool" placeholder="School Name">
+      <select id="admClass" required>
         <option value="">Select Class</option>
         <option>1st Class</option><option>2nd Class</option><option>3rd Class</option>
         <option>4th Class</option><option>5th Class</option><option>6th Class</option>
@@ -148,8 +171,30 @@
         <option>CUET Preparation</option><option>SSC Preparation</option>
         <option>Olympiad Preparation</option><option>KVPY Preparation</option>
       </select>
-      <textarea placeholder="Address"></textarea>
-      <button type="submit" class="btn-primary">Submit Admission Form</button>
+      <textarea id="admAddress" placeholder="Address"></textarea>
+
+      <!-- Honeypot: real visitors never see or fill this in (see .hp-field
+           CSS above). A hidden label + tabindex=-1 + aria-hidden keep it
+           unreachable via keyboard/screen-reader too, not just visually. -->
+      <div class="hp-field" aria-hidden="true">
+        <label for="admWebsite">Leave this field empty</label>
+        <input type="text" id="admWebsite" name="website" autocomplete="off" tabindex="-1">
+      </div>
+
+      <!-- Email verification — appears only once the visitor tries to
+           submit (see script below), not while they're still filling the
+           form in. -->
+      <div class="otp-panel" id="admOtpPanel">
+        <p class="otp-hint" id="admOtpHint">We've sent a 6-digit verification code to your email. Enter it below to confirm your admission form.</p>
+        <div class="otp-row">
+          <input type="text" id="admOtpCode" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code">
+          <button type="button" id="admVerifyOtpBtn">Verify &amp; Submit</button>
+        </div>
+        <div class="otp-status" id="admOtpStatus"></div>
+        <div class="otp-resend"><button type="button" id="admResendOtpBtn">Resend code</button></div>
+      </div>
+
+      <button type="submit" class="btn-primary" id="admSubmitBtn">Submit Admission Form</button>
     </form>
   </div>
 </section>
@@ -313,30 +358,167 @@ function renderNavCategoriesInto(list, categories, isDrawer) {
 loadNavCategories();
 
 // ===== Admission form submit (moved from index.html) =====
+// UPDATED (2026-08 anti-spam hardening): email OTP verification is now
+// required before the real submission goes through — see
+// routes/publicEnquiry.js (POST /admission/send-otp, /verify-otp,
+// /admission). The OTP panel only appears once the visitor tries to
+// submit the (already fully filled) form — not while they're still
+// typing their email — per how this was scoped.
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbzwahrh7W6dLFOXxCZp80osQPq8xWz9Tch_NrZaxRse7Va5GsBJ3x0kMvHq32qTVS0NnQ/exec";
-document.getElementById("admissionForm").addEventListener("submit", async function(e) {
+
+const admissionForm   = document.getElementById("admissionForm");
+const admSubmitBtn    = document.getElementById("admSubmitBtn");
+const admOtpPanel     = document.getElementById("admOtpPanel");
+const admOtpStatus    = document.getElementById("admOtpStatus");
+const admOtpCodeInput = document.getElementById("admOtpCode");
+const admVerifyBtn    = document.getElementById("admVerifyOtpBtn");
+const admResendBtn    = document.getElementById("admResendOtpBtn");
+
+let admVerifiedEmail = null;   // email the current verifyToken belongs to
+let admVerifyToken   = null;   // set once verify-otp succeeds
+let admResendTimer   = null;
+
+function admSetOtpStatus(message, kind) {
+    admOtpStatus.textContent = message || "";
+    admOtpStatus.className = "otp-status" + (kind ? " " + kind : "");
+}
+
+function admStartResendCooldown(seconds) {
+    let remaining = seconds;
+    admResendBtn.disabled = true;
+    admResendBtn.textContent = `Resend code (${remaining}s)`;
+    clearInterval(admResendTimer);
+    admResendTimer = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+            clearInterval(admResendTimer);
+            admResendBtn.disabled = false;
+            admResendBtn.textContent = "Resend code";
+        } else {
+            admResendBtn.textContent = `Resend code (${remaining}s)`;
+        }
+    }, 1000);
+}
+
+async function admSendOtp(email) {
+    admSetOtpStatus("Sending verification code…", "");
+    try {
+        const res = await fetch("/api/enquiry/admission/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, website: document.getElementById("admWebsite").value }),
+        });
+        const json = await res.json().catch(() => ({}));
+        admSetOtpStatus(json.message || (json.success ? "Code sent." : "Something went wrong."), json.success ? "success" : "error");
+        if (json.success) admStartResendCooldown(60);
+        return Boolean(json.success);
+    } catch (err) {
+        admSetOtpStatus("Couldn't send the code. Check your connection and try again.", "error");
+        return false;
+    }
+}
+
+async function admVerifyOtpAndSubmit() {
+    const email = document.getElementById("admEmail").value.trim();
+    const otp = admOtpCodeInput.value.trim();
+    if (!otp) { admSetOtpStatus("Enter the 6-digit code we emailed you.", "error"); return; }
+
+    admVerifyBtn.disabled = true;
+    try {
+        const res = await fetch("/api/enquiry/admission/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, otp }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!json.success) {
+            admSetOtpStatus(json.message || "Incorrect code.", "error");
+            return;
+        }
+        admVerifiedEmail = email;
+        admVerifyToken = json.data.verifyToken;
+        admSetOtpStatus("Email verified! Submitting your form…", "success");
+        await admSubmitAdmission(email);
+    } catch (err) {
+        admSetOtpStatus("Couldn't verify the code. Check your connection and try again.", "error");
+    } finally {
+        admVerifyBtn.disabled = false;
+    }
+}
+
+async function admSubmitAdmission(email) {
+    admSubmitBtn.disabled = true;
+    admSubmitBtn.textContent = "Submitting…";
+    const payload = {
+        studentName: document.getElementById("admStudentName").value.trim(),
+        parentName: document.getElementById("admParentName").value.trim(),
+        phone: document.getElementById("admPhone").value.trim(),
+        email,
+        school: document.getElementById("admSchool").value.trim(),
+        interestedClass: document.getElementById("admClass").value,
+        address: document.getElementById("admAddress").value.trim(),
+        verifyToken: admVerifyToken,
+        website: document.getElementById("admWebsite").value,
+    };
+    try {
+        const res = await fetch("/api/enquiry/admission", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (json.success) {
+            // Best-effort external backup copy — unchanged from before this
+            // hardening pass; failures here never block the real submission.
+            fetch(SHEET_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({
+                type: "admission", studentName: payload.studentName, parentName: payload.parentName,
+                mobile: payload.phone, email: payload.email, school: payload.school,
+                course: payload.interestedClass, address: payload.address,
+            }) }).catch(() => {});
+
+            alert(json.message || "Admission Form Submitted Successfully!");
+            admissionForm.reset();
+            admVerifiedEmail = null;
+            admVerifyToken = null;
+            admOtpPanel.classList.remove("active");
+            admSetOtpStatus("", "");
+        } else {
+            // Verification itself may have succeeded but the final save
+            // failed (rate limit, duplicate double-click, etc.) — surface
+            // the real reason instead of a generic alert.
+            admSetOtpStatus(json.message || "Something went wrong. Please try again.", "error");
+            alert(json.message || "Something went wrong. Please try again.");
+        }
+    } catch (err) {
+        alert("Something went wrong. Please check your connection and try again.");
+    } finally {
+        admSubmitBtn.disabled = false;
+        admSubmitBtn.textContent = "Submit Admission Form";
+    }
+}
+
+admissionForm.addEventListener("submit", async function (e) {
     e.preventDefault();
-    const inputs = this.querySelectorAll("input");
-    const select = this.querySelector("select");
-    const textarea = this.querySelector("textarea");
-    const data = { type:"admission", studentName:inputs[0].value, parentName:inputs[1].value, mobile:inputs[2].value, email:inputs[3].value, school:inputs[4].value, course:select.value, address:textarea.value };
-    const sheetPromise = fetch(SHEET_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(data)});
-    const adminPromise = fetch("/api/enquiry/admission", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            studentName: data.studentName,
-            parentName: data.parentName,
-            phone: data.mobile,
-            email: data.email,
-            school: data.school,
-            interestedClass: data.course,
-            address: data.address,
-        }),
-    });
-    try { await Promise.allSettled([sheetPromise, adminPromise]); alert("Admission Form Submitted Successfully!"); this.reset(); }
-    catch(err) { alert("Something went wrong. Please try again."); }
+    const email = document.getElementById("admEmail").value.trim();
+
+    // Already verified this exact email in this session? Skip straight to
+    // the real submission — no need to make them verify twice.
+    if (admVerifiedEmail === email && admVerifyToken) {
+        await admSubmitAdmission(email);
+        return;
+    }
+
+    // Last step before the real submit: reveal the OTP panel and send the
+    // code automatically, so it's one fewer click for a genuine visitor.
+    admOtpPanel.classList.add("active");
+    admOtpPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+    admOtpCodeInput.value = "";
+    await admSendOtp(email);
 });
+
+admVerifyBtn.addEventListener("click", admVerifyOtpAndSubmit);
+admOtpCodeInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); admVerifyOtpAndSubmit(); } });
+admResendBtn.addEventListener("click", () => admSendOtp(document.getElementById("admEmail").value.trim()));
 </script>
 
 </body>

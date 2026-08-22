@@ -85,6 +85,20 @@ function createSubmissionRateLimiter(maxRequests = 10) {
   }).middleware();
 }
 
+// SECURITY: hourly cap for the two public lead-capture forms (Admission,
+// Career/Faculty Recruitment) — see routes/publicEnquiry.js and
+// routes/recruitment.js. Separate factory from createSubmissionRateLimiter
+// (per-minute) since these need a much longer, per-hour window; reuses the
+// same RateLimiter class/store so behavior (429 + retryAfter) is identical
+// to every other rate limiter in this file.
+function createHourlyRateLimiter(maxRequests, message) {
+  return new RateLimiter({
+    windowMs: 60 * 60 * 1000,
+    maxRequests,
+    message: message || "Too many submissions from this device this hour. Please try again later.",
+  }).middleware();
+}
+
 function createQuestionRateLimiter(maxRequests = 20) {
   return new RateLimiter({
     windowMs: 60000,
@@ -115,6 +129,7 @@ module.exports = {
   RateLimiter,
   createTestRateLimiter,
   createSubmissionRateLimiter,
+  createHourlyRateLimiter,
   createQuestionRateLimiter,
   createAuthRateLimiter
 };

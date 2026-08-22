@@ -18,6 +18,26 @@ function escapeHtml(str) {
 }
 
 // ============================================================
+// ANTI-SPAM FLAG BADGES (Admission Form + Career Form review)
+// ============================================================
+// Shared by public/admin/js/admissions.js and public/admin/js/recruitment.js
+// — both list `flags` (isSuspicious/duplicateEmail/duplicateMobile/
+// blockedDomain, set by routes/publicEnquiry.js and routes/recruitment.js)
+// and `emailVerified` on every website submission. Admin-logged/legacy
+// records without these fields simply render nothing extra, so this is
+// safe to call on any record from either module.
+function renderFlagBadges(record) {
+    const flags = record.flags || {};
+    const badges = [];
+    if (flags.duplicateEmail) badges.push({ label: 'Dup. Email', title: 'Another record already exists with this email address' });
+    if (flags.duplicateMobile) badges.push({ label: 'Dup. Mobile', title: 'Another record already exists with this mobile number' });
+    if (flags.blockedDomain) badges.push({ label: 'Disposable Email', title: 'Email domain is a known temporary/disposable provider' });
+    if (!badges.length) return '';
+    const badgeHtml = badges.map(b => `<span title="${escapeHtml(b.title)}" style="display:inline-block;background:rgba(239,68,68,0.12);color:#dc2626;border-radius:5px;padding:1px 6px;font-size:10.5px;font-weight:600;margin:1px 3px 0 0;white-space:nowrap;">⚠ ${b.label}</span>`).join('');
+    return `<div style="margin-top:4px;">${badgeHtml}</div>`;
+}
+
+// ============================================================
 // MODAL FUNCTIONS
 // ============================================================
 function showModal(title, subtitle, bodyHtml, callback) {

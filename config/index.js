@@ -98,6 +98,48 @@ const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS, 10) || 12;
 const RATE_LIMIT_WINDOW_MS    = (parseInt(process.env.RATE_LIMIT_WINDOW_MIN, 10) || 15) * 60_000;
 const RATE_LIMIT_MAX_ATTEMPTS = parseInt(process.env.RATE_LIMIT_MAX_ATTEMPTS, 10) || 10;
 
+// ─── Public form anti-spam (Admission + Career forms) ────────────────────────
+// Everything here is env-overridable so Rohit can tune limits without a
+// code change/deploy. See routes/publicEnquiry.js (admission) and
+// routes/recruitment.js (career) for where these are actually applied.
+
+// Free/disposable email providers commonly used to defeat one-submission-
+// per-identity checks. Kept as a plain array (not a Set) so it can be
+// logged/inspected easily and extended via env without code changes.
+// FORM_BLOCKED_EMAIL_DOMAINS env var, if set, REPLACES this default list
+// entirely (comma-separated) — that's deliberate: an admin who's set their
+// own list almost certainly wants full control, not an unexpected merge.
+const DEFAULT_BLOCKED_EMAIL_DOMAINS = [
+  "mailinator.com",
+  "guerrillamail.com",
+  "tempmail.com",
+  "10minutemail.com",
+  "yopmail.com",
+];
+const BLOCKED_EMAIL_DOMAINS = process.env.FORM_BLOCKED_EMAIL_DOMAINS
+  ? process.env.FORM_BLOCKED_EMAIL_DOMAINS.split(",").map(d => d.trim().toLowerCase()).filter(Boolean)
+  : DEFAULT_BLOCKED_EMAIL_DOMAINS;
+
+// Email OTP verification (services/formOtpService.js) — same shape/values
+// as the existing routes/reviews.js OTP flow this was modeled on.
+const FORM_OTP_EXPIRY_MS          = (parseInt(process.env.FORM_OTP_EXPIRY_MIN, 10) || 10) * 60_000;       // 10 min to enter the code
+const FORM_OTP_VERIFY_TOKEN_MS    = (parseInt(process.env.FORM_OTP_VERIFY_TOKEN_MIN, 10) || 30) * 60_000; // 30 min to finish + submit after verifying
+const FORM_OTP_MAX_RESEND         = parseInt(process.env.FORM_OTP_MAX_RESEND, 10) || 3;                   // resends allowed per identity per window
+const FORM_OTP_RESEND_WINDOW_MS   = (parseInt(process.env.FORM_OTP_RESEND_WINDOW_MIN, 10) || 60) * 60_000; // window the above resend cap applies over
+const FORM_OTP_RESEND_COOLDOWN_MS = (parseInt(process.env.FORM_OTP_RESEND_COOLDOWN_SEC, 10) || 60) * 1000; // min gap between two sends
+const FORM_OTP_MAX_VERIFY_ATTEMPTS = parseInt(process.env.FORM_OTP_MAX_VERIFY_ATTEMPTS, 10) || 5;         // wrong-code attempts before a new OTP is required
+
+// Per-IP hourly submission caps (the actual final POST, after OTP is
+// already verified) — see middleware/rateLimit.js#createHourlyRateLimiter.
+const ADMISSION_HOURLY_LIMIT = parseInt(process.env.ADMISSION_HOURLY_LIMIT, 10) || 3;
+const CAREER_HOURLY_LIMIT    = parseInt(process.env.CAREER_HOURLY_LIMIT, 10) || 2;
+
+// Minimum gap between two successful submissions from the same IP —
+// separate from (and tighter than) the hourly cap above; the hourly cap
+// stops sustained abuse, this stops a rapid double/triple-click flood.
+// See middleware/submissionCooldown.js.
+const FORM_SUBMIT_COOLDOWN_MS = (parseInt(process.env.FORM_SUBMIT_COOLDOWN_SEC, 10) || 60) * 1000;
+
 // ─── File size limits ────────────────────────────────────────────────────────
 const MAX_FILE_SIZE = (parseInt(process.env.MAX_FILE_SIZE_MB,  10) || 25) * 1024 * 1024;
 const MAX_PDF_SIZE  = (parseInt(process.env.MAX_PDF_SIZE_MB,   10) || 28) * 1024 * 1024;
@@ -221,6 +263,18 @@ module.exports = {
   // Rate limiting
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_ATTEMPTS,
+
+  // Public form anti-spam (Admission + Career forms)
+  BLOCKED_EMAIL_DOMAINS,
+  FORM_OTP_EXPIRY_MS,
+  FORM_OTP_VERIFY_TOKEN_MS,
+  FORM_OTP_MAX_RESEND,
+  FORM_OTP_RESEND_WINDOW_MS,
+  FORM_OTP_RESEND_COOLDOWN_MS,
+  FORM_OTP_MAX_VERIFY_ATTEMPTS,
+  ADMISSION_HOURLY_LIMIT,
+  CAREER_HOURLY_LIMIT,
+  FORM_SUBMIT_COOLDOWN_MS,
 
   // File limits
   MAX_FILE_SIZE,
