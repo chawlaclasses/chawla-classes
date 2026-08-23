@@ -19,7 +19,9 @@
  * run: honeypot -> per-IP hourly cap -> per-IP post-success cooldown ->
  * strict validation (real Indian mobile, non-disposable email) -> email
  * OTP verification (send-otp/verify-otp below, modeled on the existing
- * routes/reviews.js flow) -> duplicate-identity flags for admin review.
+ * routes/reviews.js flow) -> duplicate-identity flags for admin review ->
+ * best-effort "Admission Form Received" confirmation email (same pattern
+ * routes/recruitment.js already used for its Career Form applicants).
  * See services/formOtpService.js and utils/spamDetection.js for the
  * shared logic behind most of this.
  */
@@ -38,6 +40,7 @@ const { honeypotGuard } = require("../middleware/honeypot");
 const { admissionCooldown } = require("../middleware/submissionCooldown");
 const formOtpService = require("../services/formOtpService");
 const { isBlockedEmailDomain } = require("../utils/spamDetection");
+const { sendMail, isConfigured: mailConfigured } = require("../utils/mailer");
 const { ADMISSION_HOURLY_LIMIT } = require("../config");
 
 const DUPLICATE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes — just long enough to absorb a double submit, short enough that a genuine second enquiry later the same day still goes through.
@@ -211,6 +214,24 @@ router.post(
       admissionCooldown.markSuccess(req);
 
       logger.info(`Website admission form submitted: ${admission._id} (${admission.studentName}, ${trimmedPhone}, ${email})${flags.isSuspicious ? " [flagged for review]" : ""}`);
+
+      // Confirmation email — same best-effort pattern as the Career Form's
+      // existing "Application Received" email (routes/recruitment.js):
+      // a slow/misconfigured mail server should never block the parent
+      // from getting their success response.
+      if (mailConfigured() && email) {
+        sendMail({
+          to: email,
+          subject: "Admission Form Received — Chawla Classes",
+          html: `
+            <p>Dear ${admission.parentName || "Parent"},</p>
+            <p>Thank you for submitting an admission enquiry for <strong>${admission.studentName}</strong> (Class: ${admission.interestedClass || "—"}) at Chawla Classes.</p>
+            <p>We've received your form and our team will contact you shortly on ${trimmedPhone}.</p>
+            <p>— Chawla Classes<br>"Step Towards Success"</p>
+          `,
+          text: `Dear ${admission.parentName || "Parent"}, thank you for submitting an admission enquiry for ${admission.studentName} (Class: ${admission.interestedClass || "-"}) at Chawla Classes. We've received your form and our team will contact you shortly on ${trimmedPhone}. — Chawla Classes`,
+        }).catch(err => logger.error(`Admission confirmation email failed: ${err.message}`));
+      }
 
       res.status(201).json({ success: true, message: "Admission form received. We'll get back to you shortly." });
     } catch (error) {
