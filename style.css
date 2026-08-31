@@ -871,6 +871,22 @@ body {
 .results-stat-boxes .stat-box h2 { font-size: 28px; }
 .results-stat-boxes .stat-box > div { text-align: left; }
 
+/* FIX: on narrow phones the 3 equal-width columns above only get ~100px
+   each, but .stat-box's base padding (20px 24px = 48px eaten per box)
+   plus a 28px number like "10000+" left almost no room -- the digits
+   overflowed their own column and visually bled into the neighbour's
+   text (e.g. "10000+" ran into "95%"). Padding/gap/font are all shrunk
+   here, and the icon is dropped from view (kept in the DOM for a11y --
+   `display:none`, not `visibility:hidden`, so it doesn't reserve blank
+   space) so every digit has room to breathe in its own column. */
+@media (max-width: 480px) {
+  .results-stat-boxes .stat-box { padding: 0 4px; gap: 2px; }
+  .results-stat-boxes .stat-box i { display: none; }
+  .results-stat-boxes .stat-box h2 { font-size: 19px; }
+  .results-stat-boxes .stat-box p { font-size: 10.5px; line-height: 1.3; }
+  .results-stat-boxes .stat-box p span { font-size: 9px !important; }
+}
+
 /* Homepage "Results Preview" cards (top performers pulled from the Results
    page). Own scoped classes -- deliberately NOT sharing .ws-testimonial-grid/
    .ws-testimonial-card, which are a different (centered, vertical) card
@@ -2250,6 +2266,23 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   .online-grid { grid-template-columns: 1fr; }
   .footer-container { grid-template-columns: 1fr; text-align: center; }
   .footer-box a:hover { padding-left: 0; }
+  /* Quick Links + Student Resources side-by-side as their own 2 columns
+     (each showing 1 link per row), while About and Contact Info stay
+     full-width above/below them -- requested layout: "quick link ka 1
+     column and uske sath student resource ka dusra column". IDs are
+     used (not nth-child) since they're stable across every page and
+     independent of how many footer-box divs a given page happens to
+     render.
+     max-width + auto margins (not extra padding on one side) reserve a
+     lane for the fixed WhatsApp/Call/Scroll-to-top buttons -- which sit
+     in the same bottom-right screen corner no matter what's scrolled
+     underneath -- while keeping the footer content visually CENTERED
+     rather than shifted left. */
+  #footerContainer { grid-template-columns: 1fr 1fr; column-gap: 20px; max-width: calc(100% - 68px); margin: 0 auto; }
+  #footerAboutBox, #footerContactBox { grid-column: 1 / -1; }
+  #footerQuickLinksBox, #footerResourcesBox { text-align: left; }
+  #footerQuickLinksBox .footer-links-grid,
+  #footerResourcesBox .footer-links-grid { grid-template-columns: 1fr; }
   /* FIX: footer was 3+ screenfuls tall on mobile -- Quick Links' 11 links
      were stacked one-per-line (display:block from the desktop rule) and
      the whole footer had generous desktop padding/line-height carried
@@ -2262,6 +2295,15 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   .footer-links-grid a { margin-bottom: 8px; font-size: 14.5px; }
   .footer-box p { line-height: 1.5; margin-bottom: 6px; font-size: 14.5px; }
   .footer-tagline { margin-top: 8px; }
+
+  /* Same "reserve a lane for the fixed floating buttons" fix as the
+     footer above -- the Results section's stat numbers/labels and the
+     Top Performers preview cards both sit close to the right edge on
+     phones and were getting covered by the WhatsApp/Call/Scroll-to-top
+     stack as the page scrolled through this section. max-width + auto
+     margins (not padding-right alone) so the content stays visually
+     CENTERED, just narrower, instead of shifting left. */
+  .results-left, .results-right { max-width: calc(100% - 68px); margin-left: auto; margin-right: auto; }
   .faq-contact-box h3 { font-size: 24px; }
   .faq-buttons { flex-direction: column; }
   .notice-label { padding: 12px 15px; font-size: 13px; }
