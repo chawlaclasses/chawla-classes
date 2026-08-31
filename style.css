@@ -1638,6 +1638,26 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   animation-play-state: paused;
 }
 
+.admission-cta-wrap {
+  text-align: center;
+  padding: 14px 24px 26px;
+  background: #0b1f3a;
+}
+
+/* FIX: this button reuses .hero-btn-primary (designed for short hero
+   labels like "Quick Enquiry"), whose white-space:nowrap made the
+   longer "Admission Open — Apply Now" text overflow past the section
+   edge on narrow phones and get clipped by .notice-board's
+   overflow:hidden. Let it wrap and stay centered instead. */
+.admission-cta-btn {
+  display: inline-flex;
+  white-space: normal;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.4;
+  justify-content: center;
+}
+
 @keyframes marquee-scroll {
   0%   { transform: translateX(100vw); }
   100% { transform: translateX(-100%); }
@@ -2306,8 +2326,24 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   .results-left, .results-right { max-width: calc(100% - 68px); margin-left: auto; margin-right: auto; }
   .faq-contact-box h3 { font-size: 24px; }
   .faq-buttons { flex-direction: column; }
+
+  /* FIX: .notice-board is a flex ROW on desktop (marquee + admission-cta-wrap
+     side by side). On narrow phones admission-cta-wrap's own padding + the
+     "Admission Open — Apply Now" button forced it to claim most of the row,
+     squeezing .notice-marquee into a ~15-character sliver -- the scrolling
+     "Admissions Open..." notification was effectively unreadable/not
+     visible. Stack the two into full-width rows on mobile instead: marquee
+     gets the whole width to scroll across, CTA button sits centered on its
+     own row underneath. */
+  .notice-board { flex-direction: column; }
+  .notice-marquee { width: 100%; }
+  .admission-cta-wrap { width: 100%; }
+
   .notice-label { padding: 12px 15px; font-size: 13px; }
   .notice-marquee { font-size: 13px; }
+  .marquee-track { padding: 9px 0; font-size: 12.5px; }
+  .admission-cta-wrap { padding: 8px 14px 12px; }
+  .admission-cta-btn { font-size: 12px; padding: 8px 12px; }
 
   /* Floating action buttons: smaller + tucked into safe corner so they
      never sit over the Admission Open / Book Free Demo CTAs or hero text */
