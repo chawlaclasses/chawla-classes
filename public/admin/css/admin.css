@@ -449,6 +449,59 @@ table .actions .btn {
   margin-bottom: 20px;
 }
 
+/* Same rules as `.modal .form-group...` below, but unscoped so forms
+   rendered directly in the main content area (e.g. Admin -> Settings,
+   Admin -> Footer Management -> Settings) are styled too, not just
+   forms inside a modal. */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+
 .modal .form-group {
   margin-bottom: 16px;
 }
@@ -826,3 +879,44 @@ table .actions .btn {
   position: absolute; top: 10px; right: 10px; background: #dc2626; color: #fff; border: none;
   border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer;
 }
+
+/* ── FOOTER MANAGEMENT (Admin -> Footer Management) ──────────────────── */
+/* Reusable enable/disable toggle switch — see public/admin/js/footer-management.js.
+   Native checkbox under the hood (keyboard/screen-reader accessible),
+   styled as a sliding switch. */
+.toggle-switch {
+  position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0;
+}
+.toggle-switch input {
+  opacity: 0; width: 0; height: 0;
+}
+.toggle-switch .toggle-slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: rgba(255,255,255,0.12); border: 1px solid var(--card-border);
+  border-radius: 999px; transition: var(--transition);
+}
+.toggle-switch .toggle-slider::before {
+  content: ""; position: absolute; height: 16px; width: 16px; left: 2px; top: 2px;
+  background: var(--text); border-radius: 50%; transition: var(--transition);
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--gold); border-color: var(--gold); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); background: var(--navy); }
+.toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: not-allowed; }
+
+/* Simple in-page tab bar for switching between Footer Management's
+   sub-sections (Social Links / Quick Links / Student Resources / Settings). */
+.footer-tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--card-border); margin-bottom: 16px; }
+.footer-tab {
+  padding: 9px 14px; background: none; border: none; cursor: pointer;
+  font-size: 12.5px; font-weight: 600; color: var(--muted);
+  border-bottom: 2px solid transparent; white-space: nowrap;
+}
+.footer-tab:hover { color: var(--text); }
+.footer-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* Drag-and-drop reorder handles (social links / footer nav links lists). */
+.drag-row { cursor: grab; }
+.drag-row.dragging { opacity: 0.4; }
+.drag-row.drag-over { border-top: 2px solid var(--gold); }
+.drag-handle { color: var(--muted); cursor: grab; padding: 0 6px; }
+.drag-handle:active { cursor: grabbing; }

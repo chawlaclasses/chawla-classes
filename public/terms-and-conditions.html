@@ -3,25 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student &amp; Parent Reviews | Chawla Classes, Uttam Nagar</title>
-<meta name="description" content="Read what students and parents say about their experience at Chawla Classes, a coaching institute in Uttam Nagar, Delhi. Website and Google reviews.">
+<title>Terms & Conditions | Chawla Classes</title>
+<meta name="description" content="Terms & Conditions for Chawla Classes — admissions, fees, conduct, and use of our website and student portal.">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="https://chawlaclasses.in/reviews.html">
-<meta property="og:title" content="Student &amp; Parent Reviews | Chawla Classes">
-<meta property="og:description" content="Read website and Google reviews from students and parents at Chawla Classes, Uttam Nagar.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://chawlaclasses.in/reviews.html">
-<meta property="og:site_name" content="Chawla Classes">
-<script type="application/ld+json">
-{
-  "@context":"https://schema.org",
-  "@type":"BreadcrumbList",
-  "itemListElement":[
-    {"@type":"ListItem","position":1,"name":"Home","item":"https://chawlaclasses.in/"},
-    {"@type":"ListItem","position":2,"name":"Reviews","item":"https://chawlaclasses.in/reviews.html"}
-  ]
-}
-</script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -36,53 +20,23 @@
     /* Header/nav/mobile-drawer/footer below are copied verbatim from
        index.html (same markup, same classes, same style.css rules, same
        behavior) so this page automatically looks and acts exactly like
-       the homepage's chrome -- see public/feedback.html, which uses the
-       identical copy for the same reason. If index.html's header/footer
-       content changes, mirror the change here too. */
+       the homepage's chrome -- see public/privacy-policy.html, which
+       uses the identical copy for the same reason. If index.html's
+       header/footer content changes, mirror the change here too. */
 
     .hero { background: linear-gradient(135deg, var(--primary), #14335e); color: var(--white); padding: 90px 0 50px; text-align: center; min-height: auto; height: auto; }
     .hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
     .hero p { font-size: 15.5px; opacity: 0.9; max-width: 600px; margin: 0 auto; }
 
-    /* All-reviews grid -- reads the same /api/reviews/approved endpoint
-       as the homepage's testimonial carousel (routes/reviews.js), just
-       renders every result at once instead of a limited swiper. */
-    .reviews-section { padding: 60px 0 80px; background: var(--light); min-height: 40vh; }
-    .reviews-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
-    .reviews-count { color: var(--muted); font-size: 14px; font-weight: 500; }
-    .reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
-    .review-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 12px; }
-    .review-card .stars { color: #F5A623; font-size: 16px; letter-spacing: 2px; }
-    .review-card .review-text { color: var(--text); font-size: 14.5px; flex: 1; }
-    .review-card .review-meta { font-weight: 700; font-size: 14px; color: var(--primary); border-top: 1px solid var(--border); padding-top: 10px; }
-    .review-card .review-meta span { display: block; font-weight: 500; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
-    .featured-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(245,166,35,0.12); color: #b06a00; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px; width: fit-content; }
-    .reviews-empty, .reviews-error { text-align: center; color: var(--muted); padding: 40px 0; grid-column: 1 / -1; }
-    .back-to-home-link { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-weight: 600; font-size: 14px; margin-bottom: 6px; }
-    .write-review-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--primary); color: var(--white); font-weight: 700; font-size: 13.5px; padding: 10px 20px; border-radius: 30px; }
-
-    /* Google Reviews badge -- rendered by public/js/googleReviews.js
-       (shared with index.html) from settings.googleReviews (admin-set
-       under Admin -> Settings -> Google Reviews, no API key/billing
-       involved, nothing stored in our DB) via the same public,
-       unauthenticated /api/public-settings endpoint gallery.html already
-       uses for social links. Hidden entirely unless enabled + a Google
-       Business Profile URL has been set -- class names below (grw-*) are
-       what the shared widget script builds, styled here to match this
-       page's design system. */
-    .google-badge { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 2px 10px rgba(0,0,0,0.04); padding: 22px 26px; margin: 0 0 6px; display: none; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px; }
-    .google-badge .grw-rating-block { display: flex; align-items: center; gap: 14px; }
-    .google-badge .grw-rating-number { font-size: 30px; font-weight: 800; color: var(--primary); line-height: 1; }
-    .google-badge .grw-stars { color: #F5A623; font-size: 17px; letter-spacing: 2px; display: inline-block; margin-bottom: 2px; }
-    .google-badge .grw-rating-meta { color: var(--muted); font-size: 12.5px; }
-    .google-badge .grw-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-    .google-badge .grw-btn { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 13px; padding: 9px 16px; border-radius: 30px; border: 1px solid var(--border); color: var(--text); }
-    .google-badge .grw-btn-primary { background: var(--primary); color: var(--white); border-color: var(--primary); }
-    @media (max-width: 560px) {
-        .google-badge { padding: 20px; justify-content: center; text-align: center; }
-        .google-badge .grw-rating-block { flex-direction: column; gap: 8px; }
-        .google-badge .grw-actions { justify-content: center; }
-    }
+    .policy-section { padding: 60px 0 80px; }
+    .policy-content { max-width: 820px; margin: 0 auto; }
+    .policy-updated { color: var(--muted); font-size: 13.5px; margin-bottom: 34px; }
+    .policy-content h2 { font-size: 21px; color: var(--primary); margin: 34px 0 12px; }
+    .policy-content h2:first-of-type { margin-top: 0; }
+    .policy-content p { color: var(--text); margin-bottom: 14px; font-size: 15px; }
+    .policy-content ul { margin: 0 0 14px 22px; }
+    .policy-content li { margin-bottom: 8px; font-size: 15px; }
+    .policy-content a.inline-link { color: var(--primary); font-weight: 600; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -106,7 +60,7 @@
       <li class="cat-nav-item"><a href="/about.html">About</a></li>
       <li class="cat-nav-item"><a href="/courses.html">Courses</a></li>
       <li class="cat-nav-item"><a href="/results.html">Results</a></li>
-      <li class="cat-nav-item"><a href="/reviews.html" class="nav-active">Reviews</a></li>
+      <li class="cat-nav-item"><a href="/reviews.html">Reviews</a></li>
       <li class="cat-nav-item"><a href="/gallery.html">Gallery</a></li>
       <li class="cat-nav-item"><a href="/contact.html">Contact</a></li>
       <li class="cat-nav-item"><a href="/admission.html">Admission</a></li>
@@ -142,7 +96,7 @@
     <li class="cat-nav-item"><a href="/about.html"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/courses.html"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/results.html"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/reviews.html" class="active"><i class="fas fa-star"></i> Reviews <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/reviews.html"><i class="fas fa-star"></i> Reviews <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/gallery.html"><i class="fas fa-images"></i> Gallery <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/contact.html"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/admission.html"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
@@ -175,23 +129,63 @@
 
 <section class="hero">
     <div class="wrap">
-        <h1>Student Reviews</h1>
-        <p>See what our students and parents have to say about their experience at Chawla Classes.</p>
+        <h1>Terms &amp; Conditions</h1>
+        <p>Please read these terms carefully before using our website or enrolling at Chawla Classes.</p>
     </div>
 </section>
 
-<section class="reviews-section">
+<section class="policy-section">
   <div class="wrap">
-    <a href="/#home" class="back-to-home-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+    <div class="policy-content">
+      <p class="policy-updated">Last updated: August 2026</p>
 
-    <div class="google-badge" id="googleReviewsWidget"></div>
+      <h2>1. Acceptance of Terms</h2>
+      <p>By accessing this website, submitting an enquiry or admission form, or enrolling as a student at Chawla Classes, you agree to be bound by these Terms &amp; Conditions. If you do not agree with any part of these terms, please do not use our website or services.</p>
 
-    <div class="reviews-toolbar">
-      <span class="reviews-count" id="reviewsCount"></span>
-      <a href="/feedback.html" class="write-review-btn"><i class="fas fa-pen"></i> Write a Review</a>
-    </div>
-    <div class="reviews-grid" id="allReviewsGrid">
-      <p style="color:var(--muted);text-align:center;grid-column:1/-1;">Loading reviews...</p>
+      <h2>2. About Chawla Classes</h2>
+      <p>Chawla Classes is a coaching institute based in Uttam Nagar, New Delhi, providing tuition and academic guidance for Classes 1st–12th, Commerce, B.Com, and BBA, since 2002.</p>
+
+      <h2>3. Admission &amp; Enrollment</h2>
+      <ul>
+        <li>Admission is subject to seat availability, an enquiry/application review, and payment of applicable admission and course fees.</li>
+        <li>Information provided in the admission form must be accurate and complete. Chawla Classes reserves the right to verify details and refuse or cancel admission based on incorrect information.</li>
+        <li>Enrollment in a batch/course does not guarantee a specific teacher, timing, or classroom, which may be adjusted based on operational needs.</li>
+      </ul>
+
+      <h2>4. Fees &amp; Refunds</h2>
+      <ul>
+        <li>Course fees must be paid as per the schedule communicated at the time of admission.</li>
+        <li>Fees once paid are generally non-refundable, except where required by law or explicitly agreed to in writing by Chawla Classes management.</li>
+        <li>Late fee payment may result in restricted access to classes, tests, or the student portal until dues are cleared.</li>
+      </ul>
+
+      <h2>5. Student Conduct</h2>
+      <p>Students are expected to attend classes regularly, complete assigned homework, and maintain respectful behaviour towards faculty, staff, and fellow students, both in-person and while using the student portal (doubts, feedback, and reviews sections). Chawla Classes reserves the right to take appropriate action, including suspension, in cases of serious misconduct.</p>
+
+      <h2>6. Use of the Website &amp; Student Portal</h2>
+      <ul>
+        <li>Login credentials for the student portal are personal and must not be shared with others.</li>
+        <li>You agree not to misuse the website — including attempting unauthorized access, submitting false information, or disrupting normal operation of the site.</li>
+        <li>Test results, homework, attendance, and fee records shown in the student portal are for the enrolled student's and parent's reference; Chawla Classes is not liable for any decisions made solely based on this data without also consulting faculty directly.</li>
+      </ul>
+
+      <h2>7. Reviews &amp; Feedback</h2>
+      <p>Reviews and feedback submitted through our website should be honest and based on genuine experience. Chawla Classes reserves the right to moderate, edit for clarity, or decline to publish any review that is abusive, false, or violates these terms.</p>
+
+      <h2>8. Intellectual Property</h2>
+      <p>All content on this website — including text, images, logos, and study material shared through the student portal — is the property of Chawla Classes and may not be copied, reproduced, or redistributed without prior written permission.</p>
+
+      <h2>9. Limitation of Liability</h2>
+      <p>While we strive to keep information on this website and student portal accurate and up to date, Chawla Classes does not guarantee uninterrupted or error-free access, and is not liable for any indirect loss arising from use of the website or delays in communication.</p>
+
+      <h2>10. Changes to These Terms</h2>
+      <p>We may revise these Terms &amp; Conditions from time to time. Continued use of our website or services after changes are posted constitutes acceptance of the updated terms. The "Last updated" date above reflects the most recent revision.</p>
+
+      <h2>11. Governing Law</h2>
+      <p>These terms are governed by the laws of India, and any disputes shall be subject to the jurisdiction of the courts in New Delhi.</p>
+
+      <h2>12. Contact Us</h2>
+<p>For any questions about these Terms &amp; Conditions, please reach out via our <a href="/contact.html" class="inline-link">Contact page</a>, call us at <a href="tel:9210660809" class="inline-link">9210660809</a> or <a href="tel:9717914003" class="inline-link">9717914003</a>, or email <a href="mailto:4chawlaclasses@gmail.com" class="inline-link">4chawlaclasses@gmail.com</a>. You may also review our <a href="/privacy-policy.html" class="inline-link">Privacy Policy</a> for how we handle your information.</p>
     </div>
   </div>
 </section>
@@ -243,10 +237,9 @@ B.Com | BBA
 <a href="tel:9717914003" class="call-floating-btn"><i class="fas fa-phone"></i></a>
 <a href="https://wa.me/919717914003" class="whatsapp-btn" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
 
-<script src="/js/googleReviews.js"></script>
 <script>
 
-// ===== Mobile Drawer (copied from index.html / feedback.html) =====
+// ===== Mobile Drawer (copied from index.html / privacy-policy.html) =====
 const menuToggle    = document.getElementById("menuToggle");
 const mobileDrawer  = document.getElementById("mobileDrawer");
 const mobileOverlay = document.getElementById("mobileOverlay");
@@ -267,7 +260,7 @@ document.querySelectorAll(".drawer-nav a").forEach(link => {
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
 
-// ===== Login dropdown (copied from index.html / feedback.html) =====
+// ===== Login dropdown (copied from index.html / privacy-policy.html) =====
 (function() {
     const dropdown = document.querySelector(".nav-login-dropdown");
     const toggle = dropdown?.querySelector(".login-toggle");
@@ -285,7 +278,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(
     });
 })();
 
-// ===== Scroll-to-top button (copied from index.html / feedback.html) =====
+// ===== Scroll-to-top button (copied from index.html / privacy-policy.html) =====
 const scrollTopBtn = document.getElementById("scrollTop");
 if (scrollTopBtn) {
     window.addEventListener("scroll", () => {
@@ -295,8 +288,7 @@ if (scrollTopBtn) {
 }
 
 // ===== Navbar categories (Admin -> Categories) -- same dynamic nav as
-// index.html/feedback.html, so this page shows the exact same navbar
-// items as the homepage, in the same order. =====
+// index.html/privacy-policy.html. =====
 async function loadNavCategories() {
     try {
         const res = await fetch("/api/categories");
@@ -307,28 +299,16 @@ async function loadNavCategories() {
         renderNavCategoriesInto(document.getElementById("drawerNav"), categories, true);
     } catch (err) { /* keep the static fallback nav above */ }
 }
-function findActiveCategoryIndex(categories) {
-    const herePath = window.location.pathname.replace(/\/index\.html$/, "/") || "/";
-    return categories.findIndex(c => {
-        try {
-            const target = new URL(c.url, window.location.origin);
-            const targetPath = target.pathname.replace(/\/index\.html$/, "/") || "/";
-            return targetPath === herePath;
-        } catch (err) { return false; }
-    });
-}
 function renderNavCategoriesInto(list, categories, isDrawer) {
     if (!list) return;
     const boundary = isDrawer ? list.querySelector(".drawer-divider") : list.querySelector(".nav-login-dropdown");
     list.querySelectorAll(".cat-nav-item").forEach(el => el.remove());
-    const activeIdx = findActiveCategoryIndex(categories);
     const frag = document.createDocumentFragment();
-    categories.forEach((c, idx) => {
+    categories.forEach((c) => {
         const li = document.createElement("li");
         li.className = "cat-nav-item";
         const a = document.createElement("a");
         a.href = c.url.startsWith("#") ? "/" + c.url : c.url;
-        if (idx === activeIdx) a.className = isDrawer ? "active" : "nav-active";
         if (isDrawer) {
             const icon = document.createElement("i");
             icon.className = "fas " + (c.icon || "fa-circle");
@@ -351,81 +331,6 @@ function renderNavCategoriesInto(list, categories, isDrawer) {
     if (boundary) list.insertBefore(frag, boundary); else list.appendChild(frag);
 }
 loadNavCategories();
-
-// ===== All reviews grid -- reads the same admin-approved-only endpoint
-// (/api/reviews/approved, routes/reviews.js) as the homepage's
-// testimonial carousel, but renders every review at once instead of a
-// limited swiper. Same XSS-safe DOM-based rendering (no innerHTML on
-// user-submitted text). =====
-async function loadAllReviews() {
-    const grid = document.getElementById("allReviewsGrid");
-    const countEl = document.getElementById("reviewsCount");
-    try {
-        const response = await fetch("/api/reviews/approved");
-        const result = await response.json();
-        const reviews = (result && result.success) ? result.data : [];
-        grid.innerHTML = "";
-
-        if (!reviews || reviews.length === 0) {
-            countEl.textContent = "";
-            const msg = document.createElement("p");
-            msg.className = "reviews-empty";
-            msg.textContent = "No reviews yet. Be the first to share your experience!";
-            grid.appendChild(msg);
-            return;
-        }
-
-        countEl.textContent = reviews.length + (reviews.length === 1 ? " review" : " reviews");
-
-        reviews.forEach(item => {
-            const card = document.createElement("div");
-            card.className = "review-card";
-
-            if (item.isFeatured) {
-                const badge = document.createElement("span");
-                badge.className = "featured-badge";
-                badge.innerHTML = '<i class="fas fa-star"></i> Featured';
-                card.appendChild(badge);
-            }
-
-            const stars = document.createElement("div");
-            stars.className = "stars";
-            stars.textContent = "\u2605".repeat(item.rating || 0) + "\u2606".repeat(5 - (item.rating || 0));
-            card.appendChild(stars);
-
-            const p = document.createElement("p");
-            p.className = "review-text";
-            p.textContent = "\u201C" + item.feedback + "\u201D";
-            card.appendChild(p);
-
-            const meta = document.createElement("div");
-            meta.className = "review-meta";
-            meta.textContent = item.studentName;
-            const classSpan = document.createElement("span");
-            classSpan.textContent = item.studentClass;
-            meta.appendChild(classSpan);
-            card.appendChild(meta);
-
-            grid.appendChild(card);
-        });
-    } catch (err) {
-        countEl.textContent = "";
-        grid.innerHTML = "";
-        const msg = document.createElement("p");
-        msg.className = "reviews-error";
-        msg.textContent = "Reviews could not be loaded. Please try again later.";
-        grid.appendChild(msg);
-    }
-}
-loadAllReviews();
-
-// Google Reviews badge -- rendering logic lives in the shared
-// public/js/googleReviews.js module (also used by index.html) so the
-// settings fetch, URL derivation, and safe DOM rendering aren't
-// duplicated per page. Fails quiet on any error, same as gallery.html's
-// loadSocialLinks -- a slow/failed fetch just leaves the badge hidden,
-// it never breaks the rest of this page.
-GoogleReviewsWidget.renderInto(document.getElementById("googleReviewsWidget"));
 </script>
 
 </body>

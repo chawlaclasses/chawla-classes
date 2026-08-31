@@ -224,6 +224,20 @@ router.use('/categories', require('./admin/categories'));
 router.use('/website-sections', require('./admin/website-sections'));
 
 // ============================================================
+// Footer Management
+// ============================================================
+// Admin CRUD for the footer: Social Links, Quick Links / Student
+// Resources nav columns, and the About/Contact/Bottom-Bar settings.
+// Public read of everything active is separate, unauthenticated, and
+// combined into one response (routes/footer.js — GET /api/footer),
+// mounted directly in app.js. Final URLs: /api/admin/social-links(/:id,
+// /:id/status, /reorder), /api/admin/footer-links(/:id, /:id/status,
+// /reorder), and GET/PUT /api/admin/footer-settings.
+router.use('/social-links', require('./admin/social-links'));
+router.use('/footer-links', require('./admin/footer-links'));
+router.use('/footer-settings', require('./admin/footer-settings'));
+
+// ============================================================
 // Review Management
 // ============================================================
 // Admin-side moderation (approve/reject/edit/feature/delete) for reviews

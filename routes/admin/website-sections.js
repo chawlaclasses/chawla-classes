@@ -46,7 +46,7 @@ const EDITABLE_FIELDS = ["type", "data", "page", "anchor", "order", "isActive"];
 
 const SECTION_TYPES = [
   "hero", "text", "image", "image_text", "gallery",
-  "testimonials", "faq", "video", "cta", "contact",
+  "testimonials", "faq", "video", "cta", "contact", "table", "cards",
 ];
 
 // Sections with no `page` at all (every one created before this

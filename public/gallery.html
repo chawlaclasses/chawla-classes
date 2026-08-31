@@ -3,124 +3,364 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gallery | Chawla Classes — Photos &amp; Moments</title>
-<meta name="description" content="See photos from Chawla Classes — Uttam Nagar's trusted coaching institute since 2002. Follow us on Instagram or browse our full photo album.">
+
+<title>Gallery | Chawla Classes Uttam Nagar</title>
+<meta name="description" content="Browse photos of classrooms, events, celebrations, activities and infrastructure at Chawla Classes, a coaching institute in Uttam Nagar, Delhi.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://chawlaclasses.in/gallery.html">
+<meta property="og:title" content="Gallery | Chawla Classes, Uttam Nagar">
+<meta property="og:description" content="Classroom photos, events, celebrations, activities and infrastructure at Chawla Classes.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://chawlaclasses.in/gallery.html">
+<meta property="og:site_name" content="Chawla Classes">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://chawlaclasses.in/"},
+    {"@type":"ListItem","position":2,"name":"Gallery","item":"https://chawlaclasses.in/gallery.html"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"EducationalOrganization",
+  "name":"Chawla Classes",
+  "url":"https://chawlaclasses.in/",
+  "logo":"https://chawlaclasses.in/images/logo.png",
+  "foundingDate":"2002",
+  "address":{
+    "@type":"PostalAddress",
+    "streetAddress":"Shop 72, Hastsal Road, Opp. Sabji Mandi, Near Metro Pillar 657",
+    "addressLocality":"Uttam Nagar",
+    "addressRegion":"Delhi",
+    "addressCountry":"IN"
+  },
+  "telephone":"+91-9717914003"
+}
+</script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+<link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-    :root { --primary: #0b1f3a; --secondary: #f4b400; --white: #ffffff; --light: #f7f9fc; --text: #333333; --muted: #6b7280; --border: #e5e7eb; --radius: 14px; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; color: var(--text); background: var(--white); line-height: 1.6; }
-    a { text-decoration: none; color: inherit; }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-
-    /* Nav — same simplified pattern as careers.html (same colors/logo),
-       kept independent of index.html's JS-driven mobile drawer since this
-       is a standalone page. */
-    header.site-nav { background: var(--primary); padding: 14px 0; }
-    .navrow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-    .navrow .brand { display: flex; align-items: center; gap: 10px; color: var(--white); font-weight: 800; font-size: 18px; }
-    .navrow .brand span { color: var(--secondary); }
-    .navrow a.back { color: var(--white); font-size: 14px; opacity: 0.85; }
-    .navrow a.back:hover { opacity: 1; }
-
-    .hero { background: linear-gradient(135deg, var(--primary), #14335e); color: var(--white); padding: 70px 0 60px; text-align: center; }
-    .hero h1 { font-size: 34px; font-weight: 800; margin-bottom: 12px; }
-    .hero p { font-size: 16px; opacity: 0.9; max-width: 620px; margin: 0 auto; }
-
-    section { padding: 56px 0; }
-    section.alt { background: var(--light); }
-    .section-title { font-size: 26px; font-weight: 800; color: var(--primary); text-align: center; margin-bottom: 8px; }
-    .section-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 36px; }
-
-    /* Two link cards -- Instagram / Google Photos -- shown/hidden based on
-       what's configured in Admin -> Settings -> Social Links (socialLinks
-       in services/settings.js). Neither is hardcoded: both start hidden
-       and loadSocialLinks() below reveals only the ones the admin has
-       actually filled in, so the page never shows a dead/empty link. */
-    .link-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 760px; margin: 0 auto; }
-    @media (max-width: 640px) { .link-grid { grid-template-columns: 1fr; } }
-    .link-card {
-        display: none; /* revealed by JS once a value exists */
-        flex-direction: column; align-items: center; text-align: center;
-        background: var(--white); border: 1px solid var(--border); border-radius: var(--radius);
-        padding: 36px 24px; transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .link-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(11,31,58,0.1); }
-    .link-card .icon-circle {
-        width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        font-size: 26px; color: var(--white); margin-bottom: 16px;
-    }
-    .link-card.instagram .icon-circle { background: radial-gradient(circle at 30% 30%, #f9ce34, #ee2a7b 55%, #6228d7); }
-    .link-card.google-photos .icon-circle { background: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335); }
-    .link-card h3 { font-size: 17px; color: var(--primary); margin-bottom: 6px; }
-    .link-card p { font-size: 13.5px; color: var(--muted); margin-bottom: 18px; }
-    .link-card .visit-btn {
-        display: inline-flex; align-items: center; gap: 8px; background: var(--primary); color: var(--white);
-        font-weight: 700; padding: 11px 24px; border-radius: 999px; font-size: 13.5px;
-    }
-    .link-card.instagram .visit-btn { background: linear-gradient(135deg, #f9ce34, #ee2a7b 55%, #6228d7); }
-
-    /* Shown only if NEITHER link is configured yet, so the page is never
-       just a blank section for a visitor. */
-    #emptyState { display: none; text-align: center; color: var(--muted); font-size: 14px; max-width: 480px; margin: 0 auto; }
-
-    footer.site-footer { background: var(--primary); color: rgba(255,255,255,0.75); text-align: center; padding: 26px 0; font-size: 13px; }
+    /*
+     * This page's content (Institute Story, History, Mission, Vision,
+     * Leadership, Infrastructure, Achievements) is authored entirely
+     * through Admin -> Website Builder (page: "gallery"), NOT hardcoded
+     * here, per the "Website Builder First" requirement -- an admin can
+     * add/edit/reorder any of it without a code change. This file only
+     * provides: unique per-page SEO (title/meta/canonical/OG/JSON-LD/
+     * breadcrumb, which the shared /page/:slug shell can't give each
+     * page since it's generic), the page-hero banner, and the shared
+     * site chrome (identical to index.html/site-page.html).
+     */
+    .page-hero { background: linear-gradient(135deg, #0b1f3a, #14335e); color: #fff; padding: 90px 0 50px; text-align: center; }
+    .page-hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+    .page-hero p { font-size: 15.5px; opacity: 0.9; max-width: 640px; margin: 0 auto; }
+    #loadingState, #emptyState { text-align: center; color: #6b7280; padding: 80px 24px; }
+    #emptyState { display: none; }
 </style>
 </head>
 <body>
 
-<header class="site-nav">
-    <div class="wrap navrow">
-        <a href="/" class="brand"><i class="fas fa-graduation-cap" style="color:var(--secondary)"></i> CHAWLA <span>CLASSES</span></a>
-        <a href="/" class="back"><i class="fas fa-arrow-left"></i> Back to Home</a>
+<!-- NAVBAR (identical to index.html / site-page.html) -->
+<header>
+  <nav class="navbar">
+    <div class="logo-area">
+      <img src="/images/logo.png" alt="Chawla Classes Logo">
+      <div class="logo-text">
+        <h2>CHAWLA CLASSES</h2>
+        <p>Since 2002</p>
+      </div>
     </div>
+
+    <div class="menu-toggle" id="menuToggle" aria-label="Toggle Menu" role="button" tabindex="0">
+      <span></span><span></span><span></span>
+    </div>
+
+    <ul class="nav-links" id="navLinks">
+      <li class="cat-nav-item"><a href="/#home">Home</a></li>
+      <li class="cat-nav-item"><a href="/about.html">About</a></li>
+      <li class="cat-nav-item"><a href="/courses.html">Courses</a></li>
+      <li class="cat-nav-item"><a href="/results.html">Results</a></li>
+      <li class="cat-nav-item"><a href="/reviews.html">Reviews</a></li>
+      <li class="cat-nav-item"><a href="/gallery.html" class="nav-active">Gallery</a></li>
+      <li class="cat-nav-item"><a href="/contact.html">Contact</a></li>
+      <li class="cat-nav-item"><a href="/admission.html">Admission</a></li>
+      <li class="nav-login-dropdown">
+        <a href="javascript:void(0)" class="login-toggle">
+          <i class="fas fa-user-circle"></i> Login <i class="fas fa-chevron-down"></i>
+        </a>
+        <div class="login-dropdown-menu">
+          <a href="/student/login.html"><i class="fas fa-user-graduate"></i> Student Login</a>
+          <a href="/admin/login.html"><i class="fas fa-shield-alt"></i> Admin Login</a>
+        </div>
+      </li>
+    </ul>
+
+    <a href="/admission.html" class="call-btn">Admission Open</a>
+  </nav>
 </header>
 
-<section class="hero">
+<!-- MOBILE DRAWER (identical to index.html / site-page.html) -->
+<div class="mobile-overlay" id="mobileOverlay"></div>
+<div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation Menu">
+  <div class="drawer-header">
+    <div class="drawer-logo">
+      <img src="/images/logo.png" alt="Chawla Classes Logo" class="drawer-logo-img">
+      <div class="drawer-logo-text">
+        <h4>CHAWLA CLASSES</h4>
+        <p>Since 2002 · Uttam Nagar</p>
+      </div>
+    </div>
+    <button class="drawer-close" id="drawerClose" aria-label="Close Menu">&#x2715;</button>
+  </div>
+  <ul class="drawer-nav" id="drawerNav">
+    <li class="cat-nav-item"><a href="/#home"><i class="fas fa-home"></i> Home <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/about.html"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/courses.html"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/results.html"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/reviews.html"><i class="fas fa-star"></i> Reviews <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/gallery.html" class="active"><i class="fas fa-images"></i> Gallery <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/contact.html"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/admission.html"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="drawer-divider"></li>
+    <li style="padding: 0 20px;">
+      <a href="/student/login.html" style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.15);border-radius:8px;margin-bottom:8px;justify-content:center;color:#F5A623;">
+        <i class="fas fa-user-graduate"></i> Student Login <i class="fas fa-chevron-right arrow"></i>
+      </a>
+      <a href="/admin/login.html" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;justify-content:center;">
+        <i class="fas fa-user-shield"></i> Admin Login <i class="fas fa-chevron-right arrow"></i>
+      </a>
+    </li>
+  </ul>
+  <div class="drawer-footer">
+    <a href="tel:9717914003" class="drawer-call-cta">
+      <div class="drawer-call-icon"><i class="fas fa-phone-alt"></i></div>
+      <div class="drawer-call-text">
+        <h5>Call: 9717914003</h5>
+        <p>Mon–Sat · 9am – 8:30pm</p>
+      </div>
+    </a>
+    <div class="drawer-bottom-row">
+      <a href="https://wa.me/919717914003" target="_blank" rel="noopener" class="drawer-wa-btn">
+        <i class="fab fa-whatsapp"></i> <span>WhatsApp</span>
+      </a>
+      <div class="drawer-since"><span>Since 2002<br>24+ Years</span></div>
+    </div>
+  </div>
+</div>
+
+<section class="page-hero">
     <div class="wrap">
+        <nav aria-label="Breadcrumb" style="font-size:13px;opacity:0.85;margin-bottom:14px;">
+          <a href="/" style="color:#fff;">Home</a> <span style="opacity:0.6;">/</span> <span>Gallery</span>
+        </nav>
         <h1>Gallery</h1>
-        <p>A look at life at Chawla Classes — classes in session, events, achievements, and everyday moments from Uttam Nagar's trusted coaching institute since 2002.</p>
+        <p>A look inside Chawla Classes — classrooms, events, celebrations, activities and infrastructure.</p>
     </div>
 </section>
 
-<section class="alt">
+<main>
+    <div id="loadingState">Loading…</div>
+    <div id="emptyState">
+        <i class="fas fa-circle-info" style="font-size:26px;color:#9ca3af;margin-bottom:10px;display:block;"></i>
+        This page isn't set up yet in Website Builder.<br><a href="/" style="color:#0b1f3a;text-decoration:underline;">Return to homepage</a>
+    </div>
+    <div id="pageSections"></div>
+</main>
+
+<!-- Instagram / Google Photos link cards (kept from the previous
+     gallery.html exactly as they were — Admin -> Settings -> Social
+     Links, via GET /api/public-settings, unchanged). Shown below the
+     admin-managed photo albums above as a "see more" section, not a
+     replacement for them. -->
+<section style="padding:56px 0;background:var(--light,#f7f9fc);">
     <div class="wrap">
         <h2 class="section-title">See More Photos</h2>
-        <p class="section-sub">Follow along or browse our full album</p>
+        <p style="text-align:center;color:#6b7280;font-size:14px;margin-bottom:36px;">Follow along or browse our full album</p>
 
-        <div class="link-grid" id="linkGrid">
-            <a class="link-card instagram" id="instagramCard" href="#" target="_blank" rel="noopener">
-                <div class="icon-circle"><i class="fab fa-instagram"></i></div>
-                <h3>Instagram</h3>
-                <p>Photos and reels from classes, events, and student achievements.</p>
-                <span class="visit-btn"><i class="fab fa-instagram"></i> Follow Us</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:760px;margin:0 auto;" id="linkGrid">
+            <a style="display:none;flex-direction:column;align-items:center;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:36px 24px;" class="social-link-card" id="instagramCard" href="#" target="_blank" rel="noopener">
+                <div style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin-bottom:16px;background:radial-gradient(circle at 30% 30%, #f9ce34, #ee2a7b 55%, #6228d7);"><i class="fab fa-instagram"></i></div>
+                <h3 style="font-size:17px;color:#0b1f3a;margin-bottom:6px;">Instagram</h3>
+                <p style="font-size:13.5px;color:#6b7280;margin-bottom:18px;">Photos and reels from classes, events, and student achievements.</p>
+                <span style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg, #f9ce34, #ee2a7b 55%, #6228d7);color:#fff;font-weight:700;padding:11px 24px;border-radius:999px;font-size:13.5px;"><i class="fab fa-instagram"></i> Follow Us</span>
             </a>
-            <a class="link-card google-photos" id="googlePhotosCard" href="#" target="_blank" rel="noopener">
-                <div class="icon-circle"><i class="fas fa-images"></i></div>
-                <h3>Photo Album</h3>
-                <p>Browse our complete, full-resolution photo collection.</p>
-                <span class="visit-btn"><i class="fas fa-external-link-alt"></i> View Album</span>
+            <a style="display:none;flex-direction:column;align-items:center;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:36px 24px;" class="social-link-card" id="googlePhotosCard" href="#" target="_blank" rel="noopener">
+                <div style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin-bottom:16px;background:linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335);"><i class="fas fa-images"></i></div>
+                <h3 style="font-size:17px;color:#0b1f3a;margin-bottom:6px;">Photo Album</h3>
+                <p style="font-size:13.5px;color:#6b7280;margin-bottom:18px;">Browse our complete, full-resolution photo collection.</p>
+                <span style="display:inline-flex;align-items:center;gap:8px;background:#0b1f3a;color:#fff;font-weight:700;padding:11px 24px;border-radius:999px;font-size:13.5px;"><i class="fas fa-external-link-alt"></i> View Album</span>
             </a>
         </div>
-
-        <p id="emptyState">Our photo gallery is being set up — check back soon, or follow Chawla Classes on social media for the latest updates.</p>
+        <p id="socialEmptyState" style="display:none;text-align:center;color:#6b7280;font-size:14px;max-width:480px;margin:0 auto;">More photos coming soon — follow Chawla Classes on social media for the latest updates.</p>
     </div>
 </section>
 
-<footer class="site-footer">
-    <div class="wrap">&copy; <span id="year"></span> Chawla Classes. All rights reserved.</div>
+<!-- FOOTER (identical to index.html / site-page.html) -->
+<footer>
+  <div class="footer-container" id="footerContainer">
+    <div class="footer-box" id="footerAboutBox">
+      <img src="/images/logo.png" alt="Chawla Classes Logo" class="footer-logo">
+      <h2 id="footerAboutTitle">CHAWLA CLASSES</h2>
+      <p class="footer-about-content" id="footerAboutContent">Since 2002 | Excellence in Education
+Classes 1st&ndash;12th | Commerce &amp; Arts Specialists
+B.Com | BBA
+&quot;Step Towards Success&quot;</p>
+    </div>
+    <div class="footer-box" id="footerQuickLinksBox">
+      <h3>Quick Links</h3>
+      <div class="footer-links-grid" id="footerQuickLinksList">
+        <a href="/#home">Home</a><a href="/about.html">About Us</a><a href="/courses.html">Courses</a>
+        <a href="/results.html">Results</a><a href="/admission.html">Admission</a>
+        <a href="/contact.html">Contact</a>
+      </div>
+    </div>
+    <div class="footer-box" id="footerResourcesBox">
+      <h3>Student Resources</h3>
+      <div class="footer-links-grid" id="footerResourcesList">
+        <a href="/reviews.html">Reviews</a><a href="/feedback.html">Feedback</a>
+        <a href="/gallery.html">Gallery</a><a href="/careers.html">Careers</a>
+      </div>
+    </div>
+    <div class="footer-box" id="footerContactBox">
+      <h3>Contact Info</h3>
+      <div id="footerContactDetails">
+        <p><a href="tel:9210660809" style="color:#ddd;text-decoration:none;"><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9210660809</a></p>
+        <p><a href="tel:9717914003" style="color:#ddd;text-decoration:none;"><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9717914003</a></p>
+        <p><i class="fas fa-envelope" style="color:#ffc400;margin-right:6px;"></i> 4chawlaclasses@gmail.com</p>
+        <p><i class="fas fa-map-marker-alt" style="color:#ffc400;margin-right:6px;"></i> Shop 72, Hastsal Road, Opp. Sabji Mandi, Near Metro Pillar 657, Uttam Nagar, New Delhi - 110059</p>
+      </div>
+      <a href="https://www.google.com/maps/place/Chawla+Classes/@28.6250389,77.0596209,17z" target="_blank" rel="noopener" class="map-link">
+        <i class="fas fa-map-marker-alt"></i> View on Google Maps
+      </a>
+    </div>
+  </div>
+  <div class="footer-social" id="footerSocialLinks"></div>
+  <div class="footer-bottom" id="footerBottomBar">&copy; 2026 Chawla Classes. All Rights Reserved.</div>
 </footer>
+<script src="/js/footer.js" defer></script>
 
+<button class="scroll-top" id="scrollTop" aria-label="Scroll to top"><i class="fas fa-chevron-up"></i></button>
+<a href="tel:9717914003" class="call-floating-btn"><i class="fas fa-phone"></i></a>
+<a href="https://wa.me/919717914003" class="whatsapp-btn" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
+
+<script src="/js/website-sections-renderer.js"></script>
 <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Reads the same public, unauthenticated settings endpoint used
-    // site-wide for branding/maintenance-mode (app.js's
-    // GET /api/public-settings -> services/settings.js's
-    // getPublicSettings(), which now includes socialLinks). Admin sets
-    // these under Admin -> Settings -> Social Links.
+    // ===== Mobile Drawer (identical to index.html / site-page.html) =====
+    const menuToggle    = document.getElementById("menuToggle");
+    const mobileDrawer  = document.getElementById("mobileDrawer");
+    const mobileOverlay = document.getElementById("mobileOverlay");
+    const drawerClose   = document.getElementById("drawerClose");
+
+    function openDrawer()  { mobileDrawer.classList.add("active"); mobileOverlay.classList.add("active"); menuToggle.classList.add("open"); document.body.style.overflow="hidden"; }
+    function closeDrawer() { mobileDrawer.classList.remove("active"); mobileOverlay.classList.remove("active"); menuToggle.classList.remove("open"); document.body.style.overflow=""; }
+
+    menuToggle.addEventListener("click", () => mobileDrawer.classList.contains("active") ? closeDrawer() : openDrawer());
+    drawerClose.addEventListener("click", closeDrawer);
+    mobileOverlay.addEventListener("click", closeDrawer);
+    document.querySelectorAll(".drawer-nav a").forEach(link => {
+        link.addEventListener("click", () => {
+            document.querySelectorAll(".drawer-nav a").forEach(l => l.classList.remove("active"));
+            link.classList.add("active");
+            closeDrawer();
+        });
+    });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+    // ===== Login dropdown =====
+    (function() {
+        const dropdown = document.querySelector(".nav-login-dropdown");
+        const toggle = dropdown?.querySelector(".login-toggle");
+        if (!dropdown || !toggle) return;
+        toggle.addEventListener("click", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropdown.classList.toggle("active");
+        });
+        document.addEventListener("click", function(e) {
+            if (!dropdown.contains(e.target)) dropdown.classList.remove("active");
+        });
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape") dropdown.classList.remove("active");
+        });
+    })();
+
+    // ===== Scroll-to-top button =====
+    const scrollTopBtn = document.getElementById("scrollTop");
+    if (scrollTopBtn) {
+        window.addEventListener("scroll", () => {
+            scrollTopBtn.classList.toggle("show", window.scrollY > 400);
+        });
+        scrollTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    }
+
+    // ===== Navbar categories (Admin -> Categories) — this page's own
+    // nav-active/active state for this page is already set in the markup
+    // above, so if /api/categories is empty this still shows correctly;
+    // if categories exist, this rebuilds from them like every other page. =====
+    async function loadNavCategories() {
+        try {
+            const res = await fetch("/api/categories");
+            const json = await res.json();
+            const categories = json?.data || [];
+            if (!Array.isArray(categories) || categories.length === 0) return;
+            renderNavCategoriesInto(document.getElementById("navLinks"), categories, false);
+            renderNavCategoriesInto(document.getElementById("drawerNav"), categories, true);
+        } catch (err) { /* keep the static fallback nav above */ }
+    }
+    function findActiveCategoryIndex(categories) {
+        const herePath = window.location.pathname.replace(/\/$/, "") || "/";
+        return categories.findIndex(c => {
+            try {
+                const target = new URL(c.url, window.location.origin);
+                const targetPath = target.pathname.replace(/\/$/, "") || "/";
+                return targetPath === herePath;
+            } catch (err) { return false; }
+        });
+    }
+    function renderNavCategoriesInto(list, categories, isDrawer) {
+        if (!list) return;
+        const boundary = isDrawer ? list.querySelector(".drawer-divider") : list.querySelector(".nav-login-dropdown");
+        list.querySelectorAll(".cat-nav-item").forEach(el => el.remove());
+        const activeIdx = findActiveCategoryIndex(categories);
+        const frag = document.createDocumentFragment();
+        categories.forEach((c, idx) => {
+            const li = document.createElement("li");
+            li.className = "cat-nav-item";
+            const a = document.createElement("a");
+            a.href = c.url.startsWith("#") ? "/" + c.url : c.url;
+            if (idx === activeIdx) a.className = isDrawer ? "active" : "nav-active";
+            if (isDrawer) {
+                const icon = document.createElement("i");
+                icon.className = "fas " + (c.icon || "fa-circle");
+                a.appendChild(icon);
+                a.appendChild(document.createTextNode(" " + c.name + " "));
+                const arrow = document.createElement("i");
+                arrow.className = "fas fa-chevron-right arrow";
+                a.appendChild(arrow);
+                a.addEventListener("click", () => {
+                    list.querySelectorAll("a").forEach(l => l.classList.remove("active"));
+                    a.classList.add("active");
+                    closeDrawer();
+                });
+            } else {
+                a.textContent = c.name;
+            }
+            li.appendChild(a);
+            frag.appendChild(li);
+        });
+        if (boundary) list.insertBefore(frag, boundary); else list.appendChild(frag);
+    }
+    loadNavCategories();
+
+    // ===== Instagram / Google Photos cards (kept from previous
+    // gallery.html — Admin -> Settings -> Social Links, unchanged) =====
     async function loadSocialLinks() {
         try {
             const res = await fetch('/api/public-settings');
@@ -143,16 +383,22 @@
                 card.style.display = 'flex';
                 anyShown = true;
             }
-            if (!anyShown) document.getElementById('emptyState').style.display = 'block';
+            if (!anyShown) document.getElementById('socialEmptyState').style.display = 'block';
         } catch (err) {
-            // Same fail-quiet approach as index.html's loadNavCategories/
-            // loadMarketingPromos -- a slow/failed settings fetch shouldn't
-            // break the page, it just means neither card gets revealed and
-            // the "being set up" message shows instead.
-            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('socialEmptyState').style.display = 'block';
         }
     }
     loadSocialLinks();
+
+    // ===== This page's own Website Builder sections (page: "gallery") =====
+    async function init() {
+        const container = document.getElementById('pageSections');
+        const loading = document.getElementById('loadingState');
+        const count = await renderWebsiteSectionsInto(container, "gallery");
+        loading.style.display = 'none';
+        if (!count) document.getElementById('emptyState').style.display = 'block';
+    }
+    init();
 </script>
 
 </body>

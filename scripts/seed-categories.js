@@ -1,23 +1,36 @@
 /**
  * scripts/seed-categories.js
  *
- * One-time seeder for the homepage navbar's original 11 categories
- * (Home, About, Courses, Leadership, Results, Fees & Timings, Classes,
- * Admission, Careers, Feedback, Contact) — inserts them as real
- * `categories` documents, the same collection and shape Admin ->
- * Categories manages, with the EXACT same hrefs/order the hardcoded
- * navbar in index.html always used. Running this is what makes the new
- * Admin -> Categories feature a true "replace hardcoded with
- * admin-managed" migration instead of turning the navbar blank on
- * upgrade — index.html's dynamic nav script (loadNavCategories) only
- * replaces the static fallback navbar once /api/categories returns at
- * least one row, so until this has been run, visitors keep seeing the
- * original static links exactly as before either way.
+ * One-time seeder for the homepage navbar's 8 top-level categories
+ * (Home, About, Courses, Results, Reviews, Gallery, Contact, Admission)
+ * — inserts them as real `categories` documents, the same collection and
+ * shape Admin -> Categories manages, with the EXACT hrefs/order the
+ * multi-page site structure uses. Running this is what makes Admin ->
+ * Categories a true "replace hardcoded with admin-managed" migration
+ * instead of turning the navbar blank on a fresh install — index.html's
+ * dynamic nav script (loadNavCategories) only replaces the static
+ * fallback navbar once /api/categories returns at least one row, so
+ * until this has been run, visitors keep seeing the static links baked
+ * into each page's HTML.
  *
- * SAFE TO RUN ANYTIME: it only inserts if the `categories` collection is
- * currently empty. If you've already added/edited any category yourself
- * (including a previous run of this script), it does nothing and just
- * prints a message — it will never duplicate or overwrite what's there.
+ * NOTE: this file's list changed from the original 11-item single-page
+ * navbar (Home/About/Courses/Leadership/Results/Fees & Timings/Classes/
+ * Admission/Careers/Feedback/Contact, all anchor links) to the 8-item
+ * multi-page navbar below as part of the multi-page website
+ * transformation. Leadership is no longer a navbar item (it now lives
+ * inside the About page); Fees & Timings and Classes are no longer
+ * separate navbar items (that content now lives on the Courses page);
+ * Careers and Feedback remain reachable from their existing pages'
+ * footers/links but are intentionally no longer top-level navbar items,
+ * matching the approved 8-item navbar spec.
+ *
+ * SAFE TO RUN ANYTIME ON A FRESH INSTALL: it only inserts if the
+ * `categories` collection is currently empty. If categories already
+ * exist (including from an earlier version of this script), it does
+ * nothing and just prints a message — it will never duplicate or
+ * overwrite what's there. For an already-seeded/live site that needs to
+ * move from the old 11-item navbar to this new 8-item one, use
+ * scripts/migrate-navbar-8pages.js instead (see that file's header).
  *
  * Usage:
  *   npm run seed-categories
@@ -29,23 +42,20 @@
 require("dotenv").config();
 const db = require("../services/jsonDb");
 
-// Same hrefs as index.html's original hardcoded #navLinks / #drawerNav
-// (bare "#section" — isSafeUrl allows this directly, see
-// utils/validators.js). Icons match what the mobile drawer already used
-// per item, so the dynamic drawer render looks identical to the old
-// static one.
+// Real page URLs, not homepage anchors — About/Courses/Results/Reviews/
+// Gallery/Contact/Admission are now each a dedicated page, not a section
+// of index.html. Icons match what the mobile drawer already used per
+// item where a direct equivalent exists, so the dynamic drawer render
+// looks as close as possible to the previous static one.
 const DEFAULT_CATEGORIES = [
-  { name: "Home", slug: "home", url: "#home", icon: "fa-home" },
-  { name: "About", slug: "about", url: "#about", icon: "fa-info-circle" },
-  { name: "Courses", slug: "courses", url: "#courses", icon: "fa-book-open" },
-  { name: "Leadership", slug: "leadership", url: "#faculty", icon: "fa-users" },
-  { name: "Results", slug: "results", url: "#results", icon: "fa-trophy" },
-  { name: "Fees & Timings", slug: "fees-timings", url: "#fees", icon: "fa-clock" },
-  { name: "Classes", slug: "classes", url: "#classes-overview", icon: "fa-layer-group" },
-  { name: "Admission", slug: "admission", url: "#admission", icon: "fa-file-alt" },
-  { name: "Careers", slug: "careers", url: "/careers.html", icon: "fa-user-tie" },
-  { name: "Feedback", slug: "feedback", url: "#feedback", icon: "fa-star" },
-  { name: "Contact", slug: "contact", url: "#contact", icon: "fa-map-marker-alt" },
+  { name: "Home", slug: "home", url: "/#home", icon: "fa-home" },
+  { name: "About", slug: "about", url: "/about.html", icon: "fa-info-circle" },
+  { name: "Courses", slug: "courses", url: "/courses.html", icon: "fa-book-open" },
+  { name: "Results", slug: "results", url: "/results.html", icon: "fa-trophy" },
+  { name: "Reviews", slug: "reviews", url: "/reviews.html", icon: "fa-star" },
+  { name: "Gallery", slug: "gallery", url: "/gallery.html", icon: "fa-images" },
+  { name: "Contact", slug: "contact", url: "/contact.html", icon: "fa-map-marker-alt" },
+  { name: "Admission", slug: "admission", url: "/admission.html", icon: "fa-file-alt" },
 ];
 
 async function seedCategories() {

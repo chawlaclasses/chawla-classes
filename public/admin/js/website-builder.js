@@ -14,7 +14,7 @@
 
 const SECTION_TYPE_META = {
     hero:          { label: 'Hero Banner',       icon: 'fa-image',        desc: 'Big top banner with heading, subheading, and a button' },
-    text:          { label: 'Text Section',      icon: 'fa-align-left',   desc: 'A title and a block of description text' },
+    text:          { label: 'Text Section',      icon: 'fa-align-left',   desc: 'A title, description text, and optional bullet points' },
     image:         { label: 'Image Section',     icon: 'fa-file-image',   desc: 'A single image with a caption' },
     image_text:    { label: 'Image + Text',      icon: 'fa-columns',      desc: 'Text next to an image, either side' },
     gallery:       { label: 'Gallery',           icon: 'fa-images',       desc: 'A grid of multiple photos' },
@@ -23,6 +23,8 @@ const SECTION_TYPE_META = {
     video:         { label: 'Video Section',     icon: 'fa-circle-play',  desc: 'An embedded YouTube/Vimeo or direct video link' },
     cta:           { label: 'CTA Banner',        icon: 'fa-bullhorn',     desc: 'A short call-to-action strip with a button' },
     contact:       { label: 'Contact Section',   icon: 'fa-address-card', desc: 'Phone, email, and address block' },
+    table:         { label: 'Table',             icon: 'fa-table',        desc: 'A data table with your own columns and rows (e.g. fee structure, batch timings)' },
+    cards:         { label: 'Icon Cards',         icon: 'fa-grip',         desc: 'A grid of cards, each with an icon, title, and list — e.g. course categories, features' },
 };
 
 // Matches index.html's actual <section id="..."> elements exactly (see
@@ -65,6 +67,8 @@ function sectionPreviewText(section) {
         case 'video': return d.title || '(video)';
         case 'cta': return d.heading || '(no heading)';
         case 'contact': return d.title || '(contact info)';
+        case 'table': return `${(d.rows || []).length} row(s) × ${(d.columns || []).length} column(s)`;
+        case 'cards': return `${(d.items || []).length} card(s)`;
         default: return '';
     }
 }
@@ -218,7 +222,7 @@ async function deleteBuilderPage(page) {
 const SECTION_TYPE_COLORS = {
     hero: '#f4b400', text: '#60a5fa', image: '#34d399', image_text: '#34d399',
     gallery: '#34d399', testimonials: '#f472b6', faq: '#a78bfa',
-    video: '#fb923c', cta: '#f4b400', contact: '#60a5fa',
+    video: '#fb923c', cta: '#f4b400', contact: '#60a5fa', table: '#22d3ee', cards: '#f4b400',
 };
 
 function showSectionTypePicker() {
@@ -258,7 +262,7 @@ function sectionFormFields(type, section = {}) {
     const typeFieldsHtml = {
         hero: heroFields, text: textFields, image: imageFields, image_text: imageTextFields,
         gallery: galleryFields, testimonials: testimonialsFields, faq: faqFields,
-        video: videoFields, cta: ctaFields, contact: contactFields,
+        video: videoFields, cta: ctaFields, contact: contactFields, table: tableFields, cards: cardsFields,
     }[type](d);
     const currentPage = window._currentBuilderPage || 'home';
 
@@ -293,18 +297,30 @@ function heroFields(d) {
     return `
         <div class="form-group"><label>Heading</label><input type="text" id="secHeading" value="${escapeHtml(d.heading || '')}" placeholder="e.g. Uttam Nagar's Trusted Coaching Institute"></div>
         <div class="form-group"><label>Sub Heading</label><input type="text" id="secSubHeading" value="${escapeHtml(d.subHeading || '')}" placeholder="e.g. Classes 1st-12th, Commerce, Arts, B.Com & BBA"></div>
-        <div class="form-row">
-            <div class="form-group"><label>Button Text</label><input type="text" id="secButtonText" value="${escapeHtml(d.buttonText || '')}" placeholder="e.g. Enroll Now"></div>
-            <div class="form-group"><label>Button Link</label><input type="text" id="secButtonLink" value="${escapeHtml(d.buttonLink || '')}" placeholder="e.g. #admission"></div>
-        </div>
+        ${buttonsRepeaterHtml('heroButtons', legacyButtonsToArray(d))}
         ${imageUploadField('secBackgroundImage', 'Background Image', d.backgroundImage)}
     `;
 }
 
 function textFields(d) {
+    const points = d.points && d.points.length ? d.points : [''];
     return `
         <div class="form-group"><label>Title</label><input type="text" id="secTitle" value="${escapeHtml(d.title || '')}" placeholder="e.g. About Chawla Classes"></div>
         <div class="form-group"><label>Description</label><textarea id="secDescription" rows="6" placeholder="Write the section's paragraph text here...">${escapeHtml(d.description || '')}</textarea></div>
+        <label style="display:block;margin:10px 0 6px;font-size:12.5px;">Points (optional, e.g. key highlights)</label>
+        <div id="textPoints">${points.map(p => textPointHtml(p)).join('')}</div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('textPoints').insertAdjacentHTML('beforeend', textPointHtml(''))"><i class="fas fa-plus"></i> Add Point</button>
+        <div style="margin-top:14px;">${buttonsRepeaterHtml('textButtons', legacyButtonsToArray(d))}</div>
+    `;
+}
+
+function textPointHtml(value = '') {
+    return `
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+            <input type="text" class="tx-point" value="${escapeHtml(value)}" placeholder="e.g. Experienced & qualified faculty" style="flex:1;">
+            <button type="button" onclick="this.parentElement.remove()" title="Remove point"
+                style="background:#dc2626;color:#fff;border:none;border-radius:50%;width:20px;height:20px;flex-shrink:0;font-size:10px;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
     `;
 }
 
@@ -363,6 +379,7 @@ function galleryThumbHtml(url) {
 function testimonialsFields(d) {
     const items = (d.items && d.items.length) ? d.items : [{}];
     return `
+        <div class="form-group"><label>Section Title (optional)</label><input type="text" id="secTitle" value="${escapeHtml(d.title || '')}" placeholder="e.g. What Our Students Say"></div>
         <label style="display:block;margin-bottom:8px;">Testimonials</label>
         <div id="testimonialItems">${items.map(item => testimonialItemHtml(item)).join('')}</div>
         <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('testimonialItems').insertAdjacentHTML('beforeend', testimonialItemHtml({}))"><i class="fas fa-plus"></i> Add Testimonial</button>
@@ -370,6 +387,7 @@ function testimonialsFields(d) {
 }
 
 function testimonialItemHtml(item = {}) {
+    const points = item.points && item.points.length ? item.points : [''];
     return `
         <div class="repeatable-item" style="position:relative;background:#1a2332;border:1px solid #2a3548;border-radius:10px;padding:16px;margin-bottom:12px;">
             <button type="button" class="repeatable-remove" onclick="this.parentElement.remove()" title="Remove"
@@ -378,7 +396,21 @@ function testimonialItemHtml(item = {}) {
                 <div class="form-group"><label>Student Name</label><input type="text" class="ti-name" value="${escapeHtml(item.name || '')}" placeholder="e.g. Priya Sharma"></div>
                 <div class="form-group"><label>Photo (optional)</label>${imageUploadFieldInline('ti-photo', item.photo)}</div>
             </div>
-            <div class="form-group"><label>Review</label><textarea class="ti-review" rows="3" placeholder="What the student said...">${escapeHtml(item.review || '')}</textarea></div>
+            <div class="form-group"><label>Title (optional, e.g. designation/class)</label><input type="text" class="ti-title" value="${escapeHtml(item.title || '')}" placeholder="e.g. Founder & Academic Director / Class 12 Student"></div>
+            <div class="form-group"><label>Review (optional)</label><textarea class="ti-review" rows="3" placeholder="What the student said...">${escapeHtml(item.review || '')}</textarea></div>
+            <label style="display:block;margin:10px 0 6px;font-size:12.5px;">Points (optional, e.g. key highlights)</label>
+            <div class="ti-points">${points.map(p => testimonialPointHtml(p)).join('')}</div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="this.previousElementSibling.insertAdjacentHTML('beforeend', testimonialPointHtml(''))"><i class="fas fa-plus"></i> Add Point</button>
+        </div>
+    `;
+}
+
+function testimonialPointHtml(value = '') {
+    return `
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+            <input type="text" class="ti-point" value="${escapeHtml(value)}" placeholder="e.g. Scored 95% in Class 12 Boards" style="flex:1;">
+            <button type="button" onclick="this.parentElement.remove()" title="Remove point"
+                style="background:#dc2626;color:#fff;border:none;border-radius:50%;width:20px;height:20px;flex-shrink:0;font-size:10px;cursor:pointer;"><i class="fas fa-times"></i></button>
         </div>
     `;
 }
@@ -413,11 +445,8 @@ function videoFields(d) {
 function ctaFields(d) {
     return `
         <div class="form-group"><label>Heading</label><input type="text" id="secHeading" value="${escapeHtml(d.heading || '')}" placeholder="e.g. Admissions Open for 2026-27"></div>
-        <div class="form-group"><label>Description</label><input type="text" id="secDescription" value="${escapeHtml(d.description || '')}" placeholder="e.g. Limited seats available"></div>
-        <div class="form-row">
-            <div class="form-group"><label>Button Text</label><input type="text" id="secButtonText" value="${escapeHtml(d.buttonText || '')}" placeholder="e.g. Enroll Now"></div>
-            <div class="form-group"><label>Button Link</label><input type="text" id="secButtonLink" value="${escapeHtml(d.buttonLink || '')}" placeholder="e.g. #admission"></div>
-        </div>
+        <div class="form-group"><label>Description</label><textarea id="secDescription" rows="3" placeholder="e.g. Limited seats available">${escapeHtml(d.description || '')}</textarea></div>
+        ${buttonsRepeaterHtml('ctaButtons', legacyButtonsToArray(d))}
     `;
 }
 
@@ -429,6 +458,221 @@ function contactFields(d) {
             <div class="form-group"><label>Email</label><input type="text" id="secEmail" value="${escapeHtml(d.email || '')}" placeholder="e.g. info@chawlaclasses.in"></div>
         </div>
         <div class="form-group"><label>Address</label><input type="text" id="secAddress" value="${escapeHtml(d.address || '')}" placeholder="e.g. Shani Bazar, Uttam Nagar, New Delhi"></div>
+    `;
+}
+
+// ── Table (e.g. fee structure / batch timings) ───────────────────────────
+// Columns and rows are two separate repeatable lists, kept in sync: adding/
+// removing a column adds/removes the matching cell in every existing row,
+// so a row can never end up with a different cell count than there are
+// column headings (which is exactly what the validator in utils/
+// validators.js requires).
+function tableFields(d) {
+    const columns = (d.columns && d.columns.length) ? d.columns : ['Class / Batch', 'Timing', 'Fee'];
+    const rows = (d.rows && d.rows.length) ? d.rows : [columns.map(() => '')];
+    return `
+        <div class="form-group"><label>Title (optional)</label><input type="text" id="secTitle" value="${escapeHtml(d.title || '')}" placeholder="e.g. Fee Structure &amp; Batch Timings"></div>
+
+        <label style="display:block;margin:18px 0 4px;font-size:13px;">Columns</label>
+        <p style="font-size:11.5px;color:var(--muted);margin:0 0 10px;">These become the table's header row. Rename one and every row below updates to match.</p>
+        <div id="tableColumns">${columns.map(c => tableColumnInputHtml(c)).join('')}</div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="tableAddColumn()"><i class="fas fa-plus"></i> Add Column</button>
+
+        <label style="display:block;margin:18px 0 4px;font-size:13px;">Rows</label>
+        <p style="font-size:11.5px;color:var(--muted);margin:0 0 10px;">Each box is labeled with its column, so it's always clear what goes where.</p>
+        <div id="tableRows">${rows.map(r => tableRowHtml(r, columns)).join('')}</div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="tableAddRow()"><i class="fas fa-plus"></i> Add Row</button>
+    `;
+}
+
+function tableColumnInputHtml(value = '') {
+    return `
+        <div class="table-col-item" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <i class="fas fa-grip-lines" style="color:#4a5568;font-size:11px;"></i>
+            <input type="text" class="table-col-input" value="${escapeHtml(value)}" placeholder="e.g. Class / Batch" oninput="tableSyncRows()" style="flex:1;">
+            <button type="button" onclick="tableRemoveColumn(this)" title="Remove column"
+                style="background:#dc2626;color:#fff;border:none;border-radius:50%;width:24px;height:24px;flex-shrink:0;font-size:11px;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+}
+
+function tableRowHtml(cells = [], colHeadings = []) {
+    return `
+        <div class="table-row-group" style="position:relative;background:#1a2332;border:1px solid #2a3548;border-radius:10px;padding:14px 40px 14px 14px;margin-bottom:10px;">
+            <button type="button" class="repeatable-remove" onclick="this.closest('.table-row-group').remove()" title="Remove row"
+                style="position:absolute;top:10px;right:10px;background:#dc2626;color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer;"><i class="fas fa-times"></i></button>
+            <div class="table-row-cells" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;">
+                ${cells.map((v, i) => tableCellFieldHtml(colHeadings[i] || `Column ${i + 1}`, v)).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// One cell = its column's name as a small label sitting right above the
+// input (and repeated as the placeholder), so which column a box belongs
+// to is never ambiguous, even once a row has 4-5 cells in it.
+function tableCellFieldHtml(label, value = '') {
+    return `
+        <div class="table-cell-field">
+            <label style="display:block;font-size:10.5px;font-weight:600;color:#8592a8;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(label)}</label>
+            <input type="text" class="table-cell-input" value="${escapeHtml(value)}" placeholder="${escapeHtml(label)}" style="width:100%;box-sizing:border-box;">
+        </div>
+    `;
+}
+
+function tableAddColumn() {
+    document.getElementById('tableColumns').insertAdjacentHTML('beforeend', tableColumnInputHtml(''));
+    tableSyncRows();
+}
+
+function tableRemoveColumn(btn) {
+    const columnsWrap = document.getElementById('tableColumns');
+    if (columnsWrap.children.length <= 1) return; // keep at least one column
+    btn.closest('.table-col-item').remove();
+    tableSyncRows();
+}
+
+function tableAddRow() {
+    const colHeadings = Array.from(document.querySelectorAll('#tableColumns .table-col-input')).map(el => el.value.trim() || 'Column');
+    document.getElementById('tableRows').insertAdjacentHTML('beforeend', tableRowHtml(colHeadings.map(() => ''), colHeadings));
+}
+
+// Re-labels every existing row's cells to match the current column list --
+// called whenever a column is added, removed, or renamed. Existing cell
+// values are preserved by position; a value with no column left under it
+// (a column got removed) is simply dropped along with that cell.
+function tableSyncRows() {
+    const colHeadings = Array.from(document.querySelectorAll('#tableColumns .table-col-input')).map(el => el.value.trim() || 'Column');
+    document.querySelectorAll('#tableRows .table-row-cells').forEach(cellsEl => {
+        const existingValues = Array.from(cellsEl.querySelectorAll('.table-cell-input')).map(el => el.value);
+        cellsEl.innerHTML = colHeadings.map((label, i) => tableCellFieldHtml(label, existingValues[i] || '')).join('');
+    });
+}
+
+// ── Icon Cards (e.g. course categories, features) ────────────────────────
+// Each card is its own repeatable-item (icon + title), containing a
+// second, nested repeatable list of plain-text lines -- structurally two
+// levels of the same "add/remove" pattern used everywhere else in this
+// file (testimonials/faq at the outer level, table rows at the inner).
+const CARD_ICON_SUGGESTIONS = [
+    'fa-school', 'fa-book-open', 'fa-chart-line', 'fa-landmark', 'fa-briefcase',
+    'fa-user-tie', 'fa-globe', 'fa-trophy', 'fa-graduation-cap', 'fa-calculator',
+    'fa-flask', 'fa-laptop-code', 'fa-users', 'fa-award', 'fa-book',
+];
+
+function cardsFields(d) {
+    const items = (d.items && d.items.length) ? d.items : [{}];
+    return `
+        <div class="form-group"><label>Title (optional)</label><input type="text" id="secTitle" value="${escapeHtml(d.title || '')}" placeholder="e.g. Courses We Offer"></div>
+        <div class="form-group"><label>Subtitle (optional)</label><input type="text" id="secSubtitle" value="${escapeHtml(d.subtitle || '')}" placeholder="e.g. Academic Excellence from School to College"></div>
+
+        <label style="display:block;margin:18px 0 4px;font-size:13px;">Cards</label>
+        <p style="font-size:11.5px;color:var(--muted);margin:0 0 10px;">Icon is a Font Awesome name (without "fas fa-", just the part after, e.g. <code>fa-school</code>) — see <a href="https://fontawesome.com/search?o=r&m=free" target="_blank" rel="noopener">fontawesome.com</a> for more.</p>
+        <datalist id="cardIconSuggestions">${CARD_ICON_SUGGESTIONS.map(i => `<option value="${i}">`).join('')}</datalist>
+        <div id="cardItems">${items.map(item => cardItemHtml(item)).join('')}</div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('cardItems').insertAdjacentHTML('beforeend', cardItemHtml({}))"><i class="fas fa-plus"></i> Add Card</button>
+
+        <div style="margin-top:20px;">${buttonsRepeaterHtml('cardsButtons', d.buttons || [])}</div>
+    `;
+}
+
+function cardItemHtml(item = {}) {
+    const lines = (item.lines && item.lines.length) ? item.lines : [''];
+    const buttons = legacyButtonsToArray(item);
+    const icon = item.icon || 'fa-school';
+    return `
+        <div class="repeatable-item card-item" style="position:relative;background:#1a2332;border:1px solid #2a3548;border-radius:10px;padding:16px;margin-bottom:12px;">
+            <button type="button" class="repeatable-remove" onclick="this.closest('.card-item').remove()" title="Remove card"
+                style="position:absolute;top:10px;right:10px;background:#dc2626;color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer;"><i class="fas fa-times"></i></button>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Icon</label>
+                    <input type="text" class="ci-icon" list="cardIconSuggestions" value="${escapeHtml(icon)}" placeholder="e.g. fa-school" oninput="this.closest('.card-item').querySelector('.ci-icon-preview').className = 'fas ' + (this.value.trim() || 'fa-circle') + ' ci-icon-preview'">
+                </div>
+                <div class="form-group" style="max-width:60px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;">
+                    <span style="width:34px;height:34px;border-radius:50%;background:#0b1f3a;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas ${escapeHtml(icon)} ci-icon-preview" style="color:#f4b400;font-size:14px;"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="form-group"><label>Title</label><input type="text" class="ci-title" value="${escapeHtml(item.title || '')}" placeholder="e.g. Junior Wing"></div>
+            <div class="form-group"><label>Description (optional)</label><textarea class="ci-description" rows="2" placeholder="e.g. A short line about this card">${escapeHtml(item.description || '')}</textarea></div>
+            <label style="display:block;margin:10px 0 6px;font-size:12.5px;">Lines (optional, e.g. subjects, one per box)</label>
+            <div class="card-lines">${lines.map(l => cardLineHtml(l)).join('')}</div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="this.previousElementSibling.insertAdjacentHTML('beforeend', cardLineHtml(''))"><i class="fas fa-plus"></i> Add Line</button>
+            <div class="form-group" style="margin-top:14px;"><label>Subtitle (optional)</label><input type="text" class="ci-subtitle" value="${escapeHtml(item.subtitle || '')}" placeholder="e.g. Classes 1-5"></div>
+            <label style="display:block;margin:14px 0 6px;font-size:12.5px;">Buttons (optional)</label>
+            <div class="ci-buttons">${buttons.map(b => cardButtonItemHtml(b.text || '', b.link || '', b.icon || '')).join('')}</div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="this.previousElementSibling.insertAdjacentHTML('beforeend', cardButtonItemHtml('', '', ''))"><i class="fas fa-plus"></i> Add Button</button>
+        </div>
+    `;
+}
+
+function cardButtonItemHtml(text = '', link = '', icon = '') {
+    return `
+        <div class="form-row ci-btn-item" style="margin-bottom:6px;align-items:flex-end;">
+            <div class="form-group"><label>Button Text</label><input type="text" class="ci-btn-text" value="${escapeHtml(text)}" placeholder="e.g. Know More"></div>
+            <div class="form-group"><label>Icon (optional)</label><input type="text" class="ci-btn-icon" list="cardIconSuggestions" value="${escapeHtml(icon)}" placeholder="e.g. fa-paper-plane"></div>
+            <div class="form-group" style="display:flex;gap:8px;align-items:center;">
+                <div style="flex:1;"><label>Button Link</label><input type="text" class="ci-btn-link" value="${escapeHtml(link)}" placeholder="e.g. #admission"></div>
+                <button type="button" onclick="this.closest('.ci-btn-item').remove()" title="Remove button"
+                    style="background:#dc2626;color:#fff;border:none;border-radius:50%;width:20px;height:20px;flex-shrink:0;font-size:10px;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+    `;
+}
+
+// ── Multi-button repeater (used by Hero / Text / CTA sections so admin
+// can add more than one button, e.g. "Enroll Now" + "Download Brochure") ──
+function buttonsRepeaterHtml(containerId, buttons) {
+    const list = buttons && buttons.length ? buttons : [{ text: '', link: '', icon: '' }];
+    return `
+        <label style="display:block;margin:10px 0 6px;font-size:12.5px;">Buttons (optional)</label>
+        <datalist id="buttonIconSuggestions">${CARD_ICON_SUGGESTIONS.map(i => `<option value="${i}">`).join('')}</datalist>
+        <div id="${containerId}">${list.map(b => buttonItemHtml(b.text || '', b.link || '', b.icon || '')).join('')}</div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('${containerId}').insertAdjacentHTML('beforeend', buttonItemHtml('', '', ''))"><i class="fas fa-plus"></i> Add Button</button>
+    `;
+}
+
+function buttonItemHtml(text = '', link = '', icon = '') {
+    return `
+        <div class="form-row btn-repeat-item" style="margin-bottom:6px;align-items:flex-end;">
+            <div class="form-group"><label>Button Text</label><input type="text" class="btn-item-text" value="${escapeHtml(text)}" placeholder="e.g. Enroll Now"></div>
+            <div class="form-group"><label>Icon (optional)</label><input type="text" class="btn-item-icon" list="buttonIconSuggestions" value="${escapeHtml(icon)}" placeholder="e.g. fa-paper-plane"></div>
+            <div class="form-group" style="display:flex;gap:8px;align-items:center;">
+                <div style="flex:1;"><label>Button Link</label><input type="text" class="btn-item-link" value="${escapeHtml(link)}" placeholder="e.g. #admission"></div>
+                <button type="button" onclick="this.closest('.btn-repeat-item').remove()" title="Remove button"
+                    style="background:#dc2626;color:#fff;border:none;border-radius:50%;width:20px;height:20px;flex-shrink:0;font-size:10px;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+    `;
+}
+
+function readButtonsRepeater(containerId) {
+    return Array.from(document.querySelectorAll(`#${containerId} .btn-repeat-item`))
+        .map(el => ({
+            text: el.querySelector('.btn-item-text').value.trim(),
+            link: el.querySelector('.btn-item-link').value.trim(),
+            icon: el.querySelector('.btn-item-icon').value.trim(),
+        }))
+        .filter(b => b.text || b.link);
+}
+
+// Normalizes legacy single buttonText/buttonLink (old saved sections) into
+// the buttons[] array shape, so old data still populates the repeater.
+function legacyButtonsToArray(d) {
+    if (Array.isArray(d.buttons) && d.buttons.length) return d.buttons;
+    if (d.buttonText || d.buttonLink) return [{ text: d.buttonText || '', link: d.buttonLink || '', icon: d.buttonIcon || '' }];
+    return [];
+}
+
+function cardLineHtml(value = '') {
+    return `
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+            <input type="text" class="ci-line" value="${escapeHtml(value)}" placeholder="e.g. Mathematics" style="flex:1;">
+            <button type="button" onclick="this.parentElement.remove()" title="Remove line"
+                style="background:#dc2626;color:#fff;border:none;border-radius:50%;width:20px;height:20px;flex-shrink:0;font-size:10px;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
     `;
 }
 
@@ -564,10 +808,14 @@ function readSectionForm() {
     const readers = {
         hero: () => ({
             heading: val('secHeading'), subHeading: val('secSubHeading'),
-            buttonText: val('secButtonText'), buttonLink: val('secButtonLink'),
+            buttons: readButtonsRepeater('heroButtons'),
             backgroundImage: val('secBackgroundImage'),
         }),
-        text: () => ({ title: val('secTitle'), description: val('secDescription') }),
+        text: () => ({
+            title: val('secTitle'), description: val('secDescription'),
+            points: Array.from(document.querySelectorAll('#textPoints .tx-point')).map(p => p.value.trim()).filter(Boolean),
+            buttons: readButtonsRepeater('textButtons'),
+        }),
         image: () => ({ image: val('secImage'), caption: val('secCaption') }),
         image_text: () => ({
             title: val('secTitle'), description: val('secDescription'),
@@ -577,10 +825,13 @@ function readSectionForm() {
             images: Array.from(document.querySelectorAll('#galleryImageGrid .gallery-upload-thumb')).map(el => el.dataset.url),
         }),
         testimonials: () => ({
+            title: val('secTitle'),
             items: Array.from(document.querySelectorAll('#testimonialItems .repeatable-item')).map(el => ({
                 name: el.querySelector('.ti-name').value.trim(),
+                title: el.querySelector('.ti-title').value.trim(),
                 review: el.querySelector('.ti-review').value.trim(),
                 photo: el.querySelector('.ti-photo')?.value.trim() || '',
+                points: Array.from(el.querySelectorAll('.ti-point')).map(p => p.value.trim()).filter(Boolean),
             })).filter(item => item.name || item.review),
         }),
         faq: () => ({
@@ -592,11 +843,35 @@ function readSectionForm() {
         video: () => ({ title: val('secTitle'), videoUrl: val('secVideoUrl') }),
         cta: () => ({
             heading: val('secHeading'), description: val('secDescription'),
-            buttonText: val('secButtonText'), buttonLink: val('secButtonLink'),
+            buttons: readButtonsRepeater('ctaButtons'),
         }),
         contact: () => ({
             title: val('secTitle'), phone: val('secPhone'),
             email: val('secEmail'), address: val('secAddress'),
+        }),
+        table: () => ({
+            title: val('secTitle'),
+            columns: Array.from(document.querySelectorAll('#tableColumns .table-col-input')).map(el => el.value.trim()).filter(Boolean),
+            rows: Array.from(document.querySelectorAll('#tableRows .table-row-group')).map(rowEl =>
+                Array.from(rowEl.querySelectorAll('.table-cell-input')).map(el => el.value.trim())
+            ).filter(row => row.some(cell => cell)),
+        }),
+        cards: () => ({
+            title: val('secTitle'),
+            subtitle: val('secSubtitle'),
+            items: Array.from(document.querySelectorAll('#cardItems .card-item')).map(el => ({
+                icon: el.querySelector('.ci-icon').value.trim(),
+                title: el.querySelector('.ci-title').value.trim(),
+                description: el.querySelector('.ci-description').value.trim(),
+                subtitle: el.querySelector('.ci-subtitle').value.trim(),
+                lines: Array.from(el.querySelectorAll('.ci-line')).map(l => l.value.trim()).filter(Boolean),
+                buttons: Array.from(el.querySelectorAll('.ci-buttons .ci-btn-item')).map(b => ({
+                    text: b.querySelector('.ci-btn-text').value.trim(),
+                    link: b.querySelector('.ci-btn-link').value.trim(),
+                    icon: b.querySelector('.ci-btn-icon').value.trim(),
+                })).filter(b => b.text || b.link),
+            })).filter(item => item.title || item.lines.length),
+            buttons: readButtonsRepeater('cardsButtons'),
         }),
     };
 

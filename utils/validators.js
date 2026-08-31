@@ -12,6 +12,11 @@
 
 const { body } = require("express-validator");
 const { isValidIndianMobile, isBlockedEmailDomain } = require("./spamDetection");
+const { SOCIAL_PLATFORMS } = require("../config/socialPlatforms");
+
+// Footer nav links (Quick Links / Student Resources columns) share one
+// collection scoped by this field — see routes/admin/footer-links.js.
+const FOOTER_LINK_COLUMNS = ["quick_links", "student_resources"];
 
 // ── Shared anti-spam field validators (Admission Form + Career Form) ───────
 // Both public/admission.html and public/careers.html now require a real,
@@ -101,73 +106,184 @@ function url(value, { field, required = false } = {}) {
   isSafeUrl(value); // throws its own message if unsafe/malformed
 }
 
+// Validates a `buttons` array: [{ text, link }, ...]. Used by sections
+// that support more than one button (Hero, Text, CTA). Also accepts the
+// older singular buttonText/buttonLink shape for backward compatibility
+// with sections saved before multi-button support existed.
+//
+// NOTE: every field in this module was made optional on request (Admin
+// -> Website Builder -> Add Section should never force an admin to fill
+// a box before saving) — see the matching note above SECTION_FIELD_VALIDATORS.
+function buttons(d, { max = 6 } = {}) {
+  if (d.buttons !== undefined) {
+    if (!Array.isArray(d.buttons)) throw new Error("Buttons must be a list");
+    if (d.buttons.length > max) throw new Error(`Maximum ${max} buttons`);
+    d.buttons.forEach((b, i) => {
+      str(b.text, { field: `Button ${i + 1}: Text`, maxLen: 60 });
+      url(b.link, { field: `Button ${i + 1}: Link` });
+      if (b.icon) {
+        str(b.icon, { field: `Button ${i + 1}: Icon`, maxLen: 40 });
+        if (!/^fa-[a-z0-9-]+$/i.test(b.icon)) {
+          throw new Error(`Button ${i + 1}: Icon must be a Font Awesome class like "fa-paper-plane"`);
+        }
+      }
+    });
+    return;
+  }
+  // Legacy fallback: old singular fields, still allowed on old data.
+  str(d.buttonText, { field: "Button Text", maxLen: 60 });
+  url(d.buttonLink, { field: "Button Link" });
+}
+
+// Every field below was, until this change, `required: true` for a
+// section's "primary" content (Hero's heading, Text's title/description,
+// Gallery/Testimonials/FAQ/Table/Cards needing at least one item, etc.).
+// Per request, ALL of that is now optional — an admin can save a section
+// from Admin -> Website Builder -> Add Section with any (or every) box
+// left blank; length limits and type/shape checks (still text, still a
+// safe URL, still an array where an array is expected, structural
+// consistency like a table row matching its column count) are the only
+// things still enforced, since those protect against corrupt/unsafe data
+// rather than "empty is not allowed". public/js/website-sections-
+// renderer.js already renders every section type gracefully with blank/
+// missing fields (empty heading, no items, etc.), so nothing breaks on
+// the frontend when a section is saved this way.
 const SECTION_FIELD_VALIDATORS = {
   hero: (d) => {
-    str(d.heading, { field: "Heading", required: true, maxLen: 150 });
+    str(d.heading, { field: "Heading", maxLen: 150 });
     str(d.subHeading, { field: "Sub Heading", maxLen: 300 });
-    str(d.buttonText, { field: "Button Text", maxLen: 60 });
-    url(d.buttonLink, { field: "Button Link" });
+    buttons(d);
     url(d.backgroundImage, { field: "Background Image" });
   },
   text: (d) => {
-    str(d.title, { field: "Title", required: true, maxLen: 150 });
-    str(d.description, { field: "Description", required: true, maxLen: 3000 });
+    str(d.title, { field: "Title", maxLen: 150 });
+    str(d.description, { field: "Description", maxLen: 3000 });
+    if (d.points !== undefined) {
+      if (!Array.isArray(d.points)) throw new Error("Points must be a list");
+      if (d.points.length > 15) throw new Error("Maximum 15 points");
+      d.points.forEach((point, i) => str(point, { field: `Point ${i + 1}`, maxLen: 150 }));
+    }
+    buttons(d);
   },
   image: (d) => {
-    url(d.image, { field: "Image", required: true });
+    url(d.image, { field: "Image" });
     str(d.caption, { field: "Caption", maxLen: 200 });
   },
   image_text: (d) => {
-    str(d.title, { field: "Title", required: true, maxLen: 150 });
-    str(d.description, { field: "Description", required: true, maxLen: 3000 });
-    url(d.image, { field: "Image", required: true });
-    if (!["left", "right"].includes(d.imagePosition)) {
+    str(d.title, { field: "Title", maxLen: 150 });
+    str(d.description, { field: "Description", maxLen: 3000 });
+    url(d.image, { field: "Image" });
+    if (d.imagePosition !== undefined && !["left", "right"].includes(d.imagePosition)) {
       throw new Error("Image Position must be 'left' or 'right'");
     }
   },
   gallery: (d) => {
-    if (!Array.isArray(d.images) || d.images.length === 0) {
-      throw new Error("At least one image is required");
+    if (d.images !== undefined) {
+      if (!Array.isArray(d.images)) throw new Error("Images must be a list");
+      if (d.images.length > 30) throw new Error("Maximum 30 images per gallery");
+      d.images.forEach((img, i) => url(img, { field: `Image ${i + 1}` }));
     }
-    if (d.images.length > 30) throw new Error("Maximum 30 images per gallery");
-    d.images.forEach((img, i) => url(img, { field: `Image ${i + 1}`, required: true }));
   },
   testimonials: (d) => {
-    if (!Array.isArray(d.items) || d.items.length === 0) {
-      throw new Error("At least one testimonial is required");
+    str(d.title, { field: "Section Title", maxLen: 150 });
+    if (d.items !== undefined) {
+      if (!Array.isArray(d.items)) throw new Error("Testimonials must be a list");
+      if (d.items.length > 50) throw new Error("Maximum 50 testimonials");
+      d.items.forEach((item, i) => {
+        str(item.name, { field: `Testimonial ${i + 1}: Student Name`, maxLen: 100 });
+        str(item.title, { field: `Testimonial ${i + 1}: Title`, maxLen: 120 });
+        str(item.review, { field: `Testimonial ${i + 1}: Review`, maxLen: 1000 });
+        url(item.photo, { field: `Testimonial ${i + 1}: Photo` });
+        if (item.points !== undefined) {
+          if (!Array.isArray(item.points)) throw new Error(`Testimonial ${i + 1}: Points must be a list`);
+          if (item.points.length > 10) throw new Error(`Testimonial ${i + 1}: maximum 10 points`);
+          item.points.forEach((point, j) => str(point, { field: `Testimonial ${i + 1}, Point ${j + 1}`, maxLen: 150 }));
+        }
+      });
     }
-    if (d.items.length > 50) throw new Error("Maximum 50 testimonials");
-    d.items.forEach((item, i) => {
-      str(item.name, { field: `Testimonial ${i + 1}: Student Name`, required: true, maxLen: 100 });
-      str(item.review, { field: `Testimonial ${i + 1}: Review`, required: true, maxLen: 1000 });
-      url(item.photo, { field: `Testimonial ${i + 1}: Photo` });
-    });
   },
   faq: (d) => {
-    if (!Array.isArray(d.items) || d.items.length === 0) {
-      throw new Error("At least one FAQ is required");
+    if (d.items !== undefined) {
+      if (!Array.isArray(d.items)) throw new Error("FAQs must be a list");
+      if (d.items.length > 50) throw new Error("Maximum 50 FAQs");
+      d.items.forEach((item, i) => {
+        str(item.question, { field: `FAQ ${i + 1}: Question`, maxLen: 300 });
+        str(item.answer, { field: `FAQ ${i + 1}: Answer`, maxLen: 2000 });
+      });
     }
-    if (d.items.length > 50) throw new Error("Maximum 50 FAQs");
-    d.items.forEach((item, i) => {
-      str(item.question, { field: `FAQ ${i + 1}: Question`, required: true, maxLen: 300 });
-      str(item.answer, { field: `FAQ ${i + 1}: Answer`, required: true, maxLen: 2000 });
-    });
   },
   video: (d) => {
     str(d.title, { field: "Title", maxLen: 150 });
-    url(d.videoUrl, { field: "Video URL", required: true });
+    url(d.videoUrl, { field: "Video URL" });
   },
   cta: (d) => {
-    str(d.heading, { field: "Heading", required: true, maxLen: 150 });
+    str(d.heading, { field: "Heading", maxLen: 150 });
     str(d.description, { field: "Description", maxLen: 500 });
-    str(d.buttonText, { field: "Button Text", maxLen: 60 });
-    url(d.buttonLink, { field: "Button Link" });
+    buttons(d);
   },
   contact: (d) => {
     str(d.title, { field: "Title", maxLen: 100 });
     str(d.phone, { field: "Phone", maxLen: 30 });
     str(d.email, { field: "Email", maxLen: 150 });
     str(d.address, { field: "Address", maxLen: 300 });
+  },
+  // Generic data table -- e.g. fee structure, batch timings. Fixed
+  // column-headings + row-of-cells shape, every cell a plain string (same
+  // "no free-text HTML field" rule as every other type above) -- this is
+  // the safe replacement for the old raw-HTML "Pages" module's tables.
+  table: (d) => {
+    str(d.title, { field: "Title", maxLen: 150 });
+    let columnCount = 0;
+    if (d.columns !== undefined) {
+      if (!Array.isArray(d.columns)) throw new Error("Columns must be a list");
+      if (d.columns.length > 6) throw new Error("Maximum 6 columns");
+      d.columns.forEach((col, i) => str(col, { field: `Column ${i + 1} heading`, maxLen: 60 }));
+      columnCount = d.columns.length;
+    }
+    if (d.rows !== undefined) {
+      if (!Array.isArray(d.rows)) throw new Error("Rows must be a list");
+      if (d.rows.length > 40) throw new Error("Maximum 40 rows");
+      d.rows.forEach((row, i) => {
+        if (!Array.isArray(row) || row.length !== columnCount) {
+          throw new Error(`Row ${i + 1} must have exactly ${columnCount} cell(s), matching the columns`);
+        }
+        row.forEach((cell, j) => str(cell, { field: `Row ${i + 1}, Column ${j + 1}`, maxLen: 200 }));
+      });
+    }
+  },
+  // Icon-card grid -- e.g. course categories, features, services. Each
+  // card is a Font Awesome icon class (validated against a strict
+  // "fa-word-word" pattern, never rendered as HTML -- see renderCards-
+  // Section's use of `className =`, not innerHTML) + a title + a short
+  // list of plain-text lines.
+  cards: (d) => {
+    str(d.title, { field: "Title", maxLen: 150 });
+    str(d.subtitle, { field: "Subtitle", maxLen: 250 });
+    if (d.items !== undefined) {
+      if (!Array.isArray(d.items)) throw new Error("Cards must be a list");
+      if (d.items.length > 12) throw new Error("Maximum 12 cards");
+      d.items.forEach((item, i) => {
+        if (item.icon) {
+          str(item.icon, { field: `Card ${i + 1}: Icon`, maxLen: 40 });
+          if (!/^fa-[a-z0-9-]+$/i.test(item.icon)) {
+            throw new Error(`Card ${i + 1}: Icon must be a Font Awesome class like "fa-school"`);
+          }
+        }
+        str(item.title, { field: `Card ${i + 1}: Title`, maxLen: 80 });
+        str(item.description, { field: `Card ${i + 1}: Description`, maxLen: 600 });
+        str(item.subtitle, { field: `Card ${i + 1}: Subtitle`, maxLen: 120 });
+        if (item.lines !== undefined) {
+          if (!Array.isArray(item.lines)) throw new Error(`Card ${i + 1}: Lines must be a list`);
+          if (item.lines.length > 10) throw new Error(`Card ${i + 1}: maximum 10 lines`);
+          item.lines.forEach((line, j) => str(line, { field: `Card ${i + 1}, Line ${j + 1}`, maxLen: 100 }));
+        }
+        if (item.showDivider !== undefined && typeof item.showDivider !== "boolean") {
+          throw new Error(`Card ${i + 1}: Show divider must be true or false`);
+        }
+        buttons(item, { max: 4 });
+      });
+    }
+    buttons(d);
   },
 };
 
@@ -532,9 +648,16 @@ const validators = {
   // ── Public website enquiry form (index.html's "Quick Enquiry") ────────
   submitPublicEnquiry: [
     body("name").trim().notEmpty().withMessage("Name is required").isLength({ min: 2, max: 100 }),
+    // parentName/school added for the Contact page's enquiry form (multi-
+    // page transformation) — both optional, same length caps as the
+    // equivalent fields on submitPublicAdmission below, so this stays the
+    // lightweight, low-friction form (no OTP, no required parent/school)
+    // while still letting the Contact page collect them when given.
+    body("parentName").optional({ checkFalsy: true }).trim().isLength({ max: 100 }).withMessage("Parent's name is too long"),
     body("phone").trim().notEmpty().withMessage("Mobile number is required").matches(/^[0-9+\-\s()]{10,15}$/).withMessage("Enter a valid mobile number"),
     body("email").optional({ checkFalsy: true }).trim().isEmail().withMessage("Enter a valid email").normalizeEmail(),
     body("interestedClass").optional().trim().isLength({ max: 60 }),
+    body("school").optional({ checkFalsy: true }).trim().isLength({ max: 150 }).withMessage("School name is too long"),
     body("enquiryType").optional().trim().isLength({ max: 60 }),
     body("message").optional().trim().isLength({ max: 1000 }),
   ],
@@ -773,7 +896,7 @@ const validators = {
   createSection: [
     body("type").trim().notEmpty().isIn([
       "hero", "text", "image", "image_text", "gallery",
-      "testimonials", "faq", "video", "cta", "contact",
+      "testimonials", "faq", "video", "cta", "contact", "table", "cards",
     ]).withMessage("Invalid section type"),
     body("data").custom((data, { req }) => validateSectionData(req.body.type, data)),
     body("page")
@@ -787,7 +910,7 @@ const validators = {
   updateSection: [
     body("type").optional().trim().isIn([
       "hero", "text", "image", "image_text", "gallery",
-      "testimonials", "faq", "video", "cta", "contact",
+      "testimonials", "faq", "video", "cta", "contact", "table", "cards",
     ]).withMessage("Invalid section type"),
     // On update, `type` may be omitted (editing content only) — validated
     // against the existing document's type by the route handler itself
@@ -815,6 +938,82 @@ const validators = {
 
   updateSectionStatus: [
     body("isActive").isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  // ── Footer Management: Social Links ─────────────────────────────────────
+  // Admin -> Footer Management -> Social Links. See
+  // routes/admin/social-links.js and config/socialPlatforms.js (the fixed
+  // platform list this validates against).
+  createSocialLink: [
+    body("platform").trim().notEmpty().withMessage("Platform is required")
+      .isIn(SOCIAL_PLATFORMS).withMessage("Unsupported platform"),
+    body("url").trim().notEmpty().withMessage("URL is required").isLength({ max: 300 }).custom(isSafeUrl),
+    body("icon").optional().trim().isLength({ max: 60 }),
+    body("order").optional().isInt({ min: 0, max: 999 }).withMessage("Order must be 0–999").toInt(),
+    body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  updateSocialLink: [
+    body("platform").optional().trim().isIn(SOCIAL_PLATFORMS).withMessage("Unsupported platform"),
+    body("url").optional().trim().isLength({ min: 1, max: 300 }).custom(isSafeUrl),
+    body("icon").optional().trim().isLength({ max: 60 }),
+    body("order").optional().isInt({ min: 0, max: 999 }).withMessage("Order must be 0–999").toInt(),
+    body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  reorderSocialLinks: [
+    body("orderedIds").isArray({ min: 1 }).withMessage("orderedIds must be a non-empty array"),
+    body("orderedIds.*").isString().trim().notEmpty().withMessage("Each id must be a non-empty string"),
+  ],
+
+  updateSocialLinkStatus: [
+    body("isActive").isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  // ── Footer Management: Quick Links / Student Resources ──────────────────
+  // Both footer nav columns share one collection ('footerLinks'), scoped
+  // by `column`. See routes/admin/footer-links.js.
+  createFooterLink: [
+    body("column").trim().notEmpty().withMessage("Column is required")
+      .isIn(FOOTER_LINK_COLUMNS).withMessage("Column must be quick_links or student_resources"),
+    body("label").trim().notEmpty().withMessage("Label is required").isLength({ max: 80 }),
+    body("url").trim().notEmpty().withMessage("URL is required").isLength({ max: 300 }).custom(isSafeUrl),
+    body("order").optional().isInt({ min: 0, max: 999 }).withMessage("Order must be 0–999").toInt(),
+    body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  updateFooterLink: [
+    body("column").optional().trim().isIn(FOOTER_LINK_COLUMNS).withMessage("Column must be quick_links or student_resources"),
+    body("label").optional().trim().isLength({ min: 1, max: 80 }),
+    body("url").optional().trim().isLength({ min: 1, max: 300 }).custom(isSafeUrl),
+    body("order").optional().isInt({ min: 0, max: 999 }).withMessage("Order must be 0–999").toInt(),
+    body("isActive").optional().isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  reorderFooterLinks: [
+    body("orderedIds").isArray({ min: 1 }).withMessage("orderedIds must be a non-empty array"),
+    body("orderedIds.*").isString().trim().notEmpty().withMessage("Each id must be a non-empty string"),
+  ],
+
+  updateFooterLinkStatus: [
+    body("isActive").isBoolean().withMessage("isActive must be a boolean"),
+  ],
+
+  // ── Footer Management: About / Contact / Bottom Bar settings ────────────
+  // Singleton record — see services/footerSettings.js. Every field is
+  // optional here since PUT accepts a partial patch (only the section
+  // being edited in the admin UI at a time).
+  updateFooterSettings: [
+    body("about.title").optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+    body("about.content").optional({ checkFalsy: true }).trim().isLength({ max: 1000 }),
+    body("contact.phone").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
+    body("contact.whatsapp").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
+    body("contact.email").optional({ checkFalsy: true }).trim().isEmail().withMessage("Enter a valid email address"),
+    body("contact.address").optional({ checkFalsy: true }).trim().isLength({ max: 500 }),
+    body("contact.workingHours").optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
+    body("bottomBar.copyrightText").optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
+    body("bottomBar.developedByText").optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
+    body("bottomBar.footerNote").optional({ checkFalsy: true }).trim().isLength({ max: 300 }),
   ],
 };
 

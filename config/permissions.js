@@ -90,6 +90,12 @@ const ROLE_PERMISSIONS = {
     'categories:*',
     // Website Builder — homepage section library (Admin -> Website Builder).
     'website_builder:*',
+    // Footer Management — social links, Quick Links / Student Resources
+    // nav columns, and the About/Contact/Bottom-Bar settings (Admin ->
+    // Footer Management). Same trust level as categories/website_builder:
+    // changes what every visitor sees on the public site, not financial/
+    // student-record data.
+    'footer:*',
   ],
 
   // Runs classes and tests. No visibility into money or admissions

@@ -3,39 +3,70 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chawla Classes</title>
-<meta name="description" content="Chawla Classes — Uttam Nagar's trusted coaching institute since 2002.">
+
+<title>About Chawla Classes | Coaching Institute in Uttam Nagar Since 2002</title>
+<meta name="description" content="Learn about Chawla Classes — our story, mission, vision, leadership, faculty, infrastructure and achievements as a trusted coaching institute in Uttam Nagar, Delhi.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://chawlaclasses.in/about.html">
+<meta property="og:title" content="About Chawla Classes | Uttam Nagar, Delhi">
+<meta property="og:description" content="Our story, mission, vision, leadership and achievements — Chawla Classes, Uttam Nagar.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://chawlaclasses.in/about.html">
+<meta property="og:site_name" content="Chawla Classes">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://chawlaclasses.in/"},
+    {"@type":"ListItem","position":2,"name":"About","item":"https://chawlaclasses.in/about.html"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"EducationalOrganization",
+  "name":"Chawla Classes",
+  "url":"https://chawlaclasses.in/",
+  "logo":"https://chawlaclasses.in/images/logo.png",
+  "foundingDate":"2002",
+  "address":{
+    "@type":"PostalAddress",
+    "streetAddress":"Shop 72, Hastsal Road, Opp. Sabji Mandi, Near Metro Pillar 657",
+    "addressLocality":"Uttam Nagar",
+    "addressRegion":"Delhi",
+    "addressCountry":"IN"
+  },
+  "telephone":"+91-9717914003"
+}
+</script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
     /*
-     * ONE shared shell for every standalone page built with the Website
-     * Builder (Admin -> Website Builder, any section with `page` other
-     * than "home"). app.js's `GET /page/:slug` route sends this same file
-     * regardless of slug; the script at the bottom reads the slug from
-     * the URL and renders that page's sections via
-     * /js/website-sections-renderer.js (the exact same renderer used on
-     * the homepage), so a brand new page never needs a new .html file or
-     * any code -- an admin builds it entirely from Website Builder forms.
-     *
-     * Header/nav/mobile-drawer/footer below are copied verbatim from
-     * index.html (same markup, same classes, same style.css rules, same
-     * behavior) so every Website Builder page automatically looks and
-     * acts exactly like the homepage's chrome -- an admin never adds a
-     * logo/nav/footer per page. If index.html's header or footer content
-     * changes, mirror the change here too (this file intentionally
-     * doesn't fetch index.html at runtime to build these, to avoid an
-     * extra round-trip + layout flash on every page load).
+     * This page's content (Institute Story, History, Mission, Vision,
+     * Leadership, Infrastructure, Achievements) is authored entirely
+     * through Admin -> Website Builder (page: "about"), NOT hardcoded
+     * here, per the "Website Builder First" requirement -- an admin can
+     * add/edit/reorder any of it without a code change. This file only
+     * provides: unique per-page SEO (title/meta/canonical/OG/JSON-LD/
+     * breadcrumb, which the shared /page/:slug shell can't give each
+     * page since it's generic), the page-hero banner, and the shared
+     * site chrome (identical to index.html/site-page.html).
      */
+    .page-hero { background: linear-gradient(135deg, #0b1f3a, #14335e); color: #fff; padding: 90px 0 50px; text-align: center; }
+    .page-hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+    .page-hero p { font-size: 15.5px; opacity: 0.9; max-width: 640px; margin: 0 auto; }
     #loadingState, #emptyState { text-align: center; color: #6b7280; padding: 80px 24px; }
     #emptyState { display: none; }
 </style>
 </head>
 <body>
 
-<!-- NAVBAR (copied from index.html -- see the <style> comment above) -->
+<!-- NAVBAR (identical to index.html / site-page.html) -->
 <header>
   <nav class="navbar">
     <div class="logo-area">
@@ -52,7 +83,7 @@
 
     <ul class="nav-links" id="navLinks">
       <li class="cat-nav-item"><a href="/#home">Home</a></li>
-      <li class="cat-nav-item"><a href="/about.html">About</a></li>
+      <li class="cat-nav-item"><a href="/about.html" class="nav-active">About</a></li>
       <li class="cat-nav-item"><a href="/courses.html">Courses</a></li>
       <li class="cat-nav-item"><a href="/results.html">Results</a></li>
       <li class="cat-nav-item"><a href="/reviews.html">Reviews</a></li>
@@ -74,7 +105,7 @@
   </nav>
 </header>
 
-<!-- MOBILE DRAWER (copied from index.html) -->
+<!-- MOBILE DRAWER (identical to index.html / site-page.html) -->
 <div class="mobile-overlay" id="mobileOverlay"></div>
 <div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation Menu">
   <div class="drawer-header">
@@ -89,7 +120,7 @@
   </div>
   <ul class="drawer-nav" id="drawerNav">
     <li class="cat-nav-item"><a href="/#home"><i class="fas fa-home"></i> Home <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/about.html"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/about.html" class="active"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/courses.html"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/results.html"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/reviews.html"><i class="fas fa-star"></i> Reviews <i class="fas fa-chevron-right arrow"></i></a></li>
@@ -123,16 +154,26 @@
   </div>
 </div>
 
+<section class="page-hero">
+    <div class="wrap">
+        <nav aria-label="Breadcrumb" style="font-size:13px;opacity:0.85;margin-bottom:14px;">
+          <a href="/" style="color:#fff;">Home</a> <span style="opacity:0.6;">/</span> <span>About</span>
+        </nav>
+        <h1>About Chawla Classes</h1>
+        <p>Our story, mission, vision, leadership, faculty, infrastructure and achievements — Uttam Nagar's trusted coaching institute since 2002.</p>
+    </div>
+</section>
+
 <main>
     <div id="loadingState">Loading…</div>
     <div id="emptyState">
         <i class="fas fa-circle-info" style="font-size:26px;color:#9ca3af;margin-bottom:10px;display:block;"></i>
-        This page isn't set up yet.<br><a href="/" style="color:#0b1f3a;text-decoration:underline;">Return to homepage</a>
+        This page isn't set up yet in Website Builder.<br><a href="/" style="color:#0b1f3a;text-decoration:underline;">Return to homepage</a>
     </div>
     <div id="pageSections"></div>
 </main>
 
-<!-- FOOTER (copied from index.html) -->
+<!-- FOOTER (identical to index.html / site-page.html) -->
 <footer>
   <div class="footer-container" id="footerContainer">
     <div class="footer-box" id="footerAboutBox">
@@ -183,7 +224,7 @@ B.Com | BBA
 <script src="/js/website-sections-renderer.js"></script>
 <script>
 
-    // ===== Mobile Drawer (copied from index.html) =====
+    // ===== Mobile Drawer (identical to index.html / site-page.html) =====
     const menuToggle    = document.getElementById("menuToggle");
     const mobileDrawer  = document.getElementById("mobileDrawer");
     const mobileOverlay = document.getElementById("mobileOverlay");
@@ -204,7 +245,7 @@ B.Com | BBA
     });
     document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
 
-    // ===== Login dropdown (copied from index.html) =====
+    // ===== Login dropdown =====
     (function() {
         const dropdown = document.querySelector(".nav-login-dropdown");
         const toggle = dropdown?.querySelector(".login-toggle");
@@ -222,7 +263,7 @@ B.Com | BBA
         });
     })();
 
-    // ===== Scroll-to-top button (copied from index.html) =====
+    // ===== Scroll-to-top button =====
     const scrollTopBtn = document.getElementById("scrollTop");
     if (scrollTopBtn) {
         window.addEventListener("scroll", () => {
@@ -231,9 +272,10 @@ B.Com | BBA
         scrollTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
     }
 
-    // ===== Navbar categories (Admin -> Categories) -- same dynamic nav as
-    // index.html's loadNavCategories, so a page built here shows the exact
-    // same navbar items as the homepage, in the same order. =====
+    // ===== Navbar categories (Admin -> Categories) — this page's own
+    // nav-active/active state for this page is already set in the markup
+    // above, so if /api/categories is empty this still shows correctly;
+    // if categories exist, this rebuilds from them like every other page. =====
     async function loadNavCategories() {
         try {
             const res = await fetch("/api/categories");
@@ -244,10 +286,6 @@ B.Com | BBA
             renderNavCategoriesInto(document.getElementById("drawerNav"), categories, true);
         } catch (err) { /* keep the static fallback nav above */ }
     }
-    // Which admin-configured category (if any) points at THIS standalone
-    // page (e.g. "/page/gallery"), so the navbar highlights it here the
-    // same way "Home" highlights on the homepage, instead of nothing
-    // lighting up at all.
     function findActiveCategoryIndex(categories) {
         const herePath = window.location.pathname.replace(/\/$/, "") || "/";
         return categories.findIndex(c => {
@@ -268,10 +306,6 @@ B.Com | BBA
             const li = document.createElement("li");
             li.className = "cat-nav-item";
             const a = document.createElement("a");
-            // Section anchors ("#home", "#about", ...) point at the
-            // HOMEPAGE's sections, not this page -- so on a standalone
-            // page they need the leading "/" to navigate back there
-            // first, same as the static fallback links above.
             a.href = c.url.startsWith("#") ? "/" + c.url : c.url;
             if (idx === activeIdx) a.className = isDrawer ? "active" : "nav-active";
             if (isDrawer) {
@@ -297,19 +331,11 @@ B.Com | BBA
     }
     loadNavCategories();
 
-    // ===== This page's own Website Builder sections =====
-    // "/page/gallery" -> "gallery". Matches the :slug param app.js's
-    // GET /page/:slug route captured to decide which shell to send here.
-    const slug = window.location.pathname.replace(/^\/page\//, '').replace(/\/$/, '');
-
+    // ===== This page's own Website Builder sections (page: "about") =====
     async function init() {
         const container = document.getElementById('pageSections');
         const loading = document.getElementById('loadingState');
-        if (!slug) { loading.style.display = 'none'; document.getElementById('emptyState').style.display = 'block'; return; }
-
-        document.title = `${slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} | Chawla Classes`;
-
-        const count = await renderWebsiteSectionsInto(container, slug);
+        const count = await renderWebsiteSectionsInto(container, "about");
         loading.style.display = 'none';
         if (!count) document.getElementById('emptyState').style.display = 'block';
     }

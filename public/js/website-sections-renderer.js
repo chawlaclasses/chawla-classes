@@ -22,6 +22,7 @@ const WEBSITE_SECTION_RENDERERS = {
   image_text: renderImageTextSection, gallery: renderGallerySection,
   testimonials: renderTestimonialsSection, faq: renderFaqSection,
   video: renderVideoSection, cta: renderCtaSection, contact: renderContactSection,
+  table: renderTableSection, cards: renderCardsSection,
 };
 
 // Fetches sections for `page` (default "home", matching every section
@@ -95,12 +96,33 @@ function sectionTitle(text) {
   return h2;
 }
 
-function ctaLink(text, href) {
+function ctaLink(text, href, icon) {
   const a = document.createElement("a");
   a.className = "hero-btn-primary";
   a.textContent = text;
   a.href = href || "#";
+  if (icon) {
+    const i = document.createElement("i");
+    i.className = "fas " + icon;
+    a.prepend(i);
+  }
   return a;
+}
+
+// Normalizes a section's buttons: new `buttons: [{text, link}]` array, or
+// the older singular buttonText/buttonLink shape from before multi-button
+// support existed. Returns a wrapper element with every valid button, or
+// null if there are none.
+function renderButtonsWrap(d, wrapClass) {
+  const list = Array.isArray(d.buttons) && d.buttons.length
+    ? d.buttons
+    : (d.buttonText && d.buttonLink ? [{ text: d.buttonText, link: d.buttonLink }] : []);
+  const valid = list.filter((b) => b.text && b.link);
+  if (!valid.length) return null;
+  const wrap = document.createElement("div");
+  wrap.className = wrapClass;
+  valid.forEach((b) => wrap.appendChild(ctaLink(b.text, b.link, b.icon)));
+  return wrap;
 }
 
 function renderHeroSection(d) {
@@ -120,7 +142,8 @@ function renderHeroSection(d) {
     p.textContent = d.subHeading;
     section.appendChild(p);
   }
-  if (d.buttonText && d.buttonLink) section.appendChild(ctaLink(d.buttonText, d.buttonLink));
+  const btnWrap = renderButtonsWrap(d, "ws-buttons-wrap");
+  if (btnWrap) section.appendChild(btnWrap);
   return section;
 }
 
@@ -135,6 +158,23 @@ function renderTextSection(d) {
     p.textContent = d.description;
     section.appendChild(p);
   }
+  if (Array.isArray(d.points) && d.points.length) {
+    const ul = document.createElement("ul");
+    ul.className = "ws-text-points";
+    d.points.forEach((point) => {
+      const li = document.createElement("li");
+      const check = document.createElement("i");
+      check.className = "fas fa-check-circle";
+      const span = document.createElement("span");
+      span.textContent = point;
+      li.appendChild(check);
+      li.appendChild(span);
+      ul.appendChild(li);
+    });
+    section.appendChild(ul);
+  }
+  const btnWrap = renderButtonsWrap(d, "ws-text-btn-wrap ws-buttons-wrap");
+  if (btnWrap) section.appendChild(btnWrap);
   return section;
 }
 
@@ -278,24 +318,55 @@ function renderTestimonialsSection(d) {
   if (!Array.isArray(d.items) || d.items.length === 0) return null;
   const section = document.createElement("section");
   section.className = "admission-section";
-  section.appendChild(sectionTitle("What Our Students Say"));
+  section.appendChild(sectionTitle(d.title || "What Our Students Say"));
   const grid = document.createElement("div");
   grid.className = "ws-testimonial-grid";
   d.items.forEach((item) => {
     const card = document.createElement("div");
     card.className = "ws-testimonial-card";
     if (item.photo) {
+      const avatarWrap = document.createElement("div");
+      avatarWrap.className = "ws-testimonial-avatar-wrap";
       const img = document.createElement("img");
       img.src = item.photo;
       img.alt = item.name || "";
-      card.appendChild(img);
+      avatarWrap.appendChild(img);
+      card.appendChild(avatarWrap);
     }
     const name = document.createElement("strong");
+    name.className = "ws-testimonial-name";
     name.textContent = item.name || "";
-    const review = document.createElement("p");
-    review.textContent = item.review || "";
     card.appendChild(name);
-    card.appendChild(review);
+    if (item.title) {
+      const title = document.createElement("span");
+      title.className = "ws-testimonial-title";
+      title.textContent = item.title;
+      card.appendChild(title);
+    }
+    const divider = document.createElement("span");
+    divider.className = "ws-testimonial-divider";
+    card.appendChild(divider);
+    if (item.review) {
+      const quote = document.createElement("i");
+      quote.className = "fas fa-quote-left ws-testimonial-quote-icon";
+      card.appendChild(quote);
+      const review = document.createElement("p");
+      review.className = "ws-testimonial-review";
+      review.textContent = item.review;
+      card.appendChild(review);
+    }
+    if (Array.isArray(item.points) && item.points.length) {
+      const ul = document.createElement("ul");
+      ul.className = "ws-testimonial-points";
+      item.points.forEach((point) => {
+        const li = document.createElement("li");
+        const span = document.createElement("span");
+        span.textContent = point;
+        li.appendChild(span);
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+    }
     grid.appendChild(card);
   });
   section.appendChild(grid);
@@ -315,6 +386,7 @@ function renderFaqSection(d) {
     const summary = document.createElement("summary");
     summary.textContent = item.question || "";
     const answer = document.createElement("p");
+    answer.className = "ws-faq-answer";
     answer.textContent = item.answer || "";
     details.appendChild(summary);
     details.appendChild(answer);
@@ -368,8 +440,9 @@ function renderCtaSection(d) {
   const h2 = document.createElement("h2");
   h2.textContent = d.heading;
   section.appendChild(h2);
-  if (d.description) { const p = document.createElement("p"); p.textContent = d.description; section.appendChild(p); }
-  if (d.buttonText && d.buttonLink) section.appendChild(ctaLink(d.buttonText, d.buttonLink));
+  if (d.description) { const p = document.createElement("p"); p.className = "ws-cta-desc"; p.textContent = d.description; section.appendChild(p); }
+  const btnWrap = renderButtonsWrap(d, "ws-buttons-wrap");
+  if (btnWrap) section.appendChild(btnWrap);
   return section;
 }
 
@@ -393,5 +466,133 @@ function renderContactSection(d) {
     wrap.appendChild(row);
   });
   section.appendChild(wrap);
+  return section;
+}
+
+// Generic data table (e.g. fee structure, batch timings) -- built entirely
+// with createElement + textContent per the SECURITY NOTE at the top of
+// this file, same as every other renderer. `data.columns` is a flat array
+// of header strings, `data.rows` an array of arrays of cell strings, one
+// inner array per row, each the same length as `columns` (enforced by
+// utils/validators.js's `table` validator before this ever gets saved).
+function renderTableSection(d) {
+  if (!Array.isArray(d.columns) || d.columns.length === 0) return null;
+  if (!Array.isArray(d.rows) || d.rows.length === 0) return null;
+  const section = document.createElement("section");
+  section.className = "admission-section";
+  if (d.title) section.appendChild(sectionTitle(d.title));
+  const wrap = document.createElement("div");
+  wrap.className = "ws-table-wrap";
+  const table = document.createElement("table");
+  table.className = "ws-table";
+
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  d.columns.forEach((col) => {
+    const th = document.createElement("th");
+    th.textContent = col;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  d.rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    row.forEach((cell) => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  wrap.appendChild(table);
+  section.appendChild(wrap);
+  return section;
+}
+
+// Icon-card grid (e.g. course categories, features). `data.items` is an
+// array of { icon, title, lines }. The icon is set via the `className`
+// *property* (never innerHTML/setAttribute with a template string), so
+// even though it's a Font Awesome class name chosen by the admin, there is
+// no way for it to be parsed as markup -- same DOM-only guarantee as
+// every other renderer in this file.
+function renderCardsSection(d) {
+  if (!Array.isArray(d.items) || d.items.length === 0) return null;
+  const section = document.createElement("section");
+  section.className = "admission-section";
+  if (d.title) section.appendChild(sectionTitle(d.title));
+  if (d.subtitle) {
+    const sub = document.createElement("p");
+    sub.className = "ws-cards-subtitle";
+    sub.textContent = d.subtitle;
+    section.appendChild(sub);
+  }
+  const grid = document.createElement("div");
+  grid.className = "ws-icon-cards-grid";
+  d.items.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "ws-icon-card";
+    const iconWrap = document.createElement("div");
+    iconWrap.className = "ws-icon-card-icon";
+    const i = document.createElement("i");
+    i.className = "fas " + (item.icon || "fa-circle");
+    iconWrap.appendChild(i);
+    card.appendChild(iconWrap);
+    const h3 = document.createElement("h3");
+    h3.textContent = item.title || "";
+    card.appendChild(h3);
+    if (item.subtitle) {
+      const subtitle = document.createElement("p");
+      subtitle.className = "ws-icon-card-subtitle";
+      subtitle.textContent = item.subtitle;
+      card.appendChild(subtitle);
+    }
+    if (item.description) {
+      const desc = document.createElement("p");
+      desc.className = "ws-icon-card-description";
+      desc.textContent = item.description;
+      card.appendChild(desc);
+    }
+    const showDivider = item.showDivider !== false; // default true -- keeps old saved cards (no field yet) looking the same
+    const lines = item.lines || [];
+    if (lines.length) {
+      if (showDivider) card.appendChild(document.createElement("hr")).className = "ws-icon-card-divider";
+      const ul = document.createElement("ul");
+      ul.className = "ws-icon-card-list";
+      lines.forEach((line) => {
+        const li = document.createElement("li");
+        const check = document.createElement("i");
+        check.className = "fas fa-check-circle";
+        const span = document.createElement("span");
+        span.textContent = line;
+        li.appendChild(check);
+        li.appendChild(span);
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+    }
+    const cardButtons = Array.isArray(item.buttons) && item.buttons.length
+      ? item.buttons
+      : (item.buttonText && item.buttonLink ? [{ text: item.buttonText, link: item.buttonLink }] : []);
+    const validCardButtons = cardButtons.filter((b) => b.text && b.link);
+    if (validCardButtons.length) {
+      if (showDivider) card.appendChild(document.createElement("hr")).className = "ws-icon-card-divider";
+      const btnWrap = document.createElement("div");
+      btnWrap.className = "ws-icon-card-btn-wrap";
+      validCardButtons.forEach((b) => {
+        const btn = ctaLink(b.text, b.link, b.icon || "fa-paper-plane");
+        btn.classList.add("ws-icon-card-btn");
+        btnWrap.appendChild(btn);
+      });
+      card.appendChild(btnWrap);
+    }
+    grid.appendChild(card);
+  });
+  section.appendChild(grid);
+  const sectionBtnWrap = renderButtonsWrap(d, "ws-buttons-wrap ws-cards-btn-wrap");
+  if (sectionBtnWrap) section.appendChild(sectionBtnWrap);
   return section;
 }

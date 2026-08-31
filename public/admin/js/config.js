@@ -28,7 +28,7 @@ document.getElementById('adminAvatar').textContent = adminName.charAt(0).toUpper
 const adminRole = localStorage.getItem('adminRole') || 'admin';
 const ROLE_PERMISSIONS = {
     super_admin: ['*'],
-    admin: ['dashboard:view','classes:*','subjects:*','series:*','tests:*','questions:*','homework:*','doubts:*','students:*','attendance:*','enquiries:*','admissions:*','fees:*','communication:*','ai:*','settings:view','settings:edit','audit:view','staff:view','staff:create','staff:edit','staff:deactivate','recruitment:*','marketing:*','reviews:*','categories:*','website_builder:*'],
+    admin: ['dashboard:view','classes:*','subjects:*','series:*','tests:*','questions:*','homework:*','doubts:*','students:*','attendance:*','enquiries:*','admissions:*','fees:*','communication:*','ai:*','settings:view','settings:edit','audit:view','staff:view','staff:create','staff:edit','staff:deactivate','recruitment:*','marketing:*','reviews:*','categories:*','website_builder:*','footer:*'],
     teacher: ['dashboard:view','classes:view','subjects:view','series:view','tests:*','questions:*','homework:*','doubts:*','ai:*','attendance:*','students:view','students:notes'],
     reception: ['dashboard:view','enquiries:*','admissions:*','students:view','students:create','students:edit','classes:view','subjects:view','fees:view','fees:create','attendance:view'],
     accountant: ['dashboard:view','fees:*','students:view','classes:view'],

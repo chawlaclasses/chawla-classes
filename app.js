@@ -103,6 +103,7 @@ const publicEnquiryRoutes = require("./routes/publicEnquiry");
 const marketingPublicRoutes = require("./routes/marketing");
 const categoriesPublicRoutes = require("./routes/categories");
 const websiteSectionsPublicRoutes = require("./routes/website-sections");
+const footerPublicRoutes = require("./routes/footer");
 const reviewsPublicRoutes = require("./routes/reviews");
 const bookmarksRoutes = require("./routes/bookmarks");
 const practiceRoutes = require("./routes/practice");
@@ -471,6 +472,12 @@ app.set('trust proxy', 1);
   // Website Builder (GoDaddy-style section library). Admin CRUD is
   // separate (/api/admin/website-sections).
   app.use("/api/website-sections", websiteSectionsPublicRoutes);
+  // Public — no auth, read-only. Combined footer content (social links,
+  // Quick Links / Student Resources nav columns, About/Contact/Bottom-Bar
+  // settings) for public/js/footer.js, included on every public page.
+  // Admin CRUD is separate (/api/admin/social-links, /api/admin/footer-links,
+  // /api/admin/footer-settings).
+  app.use("/api/footer", footerPublicRoutes);
   // Public — no auth. index.html's "Student Feedback & Rating" form
   // (submission) + the "Student Reviews" section (approved-only read).
   // Admin moderation is separate (/api/admin/reviews).

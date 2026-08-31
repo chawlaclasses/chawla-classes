@@ -55,16 +55,13 @@
 
     <ul class="nav-links" id="navLinks">
       <li class="cat-nav-item"><a href="/#home">Home</a></li>
-      <li class="cat-nav-item"><a href="/#about">About</a></li>
-      <li class="cat-nav-item"><a href="/#courses">Courses</a></li>
-      <li class="cat-nav-item"><a href="/#faculty">Leadership</a></li>
-      <li class="cat-nav-item"><a href="/#results">Results</a></li>
-      <li class="cat-nav-item"><a href="/#fees">Fees &amp; Timings</a></li>
-      <li class="cat-nav-item"><a href="/#classes-overview">Classes</a></li>
-      <li class="cat-nav-item"><a href="/admission.html">Admission</a></li>
-      <li class="cat-nav-item"><a href="/careers.html">Careers</a></li>
-      <li class="cat-nav-item"><a href="/feedback.html">Feedback</a></li>
+      <li class="cat-nav-item"><a href="/about.html">About</a></li>
+      <li class="cat-nav-item"><a href="/courses.html">Courses</a></li>
+      <li class="cat-nav-item"><a href="/results.html">Results</a></li>
+      <li class="cat-nav-item"><a href="/reviews.html">Reviews</a></li>
+      <li class="cat-nav-item"><a href="/gallery.html">Gallery</a></li>
       <li class="cat-nav-item"><a href="/contact.html">Contact</a></li>
+      <li class="cat-nav-item"><a href="/admission.html">Admission</a></li>
       <li class="nav-login-dropdown">
         <a href="javascript:void(0)" class="login-toggle">
           <i class="fas fa-user-circle"></i> Login <i class="fas fa-chevron-down"></i>
@@ -94,16 +91,13 @@
   </div>
   <ul class="drawer-nav" id="drawerNav">
     <li class="cat-nav-item"><a href="/#home"><i class="fas fa-home"></i> Home <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/#about"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/#courses"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/#faculty"><i class="fas fa-users"></i> Leadership <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/#results"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/#fees"><i class="fas fa-clock"></i> Fees & Timings <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/#classes-overview"><i class="fas fa-layer-group"></i> Classes <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/admission.html"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/careers.html"><i class="fas fa-user-tie"></i> Careers <i class="fas fa-chevron-right arrow"></i></a></li>
-    <li class="cat-nav-item"><a href="/feedback.html"><i class="fas fa-star"></i> Feedback <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/about.html"><i class="fas fa-info-circle"></i> About <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/courses.html"><i class="fas fa-book-open"></i> Courses <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/results.html"><i class="fas fa-trophy"></i> Results <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/reviews.html"><i class="fas fa-star"></i> Reviews <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/gallery.html"><i class="fas fa-images"></i> Gallery <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="cat-nav-item"><a href="/contact.html"><i class="fas fa-map-marker-alt"></i> Contact <i class="fas fa-chevron-right arrow"></i></a></li>
+    <li class="cat-nav-item"><a href="/admission.html"><i class="fas fa-file-alt"></i> Admission <i class="fas fa-chevron-right arrow"></i></a></li>
     <li class="drawer-divider"></li>
     <li style="padding: 0 20px;">
       <a href="/student/login.html" style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.15);border-radius:8px;margin-bottom:8px;justify-content:center;color:#F5A623;">
@@ -173,47 +167,53 @@
 </section>
 
 <footer>
-  <div class="footer-container">
-    <div class="footer-box">
+  <div class="footer-container" id="footerContainer">
+    <div class="footer-box" id="footerAboutBox">
       <img src="/images/logo.png" alt="Chawla Classes Logo" class="footer-logo">
-      <h2>CHAWLA CLASSES</h2>
-      <p>Since 2002 | Excellence in Education</p>
-      <p>Classes 1st–12th | Commerce & Arts Specialists</p>
-      <p>B.Com | BBA | B.A. | CUET | SSC | Olympiad | KVPY</p>
-      <p class="footer-tagline">"Step Towards Success"</p>
+      <h2 id="footerAboutTitle">CHAWLA CLASSES</h2>
+      <p class="footer-about-content" id="footerAboutContent">Since 2002 | Excellence in Education
+Classes 1st&ndash;12th | Commerce &amp; Arts Specialists
+B.Com | BBA
+&quot;Step Towards Success&quot;</p>
     </div>
-    <div class="footer-box">
+    <div class="footer-box" id="footerQuickLinksBox">
       <h3>Quick Links</h3>
-      <div class="footer-links-grid">
-        <a href="/#home">Home</a><a href="/#about">About</a><a href="/#courses">Courses</a>
-        <a href="/#faculty">Leadership</a><a href="/#results">Results</a>
-        <a href="/#fees">Fees &amp; Timings</a>
-        <a href="/#classes-overview">Classes</a>
-        <a href="/admission.html">Admission</a>
-        <a href="/careers.html">Careers</a>
-        <a href="/feedback.html">Feedback</a><a href="/contact.html">Contact</a><a href="/#faq">FAQ</a>
+      <div class="footer-links-grid" id="footerQuickLinksList">
+        <a href="/#home">Home</a><a href="/about.html">About Us</a><a href="/courses.html">Courses</a>
+        <a href="/results.html">Results</a><a href="/admission.html">Admission</a>
+        <a href="/contact.html">Contact</a>
       </div>
     </div>
-    <div class="footer-box">
+    <div class="footer-box" id="footerResourcesBox">
+      <h3>Student Resources</h3>
+      <div class="footer-links-grid" id="footerResourcesList">
+        <a href="/reviews.html">Reviews</a><a href="/feedback.html">Feedback</a>
+        <a href="/gallery.html">Gallery</a><a href="/careers.html">Careers</a>
+      </div>
+    </div>
+    <div class="footer-box" id="footerContactBox">
       <h3>Contact Info</h3>
-      <p><a href="tel:9210660809" style="color:#ddd;text-decoration:none;"><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9210660809</a></p>
-      <p><a href="tel:9717914003" style="color:#ddd;text-decoration:none;"><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9717914003</a></p>
-      <p><i class="fas fa-envelope" style="color:#ffc400;margin-right:6px;"></i> 4chawlaclasses@gmail.com</p>
-      <p><i class="fas fa-map-marker-alt" style="color:#ffc400;margin-right:6px;"></i> Shop 72, Hastsal Road, Opp. Sabji Mandi, Near Metro Pillar 657, Uttam Nagar, New Delhi - 110059</p>
+      <div id="footerContactDetails">
+        <p><a href="tel:9210660809" style="color:#ddd;text-decoration:none;"><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9210660809</a></p>
+        <p><a href="tel:9717914003" style="color:#ddd;text-decoration:none;"><i class="fas fa-phone" style="color:#ffc400;margin-right:6px;"></i> 9717914003</a></p>
+        <p><i class="fas fa-envelope" style="color:#ffc400;margin-right:6px;"></i> 4chawlaclasses@gmail.com</p>
+        <p><i class="fas fa-map-marker-alt" style="color:#ffc400;margin-right:6px;"></i> Shop 72, Hastsal Road, Opp. Sabji Mandi, Near Metro Pillar 657, Uttam Nagar, New Delhi - 110059</p>
+      </div>
       <a href="https://www.google.com/maps/place/Chawla+Classes/@28.6250389,77.0596209,17z" target="_blank" rel="noopener" class="map-link">
         <i class="fas fa-map-marker-alt"></i> View on Google Maps
       </a>
     </div>
   </div>
-  <div class="footer-bottom">&copy; <span id="yr"></span> Chawla Classes | All Rights Reserved</div>
+  <div class="footer-social" id="footerSocialLinks"></div>
+  <div class="footer-bottom" id="footerBottomBar">&copy; 2026 Chawla Classes. All Rights Reserved.</div>
 </footer>
+<script src="/js/footer.js" defer></script>
 
 <button class="scroll-top" id="scrollTop" aria-label="Scroll to top"><i class="fas fa-chevron-up"></i></button>
 <a href="tel:9717914003" class="call-floating-btn"><i class="fas fa-phone"></i></a>
 <a href="https://wa.me/919717914003" class="whatsapp-btn" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
 
 <script>
-document.getElementById('yr').textContent = new Date().getFullYear();
 
 // ===== Mobile Drawer (copied from index.html / feedback.html) =====
 const menuToggle    = document.getElementById("menuToggle");

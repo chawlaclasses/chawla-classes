@@ -47,7 +47,7 @@ const DUPLICATE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes — just long enough t
 
 router.post("/", createSubmissionRateLimiter(10), validators.submitPublicEnquiry, validate, (req, res) => {
   try {
-    const { name, phone, email, interestedClass, enquiryType, message } = req.body;
+    const { name, parentName, phone, email, interestedClass, school, enquiryType, message } = req.body;
     const trimmedPhone = (phone || "").trim();
 
     const recent = db
@@ -59,15 +59,25 @@ router.post("/", createSubmissionRateLimiter(10), validators.submitPublicEnquiry
       return res.status(200).json({ success: true, message: "Enquiry received. We'll get back to you shortly." });
     }
 
+    // parentName/school (Contact page fields, multi-page transformation)
+    // are stored as their own fields on the enquiry AND folded into notes
+    // — the notes line keeps them visible in the existing admin Enquiries
+    // list/detail view without requiring any admin UI changes, while the
+    // dedicated fields keep the data structured for anything that reads
+    // it directly later.
     const notesParts = [];
+    if (parentName) notesParts.push(`Parent: ${parentName}`);
+    if (school) notesParts.push(`School: ${school}`);
     if (enquiryType) notesParts.push(`Type: ${enquiryType}`);
     if (message) notesParts.push(message);
 
     const enquiry = db.insertOne("enquiries", {
       name: name.trim(),
+      parentName: (parentName || "").trim(),
       phone: trimmedPhone,
       email: (email || "").trim(),
       interestedClass: (interestedClass || "").trim(),
+      school: (school || "").trim(),
       source: "website",
       notes: notesParts.join(" — "),
       status: "new",

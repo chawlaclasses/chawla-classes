@@ -151,6 +151,14 @@ router.get("/approved", (req, res) => {
         rating: r.rating,
         feedback: r.feedback,
         isFeatured: !!r.isFeatured,
+        // Additive field only — nothing above changes. Exposed so a
+        // consumer of this same, unchanged endpoint (index.html's
+        // homepage preview) can select "latest 6" for itself without
+        // this endpoint's own sort/response shape changing for its
+        // existing consumer (public/reviews.html), which still gets
+        // featured-first ordering exactly as before and simply ignores
+        // this extra field.
+        createdAt: r.createdAt,
       }));
     res.json({ success: true, data: reviews });
   } catch (error) {
