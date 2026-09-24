@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
 const { requireApiStudent } = require('../middleware/apiAuth');
 const db = require('../services/jsonDb');
 const logger = require('../utils/logger');
@@ -1364,6 +1365,11 @@ router.get('/homework/submissions/:submissionId/download', requireApiStudent, as
         if (!submission || submission.studentId !== student._id) {
             return res.status(404).json({ success: false, message: 'Submission not found' });
         }
+        try {
+            db.insert('studentDownloads', { studentId: student._id, fileName: submission.originalName, fileType: 'doc', sourceModule: 'Homework' });
+        } catch (logErr) {
+            logger.error(`Failed to log homework submission download: ${logErr.message}`);
+        }
         if (submission.key) {
             return r2Service.streamToResponse(submission.key, res, { downloadName: submission.originalName });
         }
@@ -1508,6 +1514,11 @@ router.get('/fees/:id/receipt', requireApiStudent, (req, res) => {
             return res.status(400).json({ success: false, message: 'Receipt is only available once the fee is paid' });
         }
         const cls = student.classId ? db.findById('classes', student.classId) : null;
+        try {
+            db.insert('studentDownloads', { studentId: student._id, fileName: `Receipt-${fee._id}.pdf`, fileType: 'pdf', sourceModule: 'Fees' });
+        } catch (logErr) {
+            logger.error(`Failed to log fee receipt download: ${logErr.message}`);
+        }
         streamFeeReceipt(feeWithComputed(fee), { ...student, className: cls ? (cls.displayName || cls.name) : null }, res);
     } catch (error) {
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
@@ -1532,5 +1543,213 @@ router.get('/ai/learning-path', aiController.getLearningPath);
 router.get('/ai/chapter-analysis/:subject', aiController.getChapterAnalysis);
 router.get('/ai/predict-performance', aiController.predictPerformance);
 router.get('/ai/weak-topic-recommendations', aiController.getWeakTopicRecommendations);
+
+// ============================================================
+// Profile
+// ============================================================
+router.get('/profile', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const cls = student.classId ? db.findById('classes', student.classId) : null;
+        res.json({
+            success: true,
+            data: {
+                id: student._id,
+                name: student.name,
+                email: student.email,
+                class: cls ? cls.displayName : null,
+                photoUrl: student.photoUrl || null,
+                section: student.section || null,
+                rollNumber: student.rollNumber || null,
+                admissionNumber: student.admissionNumber || null,
+                contactPhone: student.contactPhone || student.phone || null,
+                address: student.address || null,
+                parentName: student.parentName || null,
+                parentPhone: student.parentPhone || null
+            }
+        });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.put('/profile', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const { contactPhone, address, parentName, parentPhone } = req.body;
+
+        const updates = {};
+        if (typeof contactPhone === 'string') updates.contactPhone = contactPhone;
+        if (typeof address === 'string') updates.address = address;
+        if (typeof parentName === 'string') updates.parentName = parentName;
+        if (typeof parentPhone === 'string') updates.parentPhone = parentPhone;
+
+        const updated = db.updateById('users', student._id, updates);
+        const cls = updated.classId ? db.findById('classes', updated.classId) : null;
+
+        res.json({
+            success: true,
+            data: {
+                id: updated._id,
+                name: updated.name,
+                email: updated.email,
+                class: cls ? cls.displayName : null,
+                photoUrl: updated.photoUrl || null,
+                section: updated.section || null,
+                rollNumber: updated.rollNumber || null,
+                admissionNumber: updated.admissionNumber || null,
+                contactPhone: updated.contactPhone || updated.phone || null,
+                address: updated.address || null,
+                parentName: updated.parentName || null,
+                parentPhone: updated.parentPhone || null
+            },
+            message: 'Profile updated'
+        });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
+// Change Password
+// ============================================================
+router.post('/change-password', requireApiStudent, async (req, res) => {
+    try {
+        const student = req.userData;
+        const { currentPassword, newPassword } = req.body;
+
+        if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+            return res.status(400).json({ success: false, message: 'Current and new password are required' });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+        }
+
+        const fullUser = db.findById('users', student._id);
+        const isValid = await bcrypt.compare(currentPassword, fullUser.password);
+        if (!isValid) {
+            return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+        }
+
+        const hashed = await bcrypt.hash(newPassword, 10);
+        db.updateById('users', student._id, { password: hashed });
+
+        res.json({ success: true, message: 'Password changed successfully' });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
+// Downloads (history)
+// ============================================================
+router.get('/downloads', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const items = db.find('studentDownloads', { studentId: student._id })
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .map(d => ({
+                id: d._id,
+                fileName: d.fileName,
+                fileType: d.fileType,
+                sizeLabel: d.sizeLabel || '',
+                downloadedAt: d.createdAt,
+                sourceModule: d.sourceModule,
+                fileUrl: d.fileUrl || null
+            }));
+        res.json({ success: true, data: items });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
+// Active Tests (flat, cross-subject — powers Test Dashboard's
+// "Active Tests" section without walking every subject -> series -> test)
+// ============================================================
+router.get('/tests/active', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        if (!student.classId) {
+            return res.json({ success: true, data: [] });
+        }
+
+        const seriesList = db.find('series', { classId: student.classId });
+        const now = new Date();
+        const activeTests = [];
+
+        for (const series of seriesList) {
+            const tests = db.find('tests', { seriesId: series._id, isPublished: true, isDeleted: false });
+            const subject = series.subjectId ? db.findById('subjects', series.subjectId) : null;
+
+            for (const test of tests) {
+                const attempts = db.find('studentAttempts', { studentId: student._id, testId: test._id });
+                const completedAttempts = attempts.filter(a => a.isSubmitted).length;
+                const activeAttempt = attempts.find(a => !a.isSubmitted && !a.isCompleted);
+
+                let canAttempt = completedAttempts < test.maximumAttempts;
+                if (test.isScheduled) {
+                    canAttempt = canAttempt && now >= new Date(test.startDate) && now <= new Date(test.endDate);
+                }
+                if (!canAttempt) continue;
+
+                activeTests.push({
+                    ...test,
+                    subjectName: subject ? (subject.displayName || subject.name) : null,
+                    attemptsMade: completedAttempts,
+                    remainingAttempts: Math.max(0, test.maximumAttempts - completedAttempts),
+                    canAttempt,
+                    hasActiveAttempt: !!activeAttempt,
+                    activeAttemptId: activeAttempt ? activeAttempt._id : null
+                });
+            }
+        }
+
+        res.json({ success: true, data: activeTests });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
+// Attendance Calendar
+// Reuses the same 'attendance' jsonDb collection (email, status as
+// 'Present'/'Absent', date as 'M/D/YYYY') that /dashboard already reads
+// for the attendance-percentage card — see routes/admin/attendance.js.
+// ============================================================
+router.get('/attendance/calendar', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const year = parseInt(req.query.year, 10);
+        const month = parseInt(req.query.month, 10); // 1-12
+
+        if (!year || !month) {
+            return res.status(400).json({ success: false, message: 'year and month are required' });
+        }
+
+        const records = db.find('attendance', { email: student.email });
+        const days = records
+            .map(r => {
+                const d = new Date(r.date);
+                if (isNaN(d.getTime())) return null;
+                if (d.getFullYear() !== year || (d.getMonth() + 1) !== month) return null;
+                return {
+                    date: d.toISOString().slice(0, 10),
+                    status: (r.status || '').toLowerCase() || 'absent'
+                };
+            })
+            .filter(Boolean);
+
+        res.json({ success: true, data: days });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
 
 module.exports = router;
