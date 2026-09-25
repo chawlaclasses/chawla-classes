@@ -90,6 +90,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const staffRoutes = require("./routes/staff");
 const apiStudentRoutes = require("./routes/studentRoutes");
 const importRoutes = require("./routes/import");
+const teacherRoutes = require("./routes/teacherRoutes");
 
 // FIX: these five route modules existed, and their controllers/services were
 // fully implemented, but nothing in app.js ever required or mounted them —
@@ -451,6 +452,7 @@ app.set('trust proxy', 1);
   app.use("/api/admin/settings", requireApiAdmin, settingsRoutes);
   app.use("/api/student", requireApiStudent, apiStudentRoutes);
   app.use("/api/import", requireApiAdmin, importRoutes);
+  app.use("/api/teacher", requireApiTeacher, teacherRoutes);
 
   // ── Previously-unwired student feature routes ─────────────────────────────
   app.use("/api/notifications", notificationsRoutes);
