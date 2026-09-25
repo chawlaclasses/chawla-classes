@@ -195,8 +195,76 @@ const requireApiAuth = (req, res, next) => {
     }
 };
 
+// ============================================================
+// Require Teacher
+//
+// NOTE: requireApiAdmin already accepts ANY staff role (super_admin,
+// admin, teacher, reception, accountant) because that's what the web
+// admin panel needs — one login, role-gated by config/permissions.js
+// afterwards. The mobile app is different: a teacher and a student share
+// the same app binary and the same JWT auth scheme, so mobile routes
+// need a check that is specifically "is this a teacher" (not "is this
+// any kind of staff"), the same way requireApiStudent is specifically
+// "is this a student". Hence this dedicated middleware rather than
+// reusing requireApiAdmin for /api/teacher/*.
+// ============================================================
+const requireApiTeacher = (req, res, next) => {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = db.findById('users', decoded.id);
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        if (!isSessionValid(decoded.sid)) {
+            return res.status(401).json({
+                success: false,
+                message: 'This session has been ended. Please log in again.'
+            });
+        }
+        touchSession(decoded.sid);
+
+        if (user.role !== 'teacher') {
+            return res.status(403).json({
+                success: false,
+                message: 'Teacher access required'
+            });
+        }
+
+        if (user.isActive === false) {
+            return res.status(403).json({
+                success: false,
+                message: 'Account is deactivated'
+            });
+        }
+
+        req.user = decoded;
+        req.userData = user;
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid or expired token'
+        });
+    }
+};
+
 module.exports = {
     requireApiAdmin,
     requireApiStudent,
+    requireApiTeacher,
     requireApiAuth
 };
