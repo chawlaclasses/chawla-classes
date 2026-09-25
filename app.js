@@ -117,7 +117,11 @@ const settingsRoutes = require("./routes/settings");
 const settingsService = require("./services/settings");
 
 // ── Auth middleware ───────────────────────────────────────────────────────────
-const { requireApiAdmin, requireApiStudent } = require("./middleware/apiAuth");
+const {
+  requireApiAdmin,
+  requireApiStudent,
+  requireApiTeacher,
+} = require("./middleware/apiAuth");
 
 // ── Ensure runtime directories exist ─────────────────────────────────────────
 for (const dir of [DATA_DIR, NOTES_DIR, UPLOADS_DIR, HOMEWORK_DIR, HOMEWORK_SUBMISSIONS_DIR, DOUBTS_DIR]) {
