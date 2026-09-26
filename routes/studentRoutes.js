@@ -177,6 +177,71 @@ router.get('/login-history', requireApiStudent, (req, res) => {
 });
 
 // ============================================================
+// Device Token — registers this device's FCM token so services/fcm.js
+// can target it for notice/test/live-class/result/fee pushes (see
+// services/notifications.js's notifyAndPush/notifyManyAndPush). Called by
+// the app right after login and again on FirebaseMessaging.onTokenRefresh
+// (see auth_provider.dart / push_notification_service.dart) — for BOTH
+// students and teachers, since this route only requires requireApiStudent,
+// which (see middleware/apiAuth.js) already allows any staff role through
+// too, not just role==='student'. One row per (userId, token) in the
+// 'deviceTokens' collection; a token that gets handed to a different
+// logged-in user (device shared/re-logged-in) is simply re-pointed at the
+// new userId rather than left stale.
+// ============================================================
+router.post('/device-token', requireApiStudent, (req, res) => {
+    try {
+        const user = req.userData;
+        const { token, platform } = req.body;
+
+        if (!token || typeof token !== 'string') {
+            return res.status(400).json({ success: false, message: 'token is required' });
+        }
+
+        const existing = db.findOne('deviceTokens', { token });
+        if (existing) {
+            db.findByIdAndUpdate('deviceTokens', existing._id, {
+                userId: user._id,
+                platform: platform || existing.platform || 'unknown'
+            });
+        } else {
+            db.insertOne('deviceTokens', {
+                userId: user._id,
+                token,
+                platform: platform || 'unknown'
+            });
+        }
+
+        res.json({ success: true, message: 'Device token registered' });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
+// Live Classes — every live class scheduled for the student's own class
+// (upcoming + live + ended + cancelled — the app's own screen decides
+// what to show/hide by status), same shape
+// routes/teacherRoutes.js GET /live-classes returns. Docs are already
+// denormalized with className/subjectName/teacherName at creation time
+// (see routes/teacherRoutes.js POST /live-classes), so no join needed here.
+// ============================================================
+router.get('/live-classes', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const classes = db.find('liveClasses', { classId: student.classId })
+            .slice()
+            .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
+
+        res.json({ success: true, data: classes });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
 // Get subjects for student
 // ============================================================
 router.get('/subjects', requireApiStudent, (req, res) => {
