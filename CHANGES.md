@@ -147,3 +147,96 @@ what this task originally covered.
   existing Question Bank views will just display it like any other string
   — nothing breaks, but you may want to add a display label for it in the
   Question Bank UI if you want it styled differently from "hard".
+
+# Live Classes + Online Tests + real FCM push — backend changes
+
+Overlay zip — only changed/new files, same file paths as the repo root.
+Copy over the existing files and run `npm install` (adds `firebase-admin`).
+
+## Files
+
+- **services/fcm.js** (NEW) — Firebase Admin wrapper. Safe no-op until
+  `FIREBASE_SERVICE_ACCOUNT_JSON` is set (see `.env.example`).
+- **services/notifications.js** (EDIT) — added `notifyAndPush` /
+  `notifyManyAndPush`. Existing `createNotification` and every existing
+  caller (Notices, fee reminders, etc.) is untouched — same behavior as
+  before, still no real push, unless you also switch them over.
+- **routes/teacherRoutes.js** (EDIT) — added:
+  - `POST/GET /api/teacher/live-classes`, `PUT /:id/status`,
+    `POST /:id/notify`, `DELETE /:id`
+  - `POST/GET /api/teacher/tests`, `POST /:id/publish`,
+    `GET /:id/submissions`, `DELETE /:id`
+- **routes/studentRoutes.js** (EDIT) — added:
+  - `POST /api/student/device-token` (also used by the teacher login flow —
+    see comment in the file for why)
+  - `GET /api/student/live-classes`
+- **package.json** — added `firebase-admin ^12.7.0`.
+- **.env.example** — documents the new `FIREBASE_SERVICE_ACCOUNT_JSON` var.
+
+## Setup to get REAL push working
+
+1. Firebase Console → your project (or create one) → Project Settings →
+   Service Accounts → **Generate new private key**. Downloads a JSON file.
+2. On Render (or wherever this deploys): add an env var
+   `FIREBASE_SERVICE_ACCOUNT_JSON` = the **entire contents of that file**,
+   as one line.
+3. In the Flutter app: add `google-services.json` (Android) /
+   `GoogleService-Info.plist` (iOS) from that same Firebase project, and
+   run `flutterfire configure` if you haven't already — the app's
+   `push_notification_service.dart` is already written and waiting for
+   this, nothing else to change there.
+4. Without step 2, everything above still works exactly as built — in-app
+   notification list, notifiedCount, the whole test-taking flow — the only
+   difference is `services/fcm.js` logs once at boot that it's disabled
+   and every push silently no-ops.
+
+## Design decisions worth knowing about
+
+- **Series auto-creation for Tests**: the app doesn't collect a `seriesId`
+  (only `classId`+`subjectId`), so every class/subject pair gets one
+  auto-created `"Class Tests"` series (`isTeacherSeries: true`) the first
+  time a teacher makes a test for it. All teacher-made tests for that
+  class/subject land in that one series. This is what makes a published
+  test show up in the student app's existing Subjects → Series → Tests →
+  Attempt screens with zero changes to that code.
+- **Per-question negative marking is approximated.** The existing grading
+  code (`routes/studentRoutes.js` `POST /tests/submit`) only supports ONE
+  negative-marks value for the whole test, applied to every wrong answer.
+  The teacher app lets you set a different `negativeMarks` per question —
+  each value is still saved on its `testQuestions` doc for reference, but
+  the test's actual negative-marking value used for grading is the
+  **average** of whatever positive values you entered (0 → disabled). If
+  you need true per-question negative marking, `submit`'s grading loop
+  needs to change too — happy to do that as a follow-up if it matters for
+  how you actually grade.
+- **`passingMarks` defaults to 40** (as a percentage — that's how the
+  existing grading code uses it, `percentage >= test.passingMarks`,
+  despite the field's name). The teacher app doesn't collect this value
+  today; easy to add as a field later if you want per-test control.
+- **Test delete is a hard delete** — matches `routes/admin/tests.js`'s own
+  `DELETE /:id` for this exact collection (existing precedent, not a new
+  choice). Its questions/results aren't cascade-deleted either, again
+  matching the admin route.
+- **Ownership checks**: Live Class status/notify/delete and Test
+  publish/submissions/delete all check `teacherId`/`createdBy` against the
+  logged-in teacher — a teacher only manages their own scheduled
+  classes/tests, even if another teacher shares the same class/subject.
+- **`/api/student/device-token`** is under `requireApiStudent`, but that
+  middleware already lets any staff role (teacher included) through — see
+  `middleware/apiAuth.js` — which is exactly why the Flutter app posts
+  there after a teacher login too, not just a student login. No separate
+  teacher endpoint needed.
+
+## Verified
+
+Ran the new/changed routes end-to-end against the real `services/jsonDb.js`
+(Mongo networking stubbed, everything else real) — schedule → push →
+notify-again → status → delete for Live Classes; create+publish → the
+**actual existing, untouched** student flow (Subjects → Series → Tests →
+start → save-answer → submit, grading a full-marks attempt correctly) →
+submissions list → delete for Tests; device-token registration; and that
+`services/fcm.js` degrades safely both with no Firebase config and with a
+well-formed-but-unreachable one (this sandbox has no route to Google's
+servers — that part only proves the error handling, not that a real
+push actually lands, which you'll only be able to confirm once step 2
+above is done on Render).
