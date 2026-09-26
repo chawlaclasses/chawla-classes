@@ -4,6 +4,7 @@
 const db = require('./jsonDb');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
+const fcm = require('./fcm');
 
 class NotificationService {
     constructor() {
@@ -176,6 +177,45 @@ class NotificationService {
             `Time to practice ${subject}! Keep your streak going.`,
             { subject }
         );
+    }
+
+    // ------------------------------------------------------------------
+    // NEW (Live Classes + Online Tests, real device push): same in-app
+    // notification createNotification() already wrote for every existing
+    // caller (Notices included), PLUS an actual FCM push so the student's
+    // phone is notified even if the app is closed — createNotification()
+    // itself is untouched (every existing caller's behavior is unchanged).
+    // deepLinkId is what PushNotificationService.fromRemoteMessage reads
+    // back out as `data.id` on the device (see push_notification_service
+    // .dart) — for a live class or test alert this should be that live
+    // class's/test's own _id, so tapping the push can navigate straight
+    // to it.
+    // ------------------------------------------------------------------
+    async notifyAndPush(userId, type, title, message, data, deepLinkId) {
+        const notification = await this.createNotification(userId, type, title, message, data);
+        try {
+            await fcm.sendToUser(userId, { title, body: message, data: { type, id: deepLinkId } });
+        } catch (error) {
+            logger.error(`FCM push failed for user ${userId}: ${error.message}`);
+        }
+        return notification;
+    }
+
+    // Same as notifyAndPush, but writes one in-app notification per user
+    // (so each student's own read/unread state is independent, same as
+    // sendBulkNotifications below) and sends a single FCM multicast call
+    // for the whole list instead of one push per user.
+    async notifyManyAndPush(userIds, type, title, message, data, deepLinkId) {
+        const notifications = [];
+        for (const userId of userIds) {
+            notifications.push(await this.createNotification(userId, type, title, message, data));
+        }
+        try {
+            await fcm.sendToUsers(userIds, { title, body: message, data: { type, id: deepLinkId } });
+        } catch (error) {
+            logger.error(`Bulk FCM push failed (${type}): ${error.message}`);
+        }
+        return notifications;
     }
 
     // Bulk notifications
