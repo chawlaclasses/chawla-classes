@@ -32,6 +32,10 @@ const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
 const { isClassAllowedForUser, isSubjectAllowedForUser } = require('../config/permissions');
 const notificationService = require('../services/notifications');
+// Same helper routes/admin/test-questions.js uses after attaching
+// questions to a test — keeps totalMarks/totalQuestions always derived
+// from the actual attached questions instead of hand-computed twice.
+const { recalcTestTotals } = require('./admin/_helpers');
 
 function classDisplayName(cls) {
     return cls ? (cls.displayName || cls.name) : null;
@@ -401,6 +405,497 @@ router.post('/notices', async (req, res) => {
         }
 
         res.status(201).json({ success: true, data: { notifiedCount: students.length }, message: 'Notice sent' });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
+// Shared helpers for the two sections below
+// ============================================================
+
+// Every student in a class, as {_id,...} user docs (used to fan out
+// notifications/push — same source list routes/teacherRoutes.js's own
+// Notices feature above already uses).
+function classStudents(classId) {
+    return db.findAll('users').filter(u => u.role === 'student' && u.classId === classId);
+}
+
+// A test is graded by comparing `percentage >= test.passingMarks`
+// (see routes/studentRoutes.js POST /tests/submit) — despite the name,
+// passingMarks in this codebase is a PERCENTAGE, not a raw marks value.
+// The teacher app doesn't collect a pass percentage today, so this is a
+// sane default (40%) rather than something derived from the request.
+const DEFAULT_PASSING_PERCENT = 40;
+
+// ============================================================
+// Live Classes — teacher schedules a class, every student in that class
+// gets an in-app notification (services/notifications.js, same as
+// Notices above) AND a real FCM push (services/fcm.js) the instant it's
+// created. "Notify Again" (below) re-sends the push without touching the
+// class itself.
+// ============================================================
+
+function formatLiveClass(doc) {
+    // Raw doc is already in the exact shape TeacherLiveClass.fromJson /
+    // LiveClassItem.fromJson expect (see lib/features/teacher/live_classes
+    // /models/teacher_live_class_models.dart and lib/models/misc_models.dart)
+    // — className/subjectName/teacherName are denormalized onto the doc at
+    // creation time, so no join is needed on every read.
+    return doc;
+}
+
+router.post('/live-classes', async (req, res) => {
+    try {
+        const teacher = req.userData;
+        const { title, classId, subjectId, platform, meetingLink, scheduledAt, durationMinutes } = req.body;
+
+        if (!title || !classId || !subjectId || !platform || !meetingLink || !scheduledAt || !durationMinutes) {
+            return res.status(400).json({
+                success: false,
+                message: 'title, classId, subjectId, platform, meetingLink, scheduledAt and durationMinutes are required'
+            });
+        }
+        if (!isClassAllowedForUser(teacher, classId) || !isSubjectAllowedForUser(teacher, subjectId)) {
+            return res.status(403).json({ success: false, message: "You're not assigned to this class/subject." });
+        }
+
+        const cls = db.findById('classes', classId);
+        const subj = db.findById('subjects', subjectId);
+        if (!cls || !subj) {
+            return res.status(404).json({ success: false, message: 'Class or subject not found' });
+        }
+        if (subj.classId !== classId) {
+            return res.status(400).json({ success: false, message: 'That subject does not belong to this class' });
+        }
+
+        const scheduledDate = new Date(scheduledAt);
+        if (isNaN(scheduledDate.getTime())) {
+            return res.status(400).json({ success: false, message: 'scheduledAt must be a valid ISO date string' });
+        }
+
+        const newLiveClass = db.insertOne('liveClasses', {
+            title,
+            classId,
+            className: classDisplayName(cls),
+            subjectId,
+            subjectName: subjectDisplayName(subj),
+            teacherId: teacher._id,
+            teacherName: teacher.name,
+            platform,
+            meetingLink,
+            scheduledAt: scheduledDate.toISOString(),
+            durationMinutes: Number(durationMinutes),
+            status: 'upcoming',
+            notifiedCount: 0
+        });
+
+        const students = classStudents(classId);
+        await notificationService.notifyManyAndPush(
+            students.map(s => s._id),
+            'live_class',
+            title,
+            `${classDisplayName(cls)}'s live class is starting soon`,
+            { classId, subjectId, liveClassId: newLiveClass._id, teacherName: teacher.name },
+            newLiveClass._id
+        );
+
+        const updated = db.findByIdAndUpdate('liveClasses', newLiveClass._id, { notifiedCount: students.length });
+
+        res.status(201).json({
+            success: true,
+            data: { ...formatLiveClass(updated), notifiedCount: students.length },
+            message: 'Live class scheduled'
+        });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.get('/live-classes', (req, res) => {
+    try {
+        const teacher = req.userData;
+        const classes = db.find('liveClasses', { teacherId: teacher._id })
+            .slice()
+            .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))
+            .map(formatLiveClass);
+
+        res.json({ success: true, data: classes });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.put('/live-classes/:id/status', (req, res) => {
+    try {
+        const teacher = req.userData;
+        const { status } = req.body;
+        const ALLOWED = ['upcoming', 'live', 'ended', 'cancelled'];
+        if (!ALLOWED.includes(status)) {
+            return res.status(400).json({ success: false, message: `status must be one of: ${ALLOWED.join(', ')}` });
+        }
+
+        const liveClass = db.findById('liveClasses', req.params.id);
+        if (!liveClass) {
+            return res.status(404).json({ success: false, message: 'Live class not found' });
+        }
+        if (liveClass.teacherId !== teacher._id) {
+            return res.status(403).json({ success: false, message: 'You did not schedule this class.' });
+        }
+
+        const updated = db.findByIdAndUpdate('liveClasses', liveClass._id, { status });
+        res.json({ success: true, data: formatLiveClass(updated), message: 'Status updated' });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.post('/live-classes/:id/notify', async (req, res) => {
+    try {
+        const teacher = req.userData;
+        const liveClass = db.findById('liveClasses', req.params.id);
+        if (!liveClass) {
+            return res.status(404).json({ success: false, message: 'Live class not found' });
+        }
+        if (liveClass.teacherId !== teacher._id) {
+            return res.status(403).json({ success: false, message: 'You did not schedule this class.' });
+        }
+
+        // Re-fetch the class's students fresh (a student may have joined
+        // the class since this was first scheduled) rather than reusing
+        // whatever notifiedCount was recorded at creation time.
+        const students = classStudents(liveClass.classId);
+        await notificationService.notifyManyAndPush(
+            students.map(s => s._id),
+            'live_class',
+            `Live Now: ${liveClass.title}`,
+            `${liveClass.className} - join now`,
+            { classId: liveClass.classId, subjectId: liveClass.subjectId, liveClassId: liveClass._id, teacherName: teacher.name },
+            liveClass._id
+        );
+
+        db.findByIdAndUpdate('liveClasses', liveClass._id, { notifiedCount: students.length });
+
+        res.json({ success: true, data: { notifiedCount: students.length }, message: 'Students notified' });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.delete('/live-classes/:id', (req, res) => {
+    try {
+        const teacher = req.userData;
+        const liveClass = db.findById('liveClasses', req.params.id);
+        if (!liveClass) {
+            return res.status(404).json({ success: false, message: 'Live class not found' });
+        }
+        if (liveClass.teacherId !== teacher._id) {
+            return res.status(403).json({ success: false, message: 'You did not schedule this class.' });
+        }
+
+        db.findByIdAndDelete('liveClasses', liveClass._id);
+        res.json({ success: true, message: 'Live class deleted' });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
+// Online Tests — a teacher-authored test + its questions, saved into the
+// SAME 'tests'/'testQuestions' collections the admin panel and the
+// existing student subjects -> series -> tests attempt flow already read
+// from (routes/admin/tests.js, routes/admin/test-questions.js,
+// routes/studentRoutes.js) — so once published, a student attempts it
+// through the app's existing Online Tests screens with zero changes
+// there. The one gap: the app never collects a seriesId (only
+// classId+subjectId), so every class/subject pair gets one
+// auto-created "Class Tests" series (see resolveTeacherSeries) that all
+// teacher-authored tests for that class/subject land in.
+//
+// KNOWN LIMITATION (flagging this the same way the Notices comment above
+// flags its own permission gap): the existing grading engine
+// (routes/studentRoutes.js POST /tests/submit) only supports ONE
+// negative-marking value for the whole test (test.negativeMarking =
+// {enabled, value}), applied to every wrong answer alike — there's no
+// per-question override in the data model it reads. The teacher app lets
+// a teacher set a different negativeMarks per question, so that value is
+// stored on each testQuestions doc for reference/future use, and the
+// test-level negativeMarking is approximated as the average of whatever
+// per-question values were entered (0 skipped). If any test actually
+// needs true per-question negative marking, routes/studentRoutes.js's
+// submit logic needs to change too — flag this for Rohit before
+// promising it to teachers.
+// ============================================================
+
+function resolveTeacherSeries(classId, subjectId) {
+    let series = db.findOne('series', { classId, subjectId, isTeacherSeries: true });
+    if (!series) {
+        series = db.insertOne('series', {
+            name: 'Class Tests',
+            subjectId,
+            classId,
+            description: 'Tests created by teachers from the app',
+            type: 'other',
+            isActive: true,
+            isTeacherSeries: true,
+            createdBy: 'system'
+        });
+    }
+    return series;
+}
+
+function formatTeacherTest(test) {
+    const questionCount = db.countDocuments('testQuestions', { testId: test._id, isActive: true });
+    const submissionCount = db.find('results', { testId: test._id }).length;
+    let status = test.isPublished ? 'published' : 'draft';
+
+    return {
+        _id: test._id,
+        title: test.title,
+        classId: test.classId,
+        className: test.className || (db.findById('classes', test.classId) ? classDisplayName(db.findById('classes', test.classId)) : ''),
+        subjectId: test.subjectId,
+        subjectName: test.subjectName || (db.findById('subjects', test.subjectId) ? subjectDisplayName(db.findById('subjects', test.subjectId)) : ''),
+        durationMinutes: test.duration,
+        totalMarks: test.totalMarks,
+        questionCount,
+        scheduledAt: test.scheduledAt || test.createdAt,
+        status,
+        submissionCount
+    };
+}
+
+router.post('/tests', async (req, res) => {
+    try {
+        const teacher = req.userData;
+        const { title, classId, subjectId, durationMinutes, scheduledAt, instructions, questions, publish } = req.body;
+
+        if (!title || !classId || !subjectId || !durationMinutes || !scheduledAt || !Array.isArray(questions) || questions.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'title, classId, subjectId, durationMinutes, scheduledAt and at least one question are required'
+            });
+        }
+        if (!isClassAllowedForUser(teacher, classId) || !isSubjectAllowedForUser(teacher, subjectId)) {
+            return res.status(403).json({ success: false, message: "You're not assigned to this class/subject." });
+        }
+
+        const cls = db.findById('classes', classId);
+        const subj = db.findById('subjects', subjectId);
+        if (!cls || !subj) {
+            return res.status(404).json({ success: false, message: 'Class or subject not found' });
+        }
+        if (subj.classId !== classId) {
+            return res.status(400).json({ success: false, message: 'That subject does not belong to this class' });
+        }
+
+        for (const q of questions) {
+            if (!q.text || !Array.isArray(q.options) || q.options.length < 2 ||
+                typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Every question needs text, at least 2 options, and a valid correctIndex'
+                });
+            }
+        }
+
+        const scheduledDate = new Date(scheduledAt);
+        if (isNaN(scheduledDate.getTime())) {
+            return res.status(400).json({ success: false, message: 'scheduledAt must be a valid ISO date string' });
+        }
+
+        const series = resolveTeacherSeries(classId, subjectId);
+
+        const negValues = questions.map(q => Number(q.negativeMarks) || 0).filter(v => v > 0);
+        const negativeMarking = negValues.length > 0
+            ? { enabled: true, value: Math.round((negValues.reduce((a, b) => a + b, 0) / negValues.length) * 100) / 100 }
+            : { enabled: false, value: 0 };
+
+        const instructionLines = (instructions || '')
+            .split('\n')
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        const newTest = db.insertOne('tests', {
+            title,
+            description: '',
+            seriesId: series._id,
+            subjectId,
+            classId,
+            className: classDisplayName(cls),
+            subjectName: subjectDisplayName(subj),
+            totalMarks: 0,
+            passingMarks: DEFAULT_PASSING_PERCENT,
+            duration: Number(durationMinutes),
+            negativeMarking,
+            maximumAttempts: 1,
+            randomizeQuestions: false,
+            randomizeOptions: false,
+            isPublished: false,
+            isScheduled: false,
+            startDate: null,
+            endDate: null,
+            totalQuestions: 0,
+            questions: [],
+            instructions: instructionLines,
+            scheduledAt: scheduledDate.toISOString(),
+            teacherName: teacher.name,
+            createdByTeacher: true,
+            createdBy: teacher._id,
+            isDeleted: false
+        });
+
+        questions.forEach((q, i) => {
+            const options = q.options.map((text, idx) => ({ text, isCorrect: idx === q.correctIndex }));
+            db.insertOne('testQuestions', {
+                testId: newTest._id,
+                questionText: q.text,
+                options,
+                correctAnswer: q.options[q.correctIndex],
+                explanation: '',
+                marks: Number(q.marks) || 4,
+                negativeMarks: Number(q.negativeMarks) || 0,
+                type: 'mcq',
+                order: i + 1,
+                bankQuestionId: null,
+                isActive: true,
+                createdBy: teacher._id
+            });
+        });
+
+        recalcTestTotals(newTest._id);
+
+        const responseData = { id: newTest._id };
+
+        if (publish === true) {
+            const questionCount = db.countDocuments('testQuestions', { testId: newTest._id, isActive: true });
+            if (questionCount === 0) {
+                return res.status(400).json({ success: false, message: 'Cannot publish test without questions' });
+            }
+            db.findByIdAndUpdate('tests', newTest._id, { isPublished: true });
+
+            const students = classStudents(classId);
+            await notificationService.notifyManyAndPush(
+                students.map(s => s._id),
+                'test_alert',
+                `New Test: ${title}`,
+                `${classDisplayName(cls)} - ${subjectDisplayName(subj)} test is now available`,
+                { classId, subjectId, testId: newTest._id, teacherName: teacher.name },
+                newTest._id
+            );
+            responseData.notifiedCount = students.length;
+        }
+
+        res.status(201).json({ success: true, data: responseData, message: 'Test created' });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.get('/tests', (req, res) => {
+    try {
+        const teacher = req.userData;
+        const tests = db.find('tests', { createdBy: teacher._id, createdByTeacher: true, isDeleted: false })
+            .slice()
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .map(formatTeacherTest);
+
+        res.json({ success: true, data: tests });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.post('/tests/:id/publish', async (req, res) => {
+    try {
+        const teacher = req.userData;
+        const test = db.findById('tests', req.params.id);
+        if (!test || test.isDeleted) {
+            return res.status(404).json({ success: false, message: 'Test not found' });
+        }
+        if (test.createdBy !== teacher._id) {
+            return res.status(403).json({ success: false, message: 'You did not create this test.' });
+        }
+
+        const questionCount = db.countDocuments('testQuestions', { testId: test._id, isActive: true });
+        if (questionCount === 0) {
+            return res.status(400).json({ success: false, message: 'Cannot publish test without questions' });
+        }
+
+        db.findByIdAndUpdate('tests', test._id, { isPublished: true });
+
+        const cls = db.findById('classes', test.classId);
+        const subj = db.findById('subjects', test.subjectId);
+        const students = classStudents(test.classId);
+        await notificationService.notifyManyAndPush(
+            students.map(s => s._id),
+            'test_alert',
+            `New Test: ${test.title}`,
+            `${cls ? classDisplayName(cls) : ''} - ${subj ? subjectDisplayName(subj) : ''} test is now available`,
+            { classId: test.classId, subjectId: test.subjectId, testId: test._id, teacherName: teacher.name },
+            test._id
+        );
+
+        res.json({ success: true, data: { notifiedCount: students.length }, message: 'Test published' });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.get('/tests/:id/submissions', (req, res) => {
+    try {
+        const teacher = req.userData;
+        const test = db.findById('tests', req.params.id);
+        if (!test || test.isDeleted) {
+            return res.status(404).json({ success: false, message: 'Test not found' });
+        }
+        if (test.createdBy !== teacher._id) {
+            return res.status(403).json({ success: false, message: 'You did not create this test.' });
+        }
+
+        const results = db.find('results', { testId: test._id });
+        const submissions = results.map(r => {
+            const student = db.findById('users', r.studentId);
+            return {
+                studentId: r.studentId,
+                studentName: student ? student.name : 'Unknown',
+                score: r.marksObtained,
+                totalMarks: r.totalMarks,
+                submittedAt: r.createdAt
+            };
+        });
+
+        res.json({ success: true, data: submissions });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.delete('/tests/:id', (req, res) => {
+    try {
+        const teacher = req.userData;
+        const test = db.findById('tests', req.params.id);
+        if (!test || test.isDeleted) {
+            return res.status(404).json({ success: false, message: 'Test not found' });
+        }
+        if (test.createdBy !== teacher._id) {
+            return res.status(403).json({ success: false, message: 'You did not create this test.' });
+        }
+
+        // Hard delete, matching routes/admin/tests.js's own DELETE /:id —
+        // that's the established precedent for this exact collection.
+        db.findByIdAndDelete('tests', test._id);
+        res.json({ success: true, message: 'Test deleted' });
     } catch (error) {
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
