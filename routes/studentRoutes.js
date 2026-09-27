@@ -241,6 +241,24 @@ router.get('/live-classes', requireApiStudent, (req, res) => {
     }
 });
 
+// FIX (connections audit 2026-09): ApiConstants.liveClassDetail is called
+// when a student taps a class in the list above, but only the list route
+// existed. Scoped to the student's own classId the same way the list is,
+// so a student can't view another class's live-class link by id-guessing.
+router.get('/live-classes/:id', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const liveClass = db.findById('liveClasses', req.params.id);
+        if (!liveClass || liveClass.classId !== student.classId) {
+            return res.status(404).json({ success: false, message: 'Live class not found' });
+        }
+        res.json({ success: true, data: liveClass });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
 // ============================================================
 // Get subjects for student
 // ============================================================
@@ -1098,6 +1116,56 @@ router.get('/results/:resultId/analysis', requireApiStudent, (req, res) => {
     }
 });
 
+// ============================================================
+// Per-question result review
+// FIX (connections audit 2026-09): the Flutter app calls this
+// (ApiConstants.resultReview / ResultsRepository.fetchReview) on every
+// result screen open, but the route never existed — only the coarser
+// /analysis endpoint above did. Reuses the exact same
+// result.questionWiseAnalysis + testQuestions join as /analysis, just
+// reshaped into the field names QuestionReviewItem.fromJson expects
+// (selectedOptions/correctOptions as index arrays, not single values).
+// ============================================================
+router.get('/results/:resultId/review', requireApiStudent, (req, res) => {
+    try {
+        const { resultId } = req.params;
+        const student = req.userData;
+
+        const result = db.findById('results', resultId);
+        if (!result || result.studentId !== student._id) {
+            return res.status(404).json({ success: false, message: 'Result not found' });
+        }
+
+        const questionIds = (result.questionWiseAnalysis || []).map(q => q.questionId);
+        const questions = db.find('testQuestions', { _id: { $in: questionIds } });
+
+        const review = (result.questionWiseAnalysis || []).map(analysis => {
+            const question = questions.find(q => q._id === analysis.questionId) || {};
+            return {
+                _id: analysis.questionId,
+                questionText: question.questionText || 'Question not found',
+                type: question.type || 'mcq',
+                options: question.options || [],
+                selectedOptions: analysis.selectedOption !== null && analysis.selectedOption !== undefined
+                    ? [analysis.selectedOption]
+                    : [],
+                correctOptions: question.correctAnswer !== null && question.correctAnswer !== undefined
+                    ? [question.correctAnswer]
+                    : [],
+                explanation: question.explanation || null,
+                marksAwarded: analysis.marksObtained,
+                marks: question.marks,
+                timeSpent: analysis.timeSpent
+            };
+        });
+
+        res.json({ success: true, data: review });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
 // Get rank for a specific test
 router.get('/tests/:testId/rank', requireApiStudent, (req, res) => {
     try {
@@ -1811,6 +1879,131 @@ router.get('/attendance/calendar', requireApiStudent, (req, res) => {
             .filter(Boolean);
 
         res.json({ success: true, data: days });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
+// Attendance — subject-wise
+// FIX (connections audit 2026-09): ApiConstants.attendanceSubjectWise
+// was called by the app but had no route. The 'attendance' collection
+// (same one /attendance/calendar reads) has no subject field recorded
+// against it today, so there is nothing genuine to break down by
+// subject yet — this returns the overall percentage under the whole
+// class's subject list rather than fabricating a per-subject number.
+// Replace with a real per-subject figure once attendance is recorded
+// per-subject (see routes/admin/attendance.js).
+// ============================================================
+router.get('/attendance/subjects', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const records = db.find('attendance', { email: student.email });
+        const present = records.filter(r => (r.status || '').toLowerCase() === 'present').length;
+        const overallPercentage = records.length ? Math.round((present / records.length) * 100) : 0;
+
+        const subjects = student.classId
+            ? db.find('subjects', { classId: student.classId, isActive: true })
+            : [];
+
+        const data = subjects.map(s => ({
+            subjectId: s._id,
+            subjectName: s.displayName || s.name,
+            percentage: overallPercentage,
+            presentCount: present,
+            totalCount: records.length
+        }));
+
+        res.json({ success: true, data });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// ============================================================
+// Study Material
+// FIX (connections audit 2026-09): the Study Material tab
+// (MaterialsRepository) called all four of these and got a 404 every
+// time — the 'notes' collection/POST route existed for teachers
+// (see routes/teacherRoutes.js '/materials') but nothing served it back
+// to students. There's no 'chapter' field in the current 'notes' schema,
+// so chapters are derived from each note's own 'chapter' field when a
+// teacher sets one, falling back to a single "General" bucket — swap
+// this for a real chapter collection/relation if/when one is added.
+// A note is treated as a "video" (vs a downloadable "note") purely by its
+// fileUrl looking like a video link/file.
+// ============================================================
+const isVideoUrl = (url) => !!url && /\.(mp4|mov|m3u8)(\?|$)/i.test(url) || /youtube\.com|youtu\.be|vimeo\.com/i.test(url || '');
+
+router.get('/materials/recent', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const notes = db.find('notes', { classId: student.classId })
+            .filter(n => !isVideoUrl(n.fileUrl))
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 20)
+            .map(n => ({ _id: n._id, title: n.title, fileUrl: n.fileUrl }));
+        res.json({ success: true, data: notes });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.get('/materials/:subjectId/chapters', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const { subjectId } = req.params;
+        const notes = db.find('notes', { classId: student.classId, subject: subjectId });
+
+        const byChapter = new Map();
+        for (const n of notes) {
+            const key = n.chapter || 'General';
+            if (!byChapter.has(key)) byChapter.set(key, { noteCount: 0, videoCount: 0 });
+            const bucket = byChapter.get(key);
+            if (isVideoUrl(n.fileUrl)) bucket.videoCount += 1; else bucket.noteCount += 1;
+        }
+
+        const chapters = Array.from(byChapter.entries()).map(([name, counts]) => ({
+            _id: name,
+            name,
+            noteCount: counts.noteCount,
+            videoCount: counts.videoCount
+        }));
+
+        res.json({ success: true, data: chapters });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.get('/materials/chapters/:chapterId/notes', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const notes = db.find('notes', { classId: student.classId })
+            .filter(n => (n.chapter || 'General') === req.params.chapterId)
+            .filter(n => !isVideoUrl(n.fileUrl))
+            .map(n => ({ _id: n._id, title: n.title, downloadUrl: n.fileUrl }));
+
+        res.json({ success: true, data: notes });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.get('/materials/chapters/:chapterId/videos', requireApiStudent, (req, res) => {
+    try {
+        const student = req.userData;
+        const videos = db.find('notes', { classId: student.classId })
+            .filter(n => (n.chapter || 'General') === req.params.chapterId)
+            .filter(n => isVideoUrl(n.fileUrl))
+            .map(n => ({ _id: n._id, title: n.title, videoUrl: n.fileUrl }));
+
+        res.json({ success: true, data: videos });
     } catch (error) {
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
