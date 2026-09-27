@@ -48,6 +48,24 @@ class NotificationService {
         return notifications;
     }
 
+    // FIX (connections audit 2026-09): the student app's Notice/Notification
+    // detail screen calls GET /api/notifications/:id (see
+    // ApiConstants.notificationDetail in the Flutter app), but no route or
+    // service method returned a single notification — every open from the
+    // list screen 404'd. Mirrors markRead/deleteNotification's own
+    // ownership check (userId) so a student can't fetch someone else's
+    // notification by guessing an id.
+    async getById(notificationId, userId) {
+        const notification = await db.findOne(this.collection, {
+            id: notificationId,
+            userId
+        });
+
+        if (!notification) throw new Error('Notification not found');
+
+        return notification;
+    }
+
     async markRead(notificationId, userId) {
         const notification = await db.findOne(this.collection, {
             id: notificationId,
