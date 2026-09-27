@@ -38,4 +38,13 @@ router.get('/stats',
     notificationController.getStats
 );
 
+// Get a single notification by id.
+// FIX (connections audit 2026-09): registered AFTER '/unread-count' and
+// '/stats' above deliberately — Express matches routes in registration
+// order, so a '/:notificationId' route placed earlier would have swallowed
+// both of those literal paths (treating "stats"/"unread-count" as an id).
+router.get('/:notificationId',
+    notificationController.getNotificationById
+);
+
 module.exports = router;
