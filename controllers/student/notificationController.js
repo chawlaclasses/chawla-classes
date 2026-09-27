@@ -29,6 +29,19 @@ exports.getUnreadCount = asyncHandler(async (req, res) => {
     });
 });
 
+// FIX (connections audit 2026-09): was missing entirely — see the
+// matching FIX note in services/notifications.js#getById.
+exports.getNotificationById = asyncHandler(async (req, res) => {
+    const { notificationId } = req.params;
+
+    const notification = await notificationService.getById(notificationId, req.user.id);
+
+    res.json({
+        success: true,
+        data: notification
+    });
+});
+
 exports.markRead = asyncHandler(async (req, res) => {
     const { notificationId } = req.params;
 
