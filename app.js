@@ -99,6 +99,9 @@ const teacherRoutes = require("./routes/teacherRoutes");
 // was already calling them. Each file applies its own requireApiStudent
 // internally, so no extra auth middleware is needed at the mount point here.
 const notificationsRoutes = require("./routes/notifications");
+// FIX (connections audit 2026-09): see routes/appVersion.js's own header
+// comment — the Flutter app's update-check call had nowhere to land.
+const appVersionRoutes = require("./routes/appVersion");
 const recruitmentPublicRoutes = require("./routes/recruitment");
 const publicEnquiryRoutes = require("./routes/publicEnquiry");
 const marketingPublicRoutes = require("./routes/marketing");
@@ -460,6 +463,8 @@ app.set('trust proxy', 1);
 
   // ── Previously-unwired student feature routes ─────────────────────────────
   app.use("/api/notifications", notificationsRoutes);
+  // Public (no requireApiStudent) — see routes/appVersion.js header comment.
+  app.use("/api/app", appVersionRoutes);
   // Public — no auth. Job applicants aren't a user in the system yet;
   // security here is the route's own rate limiter + duplicate-submission
   // guard (see routes/recruitment.js), not a login check.
