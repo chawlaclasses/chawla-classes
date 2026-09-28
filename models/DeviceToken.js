@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const deviceTokenSchema = new mongoose.Schema(
   {
     token:    { type: String, required: true, unique: true, index: true },
-    userId:   { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+    userId:   { type: String, required: true, index: true },
     role:     { type: String, enum: ['student', 'teacher', 'admin'], default: 'student' },
     platform: { type: String, default: 'android' },
     lastSeenAt: { type: Date, default: Date.now },
