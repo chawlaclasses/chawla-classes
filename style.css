@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /* =====================
    GOOGLE FONT
 ===================== */
@@ -2839,7 +2838,7 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   .bannerSwiper .swiper-button-prev { width: 28px; height: 28px; }
   .bannerSwiper .swiper-button-next::after,
   .bannerSwiper .swiper-button-prev::after { font-size: 11px; }
-=======
+
 /* =====================
    GOOGLE FONT
 ===================== */
@@ -5680,5 +5679,4 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   .bannerSwiper .swiper-button-prev { width: 28px; height: 28px; }
   .bannerSwiper .swiper-button-next::after,
   .bannerSwiper .swiper-button-prev::after { font-size: 11px; }
->>>>>>> abf3b5bc0d36e3261db6bbefb9f12b8672844ab8
-}
+}}
