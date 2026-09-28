@@ -1,0 +1,4 @@
+// In app.js / server.js, once, after the DB connects and before app.listen():
+const fcm = require('./services/fcm');
+fcm.verifyAtStartup().then((r) => { if (!r.ok) console.error('[FCM] PUSH IS DISABLED until this is fixed:', r.error); });
+// Optional health probe for you (admin-only!):  app.get('/api/admin/fcm-health', requireAdmin, async (_q, res) => res.json(await fcm.verifyAtStartup()));

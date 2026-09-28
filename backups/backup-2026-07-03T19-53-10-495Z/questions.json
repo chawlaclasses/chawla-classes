@@ -1,0 +1,572 @@
+[
+  {
+    "id": "q_1",
+    "text": "Sample question 1 for Mathematics - Calculus",
+    "subject": "Mathematics",
+    "chapter": "Calculus",
+    "difficulty": "easy",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 1",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_2",
+    "text": "Sample question 2 for Chemistry - Inorganic",
+    "subject": "Chemistry",
+    "chapter": "Inorganic",
+    "difficulty": "medium",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 2",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_3",
+    "text": "Sample question 3 for English - Writing",
+    "subject": "English",
+    "chapter": "Writing",
+    "difficulty": "hard",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 3",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_4",
+    "text": "Sample question 4 for Physics - Optics",
+    "subject": "Physics",
+    "chapter": "Optics",
+    "difficulty": "easy",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "D",
+    "explanation": "Explanation for question 4",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_5",
+    "text": "Sample question 5 for Chemistry - Inorganic",
+    "subject": "Chemistry",
+    "chapter": "Inorganic",
+    "difficulty": "easy",
+    "type": "true_false",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "C",
+    "explanation": "Explanation for question 5",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_6",
+    "text": "Sample question 6 for Mathematics - Algebra",
+    "subject": "Mathematics",
+    "chapter": "Algebra",
+    "difficulty": "easy",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "D",
+    "explanation": "Explanation for question 6",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_7",
+    "text": "Sample question 7 for English - Literature",
+    "subject": "English",
+    "chapter": "Literature",
+    "difficulty": "hard",
+    "type": "mcq",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "C",
+    "explanation": "Explanation for question 7",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_8",
+    "text": "Sample question 8 for English - Literature",
+    "subject": "English",
+    "chapter": "Literature",
+    "difficulty": "hard",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "B",
+    "explanation": "Explanation for question 8",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_9",
+    "text": "Sample question 9 for English - Vocabulary",
+    "subject": "English",
+    "chapter": "Vocabulary",
+    "difficulty": "easy",
+    "type": "true_false",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "D",
+    "explanation": "Explanation for question 9",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_10",
+    "text": "Sample question 10 for Chemistry - Inorganic",
+    "subject": "Chemistry",
+    "chapter": "Inorganic",
+    "difficulty": "medium",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "C",
+    "explanation": "Explanation for question 10",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_11",
+    "text": "Sample question 11 for English - Literature",
+    "subject": "English",
+    "chapter": "Literature",
+    "difficulty": "medium",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "C",
+    "explanation": "Explanation for question 11",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_12",
+    "text": "Sample question 12 for Physics - Mechanics",
+    "subject": "Physics",
+    "chapter": "Mechanics",
+    "difficulty": "hard",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "C",
+    "explanation": "Explanation for question 12",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_13",
+    "text": "Sample question 13 for English - Writing",
+    "subject": "English",
+    "chapter": "Writing",
+    "difficulty": "easy",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 13",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_14",
+    "text": "Sample question 14 for Biology - Ecology",
+    "subject": "Biology",
+    "chapter": "Ecology",
+    "difficulty": "hard",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "D",
+    "explanation": "Explanation for question 14",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_15",
+    "text": "Sample question 15 for Physics - Mechanics",
+    "subject": "Physics",
+    "chapter": "Mechanics",
+    "difficulty": "medium",
+    "type": "mcq",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "B",
+    "explanation": "Explanation for question 15",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_16",
+    "text": "Sample question 16 for Mathematics - Trigonometry",
+    "subject": "Mathematics",
+    "chapter": "Trigonometry",
+    "difficulty": "hard",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "C",
+    "explanation": "Explanation for question 16",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_17",
+    "text": "Sample question 17 for Physics - Electromagnetism",
+    "subject": "Physics",
+    "chapter": "Electromagnetism",
+    "difficulty": "hard",
+    "type": "true_false",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 17",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_18",
+    "text": "Sample question 18 for Biology - Genetics",
+    "subject": "Biology",
+    "chapter": "Genetics",
+    "difficulty": "easy",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 18",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_19",
+    "text": "Sample question 19 for Chemistry - Organic",
+    "subject": "Chemistry",
+    "chapter": "Organic",
+    "difficulty": "easy",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "B",
+    "explanation": "Explanation for question 19",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_20",
+    "text": "Sample question 20 for English - Writing",
+    "subject": "English",
+    "chapter": "Writing",
+    "difficulty": "hard",
+    "type": "true_false",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "C",
+    "explanation": "Explanation for question 20",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_21",
+    "text": "Sample question 21 for Biology - Human Anatomy",
+    "subject": "Biology",
+    "chapter": "Human Anatomy",
+    "difficulty": "easy",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "B",
+    "explanation": "Explanation for question 21",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_22",
+    "text": "Sample question 22 for Chemistry - Analytical",
+    "subject": "Chemistry",
+    "chapter": "Analytical",
+    "difficulty": "easy",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "D",
+    "explanation": "Explanation for question 22",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_23",
+    "text": "Sample question 23 for English - Literature",
+    "subject": "English",
+    "chapter": "Literature",
+    "difficulty": "easy",
+    "type": "true_false",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "C",
+    "explanation": "Explanation for question 23",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_24",
+    "text": "Sample question 24 for Physics - Thermodynamics",
+    "subject": "Physics",
+    "chapter": "Thermodynamics",
+    "difficulty": "medium",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 24",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_25",
+    "text": "Sample question 25 for English - Literature",
+    "subject": "English",
+    "chapter": "Literature",
+    "difficulty": "hard",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 25",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_26",
+    "text": "Sample question 26 for Biology - Cell Biology",
+    "subject": "Biology",
+    "chapter": "Cell Biology",
+    "difficulty": "easy",
+    "type": "true_false",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "B",
+    "explanation": "Explanation for question 26",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_27",
+    "text": "Sample question 27 for Physics - Mechanics",
+    "subject": "Physics",
+    "chapter": "Mechanics",
+    "difficulty": "hard",
+    "type": "mcq",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 27",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_28",
+    "text": "Sample question 28 for Physics - Mechanics",
+    "subject": "Physics",
+    "chapter": "Mechanics",
+    "difficulty": "medium",
+    "type": "assertion_reason",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "C",
+    "explanation": "Explanation for question 28",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_29",
+    "text": "Sample question 29 for English - Literature",
+    "subject": "English",
+    "chapter": "Literature",
+    "difficulty": "medium",
+    "type": "numerical",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "D",
+    "explanation": "Explanation for question 29",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  },
+  {
+    "id": "q_30",
+    "text": "Sample question 30 for Chemistry - Analytical",
+    "subject": "Chemistry",
+    "chapter": "Analytical",
+    "difficulty": "easy",
+    "type": "true_false",
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": "A",
+    "explanation": "Explanation for question 30",
+    "marks": 1,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.924Z"
+  }
+]

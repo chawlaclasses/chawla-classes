@@ -1,0 +1,30 @@
+[
+  {
+    "_id": "mr34ehxagjtncenir",
+    "studentId": "mr2753l58rg6neitx",
+    "testId": "mr1xnrhhwcewja0za",
+    "attemptNumber": 1,
+    "startTime": "2026-07-02T06:25:26.590Z",
+    "remainingTime": 3600,
+    "isCompleted": true,
+    "isSubmitted": true,
+    "answers": [
+      {
+        "questionId": "mr2e8ydsy3f8m9hog",
+        "selectedOption": "A. 1",
+        "isCorrect": true,
+        "marksObtained": 1,
+        "timeSpent": 0
+      }
+    ],
+    "createdAt": "2026-07-02T06:25:26.590Z",
+    "updatedAt": "2026-07-02T06:25:40.596Z",
+    "endTime": "2026-07-02T06:25:40.596Z",
+    "totalMarksObtained": 1,
+    "correctAnswers": 1,
+    "incorrectAnswers": 0,
+    "unansweredQuestions": 0,
+    "percentage": 4,
+    "isPassed": false
+  }
+]

@@ -1,0 +1,333 @@
+<!-- public/student/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chawla Classes - Student Portal</title>
+    
+    <!-- SEO -->
+    <meta name="description" content="Premium learning platform for Chawla Classes students" />
+    <meta name="keywords" content="education, learning, tests, practice, coaching" />
+    <meta name="author" content="Chawla Classes" />
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/student/manifest.json" />
+    <meta name="theme-color" content="#0a1628" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Critical CSS -->
+    <style>
+        /* Critical path CSS */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #060e1a;
+            color: #f1f5f9;
+            min-height: 100vh;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        body.loaded { opacity: 1; }
+        .app-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .app-loading .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(201, 168, 76, 0.1);
+            border-top-color: #c9a84c;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .app-loading .text {
+            color: #94a3b8;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+    </style>
+    
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="/student/css/variables.css" />
+    <link rel="stylesheet" href="/student/css/base.css" />
+    <link rel="stylesheet" href="/student/css/layout.css" />
+    <link rel="stylesheet" href="/student/css/components.css" />
+    <link rel="stylesheet" href="/student/css/dashboard.css" />
+    <link rel="stylesheet" href="/student/css/practice.css" />
+    <link rel="stylesheet" href="/student/css/profile.css" />
+    <link rel="stylesheet" href="/student/css/notifications.css" />
+    <link rel="stylesheet" href="/student/css/responsive.css" />
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="appLoading" class="app-loading">
+        <div class="spinner"></div>
+        <div class="text">Loading Chawla Classes...</div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Offline Banner -->
+    <div id="offlineBanner" class="offline-banner">
+        <i class="fas fa-wifi-slash"></i>
+        <span>You're offline. Please check your connection.</span>
+        <button class="retry-btn" onclick="window.checkConnection()">Retry</button>
+    </div>
+
+    <!-- Session Warning Modal -->
+    <div id="sessionWarning" class="session-warning">
+        <h3>⏰ Session Expiring</h3>
+        <p>Your session will expire in <strong id="sessionTimer">2:00</strong>. Please save your work.</p>
+        <div class="actions">
+            <button class="secondary" onclick="window.logout()">Logout</button>
+            <button class="primary" onclick="window.extendSession()">Continue Session</button>
+        </div>
+    </div>
+
+    <!-- PWA Install Button -->
+    <button id="pwaInstall" class="pwa-install">
+        <i class="fas fa-download"></i> Install App
+    </button>
+
+    <!-- Keyboard Shortcuts Hint -->
+    <div class="shortcuts-hint">
+        <kbd>Ctrl</kbd> + <kbd>K</kbd> Search
+        <span style="margin:0 8px;color:var(--gray-600);">|</span>
+        <kbd>Esc</kbd> Close
+    </div>
+
+    <!-- Notification Panel -->
+    <div id="notificationPanel" class="notification-panel">
+        <div class="panel-header">
+            <h3>Notifications</h3>
+            <button class="close-btn" onclick="window.closeNotifications()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="tabs">
+            <button class="active" data-filter="all" onclick="window.filterNotifications('all')">All</button>
+            <button data-filter="unread" onclick="window.filterNotifications('unread')">Unread</button>
+            <button data-filter="read" onclick="window.filterNotifications('read')">Read</button>
+        </div>
+        <div id="notificationList"></div>
+    </div>
+
+    <!-- Overlay -->
+    <div id="overlay" class="overlay"></div>
+
+    <!-- ==================== APP ==================== -->
+    <div id="app" style="display:none;">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-brand">
+                <div class="logo-icon">CC</div>
+                <div>
+                    <h1>Chawla Classes</h1>
+                    <span>Student Portal v2.0</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-label">Main</div>
+                <a href="#dashboard" class="active" data-route="dashboard">
+                    <i class="fas fa-th-large"></i> Dashboard
+                </a>
+                <a href="#practice" data-route="practice">
+                    <i class="fas fa-pencil-alt"></i> Practice
+                </a>
+                <a href="#tests" data-route="tests">
+                    <i class="fas fa-book"></i> Tests
+                </a>
+                <a href="#results" data-route="results">
+                    <i class="fas fa-chart-bar"></i> Results
+                </a>
+
+                <div class="nav-label">Learning</div>
+                <a href="#notes" data-route="notes">
+                    <i class="fas fa-book-open"></i> Notes
+                </a>
+                <a href="#attendance" data-route="attendance">
+                    <i class="fas fa-calendar-check"></i> Attendance
+                </a>
+                <a href="#homework" data-route="homework">
+                    <i class="fas fa-home"></i> Homework
+                </a>
+                <a href="#bookmarks" data-route="bookmarks">
+                    <i class="fas fa-star"></i> Bookmarks 
+                    <span class="badge" id="bookmarkBadge">0</span>
+                </a>
+                <a href="#wrong-questions" data-route="wrong-questions">
+                    <i class="fas fa-times-circle"></i> Wrong Questions 
+                    <span class="badge" id="wrongBadge">0</span>
+                </a>
+
+                <div class="nav-label">Account</div>
+                <a href="#profile" data-route="profile">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="#downloads" data-route="downloads">
+                    <i class="fas fa-download"></i> Downloads
+                </a>
+                <a href="#settings" data-route="settings">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="user-card" onclick="window.toggleProfileDropdown()">
+                    <div class="avatar" id="userAvatar">RK</div>
+                    <div class="info">
+                        <div class="name" id="userName">Loading...</div>
+                        <div class="role" id="userRole">Student</div>
+                    </div>
+                    <i class="fas fa-chevron-down" style="color:var(--gray-500);font-size:12px;"></i>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <a href="#profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
+                        <div class="divider"></div>
+                        <a href="#" onclick="window.logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="page-title">
+                    <h2 id="pageTitle">Dashboard</h2>
+                    <p id="pageSubtitle">Welcome back! Here's your learning overview.</p>
+                </div>
+                <div class="actions">
+                    <div class="search-box" id="searchBox">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search notes, tests..." id="searchInput" />
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+                    <select class="lang-select" id="langSelect">
+                        <option value="en">🇬🇧 English</option>
+                        <option value="hi">🇮🇳 Hindi</option>
+                    </select>
+                    <button class="theme-toggle" onclick="window.toggleTheme()">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                        <span id="themeLabel">Dark</span>
+                    </button>
+                    <button class="mobile-toggle" id="mobileToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <button class="icon-btn" onclick="window.toggleNotifications()" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="dot" id="notificationDot"></span>
+                    </button>
+                    <button class="icon-btn" title="Messages">
+                        <i class="fas fa-envelope"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div id="pageContent">
+                <!-- Dashboard -->
+                <section id="dashboard-page" class="page-section active">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Practice -->
+                <section id="practice-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Tests -->
+                <section id="tests-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Results -->
+                <section id="results-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Notes -->
+                <section id="notes-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Attendance -->
+                <section id="attendance-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Homework -->
+                <section id="homework-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Bookmarks -->
+                <section id="bookmarks-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Wrong Questions -->
+                <section id="wrong-questions-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Profile -->
+                <section id="profile-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Downloads -->
+                <section id="downloads-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+
+                <!-- Settings -->
+                <section id="settings-page" class="page-section">
+                    <!-- Dynamic content loaded by JS -->
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- FIX: this page (index.html) is the shell of an earlier hash-routed
+    SPA (see #dashboard/#practice/#tests nav links and the empty
+    <section id="...-page"> containers above) that was superseded by the
+    current multi-page implementation (dashboard.html, practice.html,
+    test.html, etc., each with its own working inline script — see those
+    files). The app.js this page used to load, plus the ES-module
+    api/services/components layer it depended on, were never finished and
+    don't exist on disk, so any visit to /student/ (e.g. via offline.html's
+    "back online" button, or a bookmark to the bare /student/ path) hit a
+    permanent blank spinner and a 404 in the console for the missing
+    module. Rather than resurrect the unfinished SPA — which would
+    duplicate the already-working multi-page app — this page now just
+    forwards to the real, working entry points. -->
+    <script>
+        window.location.replace(localStorage.getItem('studentToken') ? '/student/dashboard.html' : '/student/login.html');
+    </script>
+</body>
+</html>

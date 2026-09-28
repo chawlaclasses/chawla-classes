@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # ───────────────────────────────────────────────────────────
+  # Main Application
+  # ───────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chawla-classes-app
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      WHATSAPP_API_KEY: ${WHATSAPP_API_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - ./Data:/app/Data
+      - ./backups:/app/backups
+      - ./homework:/app/homework
+      - ./homework-submissions:/app/homework-submissions
+      - ./doubts:/app/doubts
+      - ./faculty-applications:/app/faculty-applications
+    depends_on:
+      - redis
+    networks:
+      - chawla-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/public-settings', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  # ───────────────────────────────────────────────────────────
+  # Redis for Session Management (Optional but recommended)
+  # ───────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: chawla-classes-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - chawla-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ───────────────────────────────────────────────────────────
+  # Nginx Reverse Proxy (Optional for production-like setup)
+  # ───────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: chawla-classes-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - chawla-network
+    restart: unless-stopped
+
+networks:
+  chawla-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

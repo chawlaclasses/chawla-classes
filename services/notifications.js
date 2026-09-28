@@ -1,0 +1,321 @@
+// services/notifications.js
+"use strict";
+
+const db = require('./jsonDb');
+const { v4: uuidv4 } = require('uuid');
+const logger = require('../utils/logger');
+const fcm = require('./fcm');
+
+class NotificationService {
+    constructor() {
+        this.collection = 'notifications';
+    }
+
+    async createNotification(userId, type, title, message, data = null) {
+        const notification = {
+            id: uuidv4(),
+            userId,
+            type,
+            title,
+            message,
+            data,
+            read: false,
+            createdAt: new Date().toISOString(),
+            readAt: null
+        };
+
+        await db.insert(this.collection, notification);
+
+        return notification;
+    }
+
+    async getNotifications(userId, filters = {}) {
+        const query = { userId };
+        
+        if (filters.read !== undefined) {
+            query.read = filters.read;
+        }
+        
+        if (filters.type) {
+            query.type = filters.type;
+        }
+
+        const notifications = await db.find(this.collection, query, {
+            sort: 'createdAt:desc',
+            limit: filters.limit || 50
+        });
+
+        return notifications;
+    }
+
+    // FIX (connections audit 2026-09): the student app's Notice/Notification
+    // detail screen calls GET /api/notifications/:id (see
+    // ApiConstants.notificationDetail in the Flutter app), but no route or
+    // service method returned a single notification — every open from the
+    // list screen 404'd. Mirrors markRead/deleteNotification's own
+    // ownership check (userId) so a student can't fetch someone else's
+    // notification by guessing an id.
+    async getById(notificationId, userId) {
+        const notification = await db.findOne(this.collection, {
+            id: notificationId,
+            userId
+        });
+
+        if (!notification) throw new Error('Notification not found');
+
+        return notification;
+    }
+
+    async markRead(notificationId, userId) {
+        const notification = await db.findOne(this.collection, {
+            id: notificationId,
+            userId
+        });
+
+        if (!notification) throw new Error('Notification not found');
+
+        notification.read = true;
+        notification.readAt = new Date().toISOString();
+        await db.updateById(this.collection, notificationId, notification);
+
+        return notification;
+    }
+
+    async markAllRead(userId) {
+        const notifications = await db.find(this.collection, {
+            userId,
+            read: false
+        });
+
+        for (const notification of notifications) {
+            notification.read = true;
+            notification.readAt = new Date().toISOString();
+            await db.updateById(this.collection, notification.id, notification);
+        }
+
+        return notifications.length;
+    }
+
+    async deleteNotification(notificationId, userId) {
+        const notification = await db.findOne(this.collection, {
+            id: notificationId,
+            userId
+        });
+
+        if (!notification) throw new Error('Notification not found');
+
+        await db.deleteById(this.collection, notificationId);
+        return true;
+    }
+
+    async getUnreadCount(userId) {
+        const notifications = await db.find(this.collection, {
+            userId,
+            read: false
+        });
+        return notifications.length;
+    }
+
+    // Notification types
+    async sendTestReminder(studentId, testName, testDate) {
+        return this.createNotification(
+            studentId,
+            'test_reminder',
+            `Upcoming Test: ${testName}`,
+            `Your ${testName} is scheduled for ${testDate}`,
+            { testName, testDate }
+        );
+    }
+
+    async sendResultNotification(studentId, testName, score) {
+        return this.createNotification(
+            studentId,
+            'result',
+            `Results Available: ${testName}`,
+            `You scored ${score}% in ${testName}`,
+            { testName, score }
+        );
+    }
+
+    async sendHomeworkReminder(studentId, homeworkTitle, dueDate) {
+        return this.createNotification(
+            studentId,
+            'homework',
+            `Homework Due: ${homeworkTitle}`,
+            `Your homework "${homeworkTitle}" is due on ${dueDate}`,
+            { homeworkTitle, dueDate }
+        );
+    }
+
+    async sendAnnouncement(studentId, title, message, data = null) {
+        return this.createNotification(
+            studentId,
+            'announcement',
+            title,
+            message,
+            data
+        );
+    }
+
+    async sendAttendanceAlert(studentId, message) {
+        return this.createNotification(
+            studentId,
+            'attendance',
+            'Attendance Alert',
+            message,
+            { type: 'attendance_alert' }
+        );
+    }
+
+    async sendFeeReminder(studentId, amount, dueDate) {
+        return this.createNotification(
+            studentId,
+            'fee',
+            'Fee Payment Reminder',
+            `Fee of ₹${amount} is due on ${dueDate}`,
+            { amount, dueDate }
+        );
+    }
+
+    async sendAchievementNotification(studentId, achievementTitle) {
+        return this.createNotification(
+            studentId,
+            'achievement',
+            `Achievement Unlocked! 🎉`,
+            `You've earned "${achievementTitle}"`,
+            { achievement: achievementTitle }
+        );
+    }
+
+    async sendPracticeReminder(studentId, subject) {
+        return this.createNotification(
+            studentId,
+            'practice',
+            'Practice Reminder',
+            `Time to practice ${subject}! Keep your streak going.`,
+            { subject }
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // NEW (Live Classes + Online Tests, real device push): same in-app
+    // notification createNotification() already wrote for every existing
+    // caller (Notices included), PLUS an actual FCM push so the student's
+    // phone is notified even if the app is closed — createNotification()
+    // itself is untouched (every existing caller's behavior is unchanged).
+    // deepLinkId is what PushNotificationService.fromRemoteMessage reads
+    // back out as `data.id` on the device (see push_notification_service
+    // .dart) — for a live class or test alert this should be that live
+    // class's/test's own _id, so tapping the push can navigate straight
+    // to it.
+    // ------------------------------------------------------------------
+    async notifyAndPush(userId, type, title, message, data, deepLinkId) {
+        const notification = await this.createNotification(userId, type, title, message, data);
+        try {
+            await fcm.sendToUser(userId, { title, body: message, data: { type, id: deepLinkId } });
+        } catch (error) {
+            logger.error(`FCM push failed for user ${userId}: ${error.message}`);
+        }
+        return notification;
+    }
+
+    // Same as notifyAndPush, but writes one in-app notification per user
+    // (so each student's own read/unread state is independent, same as
+    // sendBulkNotifications below) and sends a single FCM multicast call
+    // for the whole list instead of one push per user.
+    async notifyManyAndPush(userIds, type, title, message, data, deepLinkId) {
+        const notifications = [];
+        for (const userId of userIds) {
+            notifications.push(await this.createNotification(userId, type, title, message, data));
+        }
+        try {
+            await fcm.sendToUsers(userIds, { title, body: message, data: { type, id: deepLinkId } });
+        } catch (error) {
+            logger.error(`Bulk FCM push failed (${type}): ${error.message}`);
+        }
+        return notifications;
+    }
+
+    // Bulk notifications
+    async sendBulkNotifications(userIds, type, title, message, data = null) {
+        const notifications = [];
+        for (const userId of userIds) {
+            const notification = await this.createNotification(
+                userId,
+                type,
+                title,
+                message,
+                data
+            );
+            notifications.push(notification);
+        }
+        return notifications;
+    }
+
+    // Send to all students in a class
+    async sendClassAnnouncement(classId, title, message, data = null) {
+        const students = await db.find('students', { class: classId });
+        return this.sendBulkNotifications(
+            students.map(s => s.id),
+            'announcement',
+            title,
+            message,
+            data
+        );
+    }
+
+    // Send to all students in a batch
+    async sendBatchAnnouncement(batchId, title, message, data = null) {
+        const students = await db.find('students', { batch: batchId });
+        return this.sendBulkNotifications(
+            students.map(s => s.id),
+            'announcement',
+            title,
+            message,
+            data
+        );
+    }
+
+    // Cleanup old notifications
+    async cleanupOldNotifications(days = 30) {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        cutoff.setHours(0, 0, 0, 0);
+
+        const notifications = await db.find(this.collection, {
+            read: true,
+            createdAt: { $lt: cutoff.toISOString() }
+        });
+
+        for (const notification of notifications) {
+            await db.deleteById(this.collection, notification.id);
+        }
+
+        return notifications.length;
+    }
+
+    // Get notification statistics
+    async getStats(userId) {
+        const all = await db.find(this.collection, { userId });
+        const unread = all.filter(n => !n.read);
+        const byType = {};
+        
+        all.forEach(n => {
+            byType[n.type] = (byType[n.type] || 0) + 1;
+        });
+
+        return {
+            total: all.length,
+            unread: unread.length,
+            byType,
+            lastWeek: all.filter(n => {
+                const date = new Date(n.createdAt);
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                return date > weekAgo;
+            }).length
+        };
+    }
+}
+
+module.exports = new NotificationService();

@@ -1,0 +1,1 @@
+{ "name": "chawla-fcm-module", "private": true, "description": "Drop-in FCM module for the Chawla Classes backend", "dependencies": { "firebase-admin": "^14.5.0" } }

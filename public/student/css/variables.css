@@ -1,0 +1,71 @@
+/* public/student/css/variables.css */
+:root {
+    /* Colors */
+    --navy: #0a1628;
+    --navy-light: #132044;
+    --navy-dark: #060e1a;
+    --gold: #c9a84c;
+    --gold-light: #e8d07a;
+    --gold-dark: #a8892e;
+    --white: #ffffff;
+    
+    /* Grays */
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
+    
+    /* Effects */
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 12px 48px -8px rgba(0, 0, 0, 0.18);
+    --shadow-xl: 0 24px 64px -12px rgba(0, 0, 0, 0.25);
+    
+    /* Radius */
+    --radius-sm: 8px;
+    --radius: 16px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
+    
+    /* Transitions */
+    --transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Layout */
+    --sidebar-width: 280px;
+    --header-height: 72px;
+    
+    /* Typography */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Light Theme */
+[data-theme="light"] {
+    --navy: #f8fafc;
+    --navy-light: #ffffff;
+    --navy-dark: #f1f5f9;
+    --white: #0f172a;
+    --gray-50: #0f172a;
+    --gray-100: #1e293b;
+    --gray-200: #334155;
+    --gray-300: #475569;
+    --gray-400: #64748b;
+    --gray-500: #94a3b8;
+    --gray-600: #cbd5e1;
+    --gray-700: #e2e8f0;
+    --gray-800: #f1f5f9;
+    --gray-900: #f8fafc;
+    --glass-bg: rgba(0, 0, 0, 0.04);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 12px 48px -8px rgba(0, 0, 0, 0.1);
+}

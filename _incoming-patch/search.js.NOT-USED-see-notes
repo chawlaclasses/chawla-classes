@@ -1,0 +1,314 @@
+/**
+ * routes/admin/search.js
+ *
+ * Global header search (the "Search anything..." box in dashboard.html's
+ * top bar). Searches across every module the person has view permission for.
+ *
+ * Each result: { category, section, id, title, subtitle, icon }.
+ */
+
+"use strict";
+
+const express = require("express");
+const router = express.Router();
+
+const db = require("../../services/jsonDb");
+const logger = require("../../utils/logger");
+const { hasPermission } = require("../../config/permissions");
+
+// Cap per category so one huge match can't crowd out other categories
+const RESULTS_PER_CATEGORY = 5;
+
+// Case-insensitive substring match across multiple fields
+function textMatch(q, ...fields) {
+  if (!q || typeof q !== "string") return false;
+  const needle = q.toLowerCase().trim();
+  if (needle.length === 0) return false;
+  
+  return fields.some(f => {
+    if (typeof f === "string") {
+      return f.toLowerCase().includes(needle);
+    }
+    if (typeof f === "number") {
+      return String(f).includes(needle);
+    }
+    return false;
+  });
+}
+
+router.get("/", (req, res) => {
+  try {
+    const q = (req.query.q || "").toString().trim();
+    
+    // Require minimum 2 characters
+    if (q.length < 2) {
+      return res.json({ success: true, data: { results: [] } });
+    }
+
+    const role = req.userData?.role || "admin";
+    const results = [];
+
+    // ---- STUDENTS ----
+    if (hasPermission(role, "students:view")) {
+      try {
+        const students = db.find("users", { role: "student" }) || [];
+        students
+          .filter(u => textMatch(q, u.name, u.email, u.rollNumber))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(u => {
+            results.push({
+              category: "Students",
+              section: "students",
+              id: u._id,
+              title: u.name || "Student",
+              subtitle: u.email || u.rollNumber || "",
+              icon: "fa-users",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching students:", e.message);
+      }
+    }
+
+    // ---- STAFF ----
+    if (hasPermission(role, "staff:view")) {
+      try {
+        const staff = db.find("users", {}) || [];
+        staff
+          .filter(u => u.role && u.role !== "student")
+          .filter(u => textMatch(q, u.name, u.email, u.role))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(u => {
+            results.push({
+              category: "Staff",
+              section: "staff",
+              id: u._id,
+              title: u.name || "Staff",
+              subtitle: u.role || "",
+              icon: "fa-user-shield",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching staff:", e.message);
+      }
+    }
+
+    // ---- FACULTY RECRUITMENT ----
+    if (hasPermission(role, "recruitment:view")) {
+      try {
+        const apps = db.find("facultyApplications", {}) || [];
+        apps
+          .filter(a => textMatch(q, a.fullName, a.email, a.phone))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(a => {
+            results.push({
+              category: "Faculty Recruitment",
+              section: "recruitment",
+              id: a._id,
+              title: a.fullName || "Application",
+              subtitle: a.status || "",
+              icon: "fa-user-tie",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching recruitment:", e.message);
+      }
+    }
+
+    // ---- CLASSES ----
+    if (hasPermission(role, "classes:view")) {
+      try {
+        const classes = db.find("classes", {}) || [];
+        classes
+          .filter(c => textMatch(q, c.name, c.displayName, c.code))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(c => {
+            results.push({
+              category: "Classes",
+              section: "classes",
+              id: c._id,
+              title: c.displayName || c.name || "Class",
+              subtitle: "Class",
+              icon: "fa-school",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching classes:", e.message);
+      }
+    }
+
+    // ---- SUBJECTS ----
+    if (hasPermission(role, "subjects:view")) {
+      try {
+        const subjects = db.find("subjects", {}) || [];
+        subjects
+          .filter(s => textMatch(q, s.name, s.code))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(s => {
+            results.push({
+              category: "Subjects",
+              section: "subjects",
+              id: s._id,
+              title: s.name || "Subject",
+              subtitle: s.code || "Subject",
+              icon: "fa-book",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching subjects:", e.message);
+      }
+    }
+
+    // ---- TEST SERIES ----
+    if (hasPermission(role, "series:view")) {
+      try {
+        const series = db.find("series", {}) || [];
+        series
+          .filter(s => textMatch(q, s.name, s.description))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(s => {
+            results.push({
+              category: "Test Series",
+              section: "series",
+              id: s._id,
+              title: s.name || "Series",
+              subtitle: s.type || "Series",
+              icon: "fa-layer-group",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching series:", e.message);
+      }
+    }
+
+    // ---- TESTS ----
+    if (hasPermission(role, "tests:view")) {
+      try {
+        const tests = db.find("tests", {}) || [];
+        tests
+          .filter(t => textMatch(q, t.title, t.description))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(t => {
+            results.push({
+              category: "Tests",
+              section: "tests",
+              id: t._id,
+              title: t.title || "Test",
+              subtitle: t.isPublished ? "Published" : "Draft",
+              icon: "fa-file-alt",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching tests:", e.message);
+      }
+    }
+
+    // ---- QUESTION BANK ----
+    if (hasPermission(role, "questions:view")) {
+      try {
+        const questions = db.find("questions", {}) || [];
+        questions
+          .filter(qn => textMatch(q, qn.questionText, qn.chapter, qn.topic, qn.tags))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(qn => {
+            const questionSnippet = (qn.questionText || "")
+              .replace(/<[^>]*>/g, "") // Remove HTML tags if any
+              .slice(0, 80);
+            
+            results.push({
+              category: "Question Bank",
+              section: "questions",
+              id: qn._id,
+              title: questionSnippet || "Question",
+              subtitle: qn.chapter || qn.topic || "",
+              icon: "fa-question-circle",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching questions:", e.message);
+      }
+    }
+
+    // ---- HOMEWORK ----
+    if (hasPermission(role, "homework:view")) {
+      try {
+        const homework = db.find("homework", {}) || [];
+        homework
+          .filter(h => textMatch(q, h.title, h.description, h.chapter))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(h => {
+            results.push({
+              category: "Homework",
+              section: "homework",
+              id: h._id,
+              title: h.title || "Homework",
+              subtitle: h.chapter || h.subject || "",
+              icon: "fa-tasks",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching homework:", e.message);
+      }
+    }
+
+    // ---- DOUBTS ----
+    if (hasPermission(role, "doubts:view")) {
+      try {
+        const doubts = db.find("doubts", {}) || [];
+        doubts
+          .filter(d => textMatch(q, d.question, d.subject, d.topic))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(d => {
+            results.push({
+              category: "Doubts",
+              section: "doubts",
+              id: d._id,
+              title: (d.question || "").slice(0, 60) || "Doubt",
+              subtitle: d.subject || d.topic || "",
+              icon: "fa-lightbulb",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching doubts:", e.message);
+      }
+    }
+
+    // ---- ENQUIRIES ----
+    if (hasPermission(role, "enquiries:view")) {
+      try {
+        const enquiries = db.find("enquiries", {}) || [];
+        enquiries
+          .filter(e => textMatch(q, e.name, e.email, e.phone, e.message))
+          .slice(0, RESULTS_PER_CATEGORY)
+          .forEach(e => {
+            results.push({
+              category: "Enquiries",
+              section: "enquiries",
+              id: e._id,
+              title: e.name || "Enquiry",
+              subtitle: e.email || e.phone || "",
+              icon: "fa-envelope",
+            });
+          });
+      } catch (e) {
+        logger.error("Error searching enquiries:", e.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      data: { results },
+    });
+  } catch (error) {
+    logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, {
+      stack: error.stack,
+    });
+    res.status(500).json({
+      success: false,
+      message: "Search failed",
+      error: error.message,
+    });
+  }
+});
+
+module.exports = router;

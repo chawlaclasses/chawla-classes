@@ -1,0 +1,41 @@
+[
+  {
+    "id": "test_1",
+    "name": "Mathematics - Calculus",
+    "subject": "Mathematics",
+    "class": "12",
+    "batch": "2025-26",
+    "date": "2026-07-04",
+    "time": "2:00 PM",
+    "duration": 90,
+    "totalQuestions": 20,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.921Z"
+  },
+  {
+    "id": "test_2",
+    "name": "Physics - Mechanics",
+    "subject": "Physics",
+    "class": "12",
+    "batch": "2025-26",
+    "date": "2026-07-06",
+    "time": "10:00 AM",
+    "duration": 60,
+    "totalQuestions": 15,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.921Z"
+  },
+  {
+    "id": "test_3",
+    "name": "Chemistry - Organic",
+    "subject": "Chemistry",
+    "class": "12",
+    "batch": "2025-26",
+    "date": "2026-07-08",
+    "time": "3:30 PM",
+    "duration": 75,
+    "totalQuestions": 20,
+    "status": "active",
+    "createdAt": "2026-07-03T19:52:26.921Z"
+  }
+]

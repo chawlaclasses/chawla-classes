@@ -1,0 +1,13 @@
+[
+  {
+    "_id": "mr1xcl1a938nrqtb7",
+    "name": "Class 9",
+    "displayName": "Class IX",
+    "description": "maths chapter 1 test",
+    "subjects": ["mr1xdegshsiawdrx5"],
+    "isActive": true,
+    "createdBy": "mr1u8mhxi2c6x9by0",
+    "createdAt": "2026-07-01T10:20:13.822Z",
+    "updatedAt": "2026-07-01T10:20:51.965Z"
+  }
+]

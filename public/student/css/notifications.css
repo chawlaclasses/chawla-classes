@@ -1,0 +1,141 @@
+/* public/student/css/notifications.css */
+.notification-panel {
+    position: fixed;
+    top: 0;
+    right: -420px;
+    width: 400px;
+    height: 100vh;
+    background: var(--navy-light);
+    border-left: 1px solid var(--glass-border);
+    z-index: 200;
+    padding: 24px;
+    transition: right 0.3s ease;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+}
+
+.notification-panel.open {
+    right: 0;
+}
+
+.notification-panel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.notification-panel .panel-header h3 {
+    font-size: 18px;
+}
+
+.notification-panel .panel-header .close-btn {
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.notification-panel .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.notification-panel .tabs button {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--gray-400);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: var(--transition);
+    font-family: inherit;
+}
+
+.notification-panel .tabs button.active {
+    background: var(--gold);
+    color: var(--navy-dark);
+    border-color: var(--gold);
+}
+
+.notification-panel .tabs button:hover:not(.active) {
+    background: var(--glass-bg);
+}
+
+.notification-item {
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--glass-border);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.notification-item:hover {
+    padding-left: 8px;
+}
+
+.notification-item .icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--gold);
+}
+
+.notification-item .content .title {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--white);
+}
+
+.notification-item .content .desc {
+    font-size: 13px;
+    color: var(--gray-400);
+}
+
+.notification-item .content .time {
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-top: 4px;
+}
+
+.notification-item.unread .content .title {
+    color: var(--gold);
+}
+
+.notification-item.unread::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+/* Topbar Notification Icon */
+.icon-btn .dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid var(--navy-dark);
+    display: none;
+}
+
+.icon-btn .dot.active {
+    display: block;
+}
