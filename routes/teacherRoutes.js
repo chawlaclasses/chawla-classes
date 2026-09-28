@@ -394,6 +394,7 @@ router.post('/notices', async (req, res) => {
         }
 
         const students = db.findAll('users').filter(u => u.role === 'student' && u.classId === classId);
+<<<<<<< HEAD
         for (const student of students) {
             await notificationService.createNotification(
                 student._id,
@@ -403,6 +404,26 @@ router.post('/notices', async (req, res) => {
                 { classId, teacherId: teacher._id, teacherName: teacher.name }
             );
         }
+=======
+
+        // FIX (2026-09): this used to loop createNotification() per student,
+        // which only writes the in-app notification row — it never touched
+        // services/fcm.js, so a Notice showed up inside the app's
+        // Notifications list but never fired an actual phone push (unlike
+        // Live Classes below, which already used notifyManyAndPush). Switched
+        // to notifyManyAndPush so a notice now also reaches the student's
+        // phone even if the app is closed/backgrounded. No deep-link target
+        // for a notice, so deepLinkId is left null (PushNotificationService
+        // on the app side already treats it as optional).
+        await notificationService.notifyManyAndPush(
+            students.map(s => s._id),
+            'notice',
+            title,
+            message,
+            { classId, teacherId: teacher._id, teacherName: teacher.name },
+            null
+        );
+>>>>>>> abf3b5bc0d36e3261db6bbefb9f12b8672844ab8
 
         res.status(201).json({ success: true, data: { notifiedCount: students.length }, message: 'Notice sent' });
     } catch (error) {

@@ -84,4 +84,8 @@ exports.getStats = asyncHandler(async (req, res) => {
         success: true,
         data: stats
     });
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> abf3b5bc0d36e3261db6bbefb9f12b8672844ab8

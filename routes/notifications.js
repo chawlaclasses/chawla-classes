@@ -47,4 +47,8 @@ router.get('/:notificationId',
     notificationController.getNotificationById
 );
 
+<<<<<<< HEAD
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> abf3b5bc0d36e3261db6bbefb9f12b8672844ab8
