@@ -10,6 +10,7 @@
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getMessaging } = require('firebase-admin/messaging');
 const DeviceToken = require('../models/DeviceToken');
+const mongoose = require('mongoose');
 
 const EXPECTED_PROJECT_ID = 'chawla-classes-student-app';
 // Must equal kPushChannelId in the Flutter app AND the manifest default channel.
@@ -107,7 +108,10 @@ const DEAD = new Set([
 async function sendToUsers(userIds, payload) {
   const result = { devices: 0, success: 0, failure: 0, pruned: 0, errors: [] };
   if (!init()) { result.errors.push(`init: ${initError && initError.message}`); return result; }
-
+  console.log(
+  '[FCM] Mongo readyState:',
+  mongoose.connection.readyState
+  );
   const rows = await DeviceToken.find({ userId: { $in: userIds } }).select('token').lean();
   const tokens = [...new Set(rows.map((r) => r.token))];
   result.devices = tokens.length;
