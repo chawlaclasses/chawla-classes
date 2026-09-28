@@ -48,5 +48,3 @@ router.get('/:notificationId',
 );
 
 module.exports = router;
-=======
-module.exports = router;
