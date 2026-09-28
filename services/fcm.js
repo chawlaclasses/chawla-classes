@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // services/fcm.js — the ONLY place firebase-admin is initialised and FCM is called.
 //
 // Env (Render):
@@ -274,4 +273,3 @@ async function sendToUser(userId, payload) {
 }
 
 module.exports = { isEnabled, sendToUsers, sendToUser };
->>>>>>> abf3b5bc0d36e3261db6bbefb9f12b8672844ab8
