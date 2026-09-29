@@ -103,10 +103,9 @@ function normalisePayload(p = {}) {
   };
 }
 
-function buildMessage(tokens, rawPayload) {
+function buildPayloadParts(rawPayload) {
   const { title, body, type, id, extra } = normalisePayload(rawPayload);
   return {
-    tokens,
     // notification + data ("hybrid"): the Android system draws it when the app is
     // backgrounded/killed (survives OEM task-killers far better than data-only),
     // and the app still receives `data` for tap navigation.
@@ -121,6 +120,17 @@ function buildMessage(tokens, rawPayload) {
       notification: { channelId: CHANNEL_ID, ...(id && { tag: `${str(type)}-${str(id)}` }) },
     },
   };
+}
+
+function buildMessage(tokens, rawPayload) {
+  return { tokens, ...buildPayloadParts(rawPayload) };
+}
+
+/** Same shape as buildMessage but for ONE token — sendEach() (not
+ * sendEachForMulticast) takes an array of these, each free to carry its
+ * OWN data. Used by sendPersonalizedToUsers below. */
+function buildSingleMessage(token, rawPayload) {
+  return { token, ...buildPayloadParts(rawPayload) };
 }
 
 const DEAD = new Set([
@@ -184,7 +194,62 @@ function sendToUser(userId, payload) {
   return sendToUsers([userId], payload);
 }
 
+/**
+ * Like sendToUsers, but each recipient gets THEIR OWN `data.id` instead of
+ * one shared id for the whole batch — needed for Notices, where every
+ * student has their own separate per-student notification row (see
+ * services/notifications.js#notifyManyAndPush) and the app resolves a tap
+ * via GET /api/notifications/:id scoped to that student's own row, not a
+ * shared "notice" id. Uses sendEach() (one Message per token, each free to
+ * carry different data) instead of sendEachForMulticast()'s single shared
+ * message — still one batched API call per 500-token chunk, not one HTTP
+ * call per student.
+ * @param {Object<string,string>} userDeepLinkMap  userId -> that user's own deepLinkId
+ * @param {{title,body,type}} payload
+ * @returns {Promise<{devices:number, success:number, failure:number, pruned:number, errors:string[]}>}
+ */
+async function sendPersonalizedToUsers(userDeepLinkMap, payload) {
+  const result = { devices: 0, success: 0, failure: 0, pruned: 0, errors: [] };
+  if (!init()) { result.errors.push(`init: ${initError && initError.message}`); return result; }
+
+  const map = userDeepLinkMap || {};
+  const wanted = new Set(Object.keys(map));
+  const rows = db.findAll('deviceTokens').filter((r) => r && r.token && wanted.has(String(r.userId)));
+  result.devices = rows.length;
+  if (!rows.length) {
+    console.warn('[FCM] no registered devices for these users — nothing to send (are students registering tokens?)');
+    return result;
+  }
+
+  for (let i = 0; i < rows.length; i += MULTICAST_LIMIT) {
+    const chunk = rows.slice(i, i + MULTICAST_LIMIT);
+    const messages = chunk.map((r) => buildSingleMessage(r.token, { ...payload, id: map[String(r.userId)] }));
+    try {
+      const res = await messaging().sendEach(messages);
+      result.success += res.successCount;
+      result.failure += res.failureCount;
+      const dead = [];
+      res.responses.forEach((r, idx) => {
+        if (r.success) return;
+        const code = (r.error && r.error.code) || 'unknown';
+        const msg = (r.error && r.error.message) || '';
+        if (isDeadToken(code, msg)) dead.push(chunk[idx].token);
+        else { result.errors.push(code); console.error(`[FCM] send error: ${code} ${msg}`); }
+      });
+      if (dead.length) {
+        for (const t of dead) result.pruned += db.deleteOne('deviceTokens', { token: t }).deletedCount || 0;
+      }
+    } catch (e) {
+      result.failure += chunk.length;
+      result.errors.push(`${e.code || 'batch'}: ${e.message}`);
+      console.error(`[FCM] batch FAILED: ${e.code} ${e.message}`);
+    }
+  }
+  console.log(`[FCM] ${payload.type} (personalized): devices=${result.devices} ok=${result.success} fail=${result.failure} pruned=${result.pruned}`);
+  return result;
+}
+
 module.exports = {
-  init, verifyAtStartup, sendToUsers, sendToUser, buildMessage, normalizePrivateKey, CHANNEL_ID,
+  init, verifyAtStartup, sendToUsers, sendToUser, sendPersonalizedToUsers, buildMessage, normalizePrivateKey, CHANNEL_ID,
   _setMessagingForTest: (fn) => { messaging = fn; },
 };
