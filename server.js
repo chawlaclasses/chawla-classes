@@ -27,6 +27,7 @@ const settingsService = require("./services/settings");
 const { ensureAdminAccount } = require("./services/auth");
 
 const db = require("./services/jsonDb");
+const fcm = require("./services/fcm");
 const mongoBackup = require("./services/mongoBackup");
 const { ensureReviewOtpTtlIndex } = require("./services/reviewOtpCleanup");
 const { ensureFormOtpTtlIndex } = require("./services/formOtpCleanup");
@@ -108,6 +109,20 @@ db.connect()
         logger.info(`🚀 Server running on port ${PORT}`);
         logger.info(`📍 http://localhost:${PORT}`);
       });
+    });
+
+    // FIX (notification-system audit): this credential check previously only
+    // existed in server-startup-snippet.js.example — a file nothing ever
+    // required — so a broken/missing Firebase service account was invisible
+    // until a real notice silently failed to push. Runs once at boot,
+    // logged loudly (not thrown) so a Firebase misconfig never blocks the
+    // server itself from starting, same fail-open policy as ensureAdminAccount above.
+    fcm.verifyAtStartup().then((r) => {
+      if (!r.ok) {
+        logger.error(`❌ [FCM] Push notifications are DISABLED: ${r.error}`);
+      } else {
+        logger.info('✅ [FCM] Firebase credentials verified — push notifications enabled');
+      }
     });
   })
   .catch(error => {
