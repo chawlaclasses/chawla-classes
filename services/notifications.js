@@ -221,15 +221,31 @@ class NotificationService {
 
     // Same as notifyAndPush, but writes one in-app notification per user
     // (so each student's own read/unread state is independent, same as
-    // sendBulkNotifications below) and sends a single FCM multicast call
-    // for the whole list instead of one push per user.
+    // sendBulkNotifications below).
+    //
+    // FIX: deepLinkId used to be one shared value (or null) sent to every
+    // recipient — fine for a live class/test, where every student really
+    // does land on the SAME target, but wrong for a Notice: the app opens
+    // a tapped notification via GET /api/notifications/:id scoped to the
+    // STUDENT'S OWN notification row (see NoticeDetailLoaderScreen /
+    // notices_repository.dart on the app side), not a shared id. When the
+    // caller passes an explicit deepLinkId (live classes, test alerts),
+    // that unchanged shared-multicast behavior is kept. When it's left
+    // null/undefined (Notices), each student's OWN just-created
+    // notification id is used instead, via sendPersonalizedToUsers.
     async notifyManyAndPush(userIds, type, title, message, data, deepLinkId) {
         const notifications = [];
         for (const userId of userIds) {
             notifications.push(await this.createNotification(userId, type, title, message, data));
         }
         try {
-            await fcm.sendToUsers(userIds, { title, body: message, data: { type, id: deepLinkId } });
+            if (deepLinkId !== undefined && deepLinkId !== null) {
+                await fcm.sendToUsers(userIds, { title, body: message, data: { type, id: deepLinkId } });
+            } else {
+                const perUserId = {};
+                notifications.forEach((n) => { perUserId[String(n.userId)] = n.id; });
+                await fcm.sendPersonalizedToUsers(perUserId, { title, body: message, type });
+            }
         } catch (error) {
             logger.error(`Bulk FCM push failed (${type}): ${error.message}`);
         }
