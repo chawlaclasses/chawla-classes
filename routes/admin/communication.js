@@ -20,6 +20,7 @@ const { sendMail } = require('../../utils/mailer');
 const { sendWhatsApp } = require('../../utils/whatsapp');
 const { sendSms } = require('../../utils/sms');
 const notificationService = require('../../services/notifications');
+const fcm = require('../../services/fcm');
 
 // Resolves a { targetType, targetValue } pair into the actual list of
 // student records it refers to — shared by the preview and send endpoints
@@ -122,6 +123,16 @@ router.post('/send', requirePermission('communication:send'), async (req, res) =
             sms: { sent: 0, failed: 0 },
         };
 
+        // FIX (notification-system audit): this loop used to call ONLY
+        // createNotification(), which writes the in-app row but never
+        // reaches services/fcm.js — so a Communication Center "push" send
+        // showed up in the student's in-app Notifications list but never
+        // produced an actual phone notification (identical bug to the one
+        // already fixed in routes/teacherRoutes.js's /notices, see the
+        // FIX (2026-09) comment there). Writing the in-app rows in the same
+        // per-student loop (unchanged), then sending ONE FCM multicast for
+        // the whole batch after the loop (matches notifyManyAndPush's
+        // pattern: one push write per student, one push call total).
         for (const student of students) {
             if (selectedChannels.includes('push')) {
                 try {
@@ -146,6 +157,19 @@ router.post('/send', requirePermission('communication:send'), async (req, res) =
             if (selectedChannels.includes('sms')) {
                 const result = await sendSms({ to: student.phone, body: `${title}: ${message.trim()}` });
                 channelResults.sms[result.sent ? 'sent' : 'failed'] += 1;
+            }
+        }
+
+        if (selectedChannels.includes('push')) {
+            try {
+                const push = await fcm.sendToUsers(students.map((s) => s._id), {
+                    title,
+                    body: message.trim(),
+                    type: 'broadcast',
+                });
+                logger.info(`[FCM] Communication Center broadcast "${title}": devices=${push.devices} ok=${push.success} fail=${push.failure}`);
+            } catch (err) {
+                logger.error(`[FCM] Communication Center broadcast push crashed: ${err.message}`);
             }
         }
 
