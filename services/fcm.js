@@ -9,8 +9,7 @@
 // (admin.credential.cert / admin.messaging() / admin.apps are undefined there).
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getMessaging } = require('firebase-admin/messaging');
-const DeviceToken = require('../models/DeviceToken');
-const mongoose = require('mongoose');
+const db = require('./jsonDb');   // SAME store routes/studentRoutes.js POST /device-token writes to ('deviceTokens')
 
 const EXPECTED_PROJECT_ID = 'chawla-classes-student-app';
 // Must equal kPushChannelId in the Flutter app AND the manifest default channel.
@@ -26,21 +25,38 @@ function normalizePrivateKey(raw) {
 
 let initError = null;
 let messaging = () => getMessaging();   // indirection so tests can stub FCM
+function readCredentials() {
+  // Option A (documented in CHANGES.md): whole service-account JSON in one env var.
+  const rawJson = (process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
+  if (rawJson) {
+    const j = JSON.parse(rawJson);
+    return {
+      projectId: (j.project_id || '').trim(),
+      clientEmail: (j.client_email || '').trim(),
+      privateKey: normalizePrivateKey(j.private_key),
+    };
+  }
+  // Option B: three separate env vars.
+  return {
+    projectId: (process.env.FIREBASE_PROJECT_ID || '').trim(),
+    clientEmail: (process.env.FIREBASE_CLIENT_EMAIL || '').trim(),
+    privateKey: normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY),
+  };
+}
+
 function init() {
   if (getApps().length) return true;
-  const projectId = (process.env.FIREBASE_PROJECT_ID || '').trim();
-  const clientEmail = (process.env.FIREBASE_CLIENT_EMAIL || '').trim();
-  const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
   try {
+    const { projectId, clientEmail, privateKey } = readCredentials();
     if (!projectId || !clientEmail || !privateKey) {
-      throw new Error('FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY missing');
+      throw new Error('Firebase credentials missing: set FIREBASE_SERVICE_ACCOUNT_JSON, or FIREBASE_PROJECT_ID + FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY');
     }
     if (projectId !== EXPECTED_PROJECT_ID) {
       // Not fatal to init, but every send to an app token will fail -> shout.
-      console.error(`[FCM] !! FIREBASE_PROJECT_ID="${projectId}" but the app uses "${EXPECTED_PROJECT_ID}". Pushes WILL fail.`);
+      console.error(`[FCM] !! project_id="${projectId}" but the app uses "${EXPECTED_PROJECT_ID}". Pushes WILL fail.`);
     }
     if (!clientEmail.includes(`@${projectId}.iam.gserviceaccount.com`)) {
-      console.error('[FCM] !! FIREBASE_CLIENT_EMAIL does not belong to FIREBASE_PROJECT_ID');
+      console.error('[FCM] !! client_email does not belong to project_id');
     }
     initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
     initError = null;
@@ -74,7 +90,21 @@ async function verifyAtStartup() {
 
 const str = (v) => (v === undefined || v === null ? '' : String(v)); // FCM data values MUST be strings
 
-function buildMessage(tokens, { title, body, type = 'general', id = '', extra = {} }) {
+// notifications.js passes { title, body, data:{type,id} }; older callers pass { type, id }.
+// Accept both — before this, type/id were silently dropped (deep-link data lost).
+function normalisePayload(p = {}) {
+  const d = p.data || {};
+  const { data, ...rest } = p;
+  return {
+    ...rest,
+    type: p.type || d.type || 'general',
+    id: p.id !== undefined && p.id !== null ? p.id : (d.id !== undefined && d.id !== null ? d.id : ''),
+    extra: { ...(p.extra || {}) },
+  };
+}
+
+function buildMessage(tokens, rawPayload) {
+  const { title, body, type, id, extra } = normalisePayload(rawPayload);
   return {
     tokens,
     // notification + data ("hybrid"): the Android system draws it when the app is
@@ -96,8 +126,11 @@ function buildMessage(tokens, { title, body, type = 'general', id = '', extra = 
 const DEAD = new Set([
   'messaging/registration-token-not-registered',
   'messaging/invalid-registration-token',
-  'messaging/invalid-argument',
 ]);
+// 'invalid-argument' is ALSO what FCM returns for a bad *payload*; pruning on it would
+// delete every student's token because of one code bug. Only prune when FCM says the token is the problem.
+const isDeadToken = (code, msg) =>
+  DEAD.has(code) || (code === 'messaging/invalid-argument' && /registration token/i.test(msg || ''));
 
 /**
  * Send one push to every registered device of the given users.
@@ -108,11 +141,9 @@ const DEAD = new Set([
 async function sendToUsers(userIds, payload) {
   const result = { devices: 0, success: 0, failure: 0, pruned: 0, errors: [] };
   if (!init()) { result.errors.push(`init: ${initError && initError.message}`); return result; }
-  console.log(
-  '[FCM] Mongo readyState:',
-  mongoose.connection.readyState
-  );
-  const rows = await DeviceToken.find({ userId: { $in: userIds } }).select('token').lean();
+
+  const wanted = new Set((userIds || []).filter(Boolean).map(String));
+  const rows = db.findAll('deviceTokens').filter((r) => r && r.token && wanted.has(String(r.userId)));
   const tokens = [...new Set(rows.map((r) => r.token))];
   result.devices = tokens.length;
   if (!tokens.length) {
@@ -130,12 +161,12 @@ async function sendToUsers(userIds, payload) {
       res.responses.forEach((r, idx) => {
         if (r.success) return;
         const code = (r.error && r.error.code) || 'unknown';
-        if (DEAD.has(code)) dead.push(chunk[idx]);
-        else { result.errors.push(code); console.error(`[FCM] send error: ${code} ${r.error && r.error.message}`); }
+        const msg = (r.error && r.error.message) || '';
+        if (isDeadToken(code, msg)) dead.push(chunk[idx]);
+        else { result.errors.push(code); console.error(`[FCM] send error: ${code} ${msg}`); }
       });
       if (dead.length) {
-        const del = await DeviceToken.deleteMany({ token: { $in: dead } });
-        result.pruned += del.deletedCount || dead.length;
+        for (const t of dead) result.pruned += db.deleteOne('deviceTokens', { token: t }).deletedCount || 0;
       }
     } catch (e) {
       // Whole-batch failure = auth / project / network problem, not a bad token.
@@ -148,7 +179,12 @@ async function sendToUsers(userIds, payload) {
   return result;
 }
 
+/** Single-user convenience wrapper — services/notifications.js#notifyAndPush calls this. */
+function sendToUser(userId, payload) {
+  return sendToUsers([userId], payload);
+}
+
 module.exports = {
-  init, verifyAtStartup, sendToUsers, buildMessage, normalizePrivateKey, CHANNEL_ID,
+  init, verifyAtStartup, sendToUsers, sendToUser, buildMessage, normalizePrivateKey, CHANNEL_ID,
   _setMessagingForTest: (fn) => { messaging = fn; },
 };
