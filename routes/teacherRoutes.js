@@ -395,25 +395,20 @@ router.post('/notices', async (req, res) => {
 
         const students = db.findAll('users').filter(u => u.role === 'student' && u.classId === classId);
 
-        for (const student of students) {
-            await notificationService.createNotification(
-                student._id,
-                'notice',
-                title,
-                message,
-                { classId, teacherId: teacher._id, teacherName: teacher.name }
-            );
-        }
-
-        // FIX (2026-09): this used to loop createNotification() per student,
-        // which only writes the in-app notification row — it never touched
-        // services/fcm.js, so a Notice showed up inside the app's
-        // Notifications list but never fired an actual phone push (unlike
-        // Live Classes below, which already used notifyManyAndPush). Switched
-        // to notifyManyAndPush so a notice now also reaches the student's
-        // phone even if the app is closed/backgrounded. No deep-link target
-        // for a notice, so deepLinkId is left null (PushNotificationService
-        // on the app side already treats it as optional).
+        // FIX: this used to ALSO loop notificationService.createNotification()
+        // here, before calling notifyManyAndPush() below — but
+        // notifyManyAndPush() already creates one notification per student
+        // itself. Doing both created every Notice TWICE in each student's
+        // in-app Notifications list (one real push either way, since the
+        // FCM send only happened once, but two duplicate rows). Left over
+        // from the migration described in the comment below — the old loop
+        // was meant to be replaced, not kept alongside notifyManyAndPush.
+        //
+        // No shared deep-link target for a notice (each student's tap
+        // should open THEIR OWN notification row, not one shared id) —
+        // deepLinkId is left null on purpose; notifyManyAndPush uses each
+        // student's own just-created notification id instead. See the FIX
+        // comment on notifyManyAndPush in services/notifications.js.
         await notificationService.notifyManyAndPush(
             students.map(s => s._id),
             'notice',
