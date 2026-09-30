@@ -19,12 +19,32 @@
 
 const express = require("express");
 const router = express.Router();
+const mobileApp = require("../services/mobileApp");
+const appDownloadService = require("../services/appDownload");
 
 router.get("/version", (req, res) => {
   const platform = (req.query.platform || "android").toString().toLowerCase();
   const defaultUrl = platform === "ios"
     ? "https://apps.apple.com/app/chawla-classes"
     : "https://play.google.com/store/apps/details?id=com.chawlaclasses.student";
+
+  // Admin -> System -> Mobile App is the source of truth (see
+  // services/mobileApp.js). This legacy endpoint stays so app builds that
+  // still call /api/app/version keep working: forceUpdate maps to
+  // minSupportedVersion = latest version, i.e. "everyone older must update".
+  // The env vars below are only a fallback if the settings can't be read.
+  try {
+    const s = mobileApp.getMobileAppSettings();
+    return res.json({
+      success: true,
+      data: {
+        latestVersion: s.version,
+        minSupportedVersion: s.forceUpdate ? s.version : (process.env.APP_MIN_SUPPORTED_VERSION || "1.0.0"),
+        updateUrl: platform === "ios" ? defaultUrl : s.apkUrl,
+        releaseNotes: s.releaseNotes || null,
+      },
+    });
+  } catch (_) { /* fall through to env-based values */ }
 
   res.json({
     success: true,
