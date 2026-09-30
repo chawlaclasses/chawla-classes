@@ -151,6 +151,8 @@ var sectionLoaders = {
     'categories': function() { return window.loadCategories && window.loadCategories(); },
     'website-builder': function() { return window.loadWebsiteBuilder && window.loadWebsiteBuilder(); },
     'footer-management': function() { return window.loadFooterManagement && window.loadFooterManagement(); },
+    'app-download': function() { return window.loadAppDownload && window.loadAppDownload(); },
+    'mobile-app': function() { return window.loadMobileApp && window.loadMobileApp(); },
     'students': function() { return window.loadStudents && window.loadStudents(); },
     'active-sessions': function() { return window.loadActiveSessions && window.loadActiveSessions(); },
     'login-history': function() { return window.loadLoginHistory && window.loadLoginHistory(); },
