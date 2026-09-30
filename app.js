@@ -108,6 +108,8 @@ const marketingPublicRoutes = require("./routes/marketing");
 const categoriesPublicRoutes = require("./routes/categories");
 const websiteSectionsPublicRoutes = require("./routes/website-sections");
 const footerPublicRoutes = require("./routes/footer");
+const appDownloadPublic = require("./routes/appDownload");
+const mobileAppPublicRoutes = require("./routes/mobileApp");
 const reviewsPublicRoutes = require("./routes/reviews");
 const bookmarksRoutes = require("./routes/bookmarks");
 const practiceRoutes = require("./routes/practice");
@@ -409,6 +411,11 @@ app.set('trust proxy', 1);
     res.sendFile(path.join(__dirname, "public", "site-page.html"));
   });
 
+  // Student App download link used by the website header/footer/drawer/floating
+  // button. Destination is managed from Admin -> App Download (uploaded APK or
+  // external link); see routes/appDownload.js.
+  app.get("/download-app", appDownloadPublic.downloadHandler);
+
   // ── Existing API routes ───────────────────────────────────────────────────
   // FIX: notesRoutes and pdfRoutes were mounted at bare "/" alongside
   // studentRoutes (routes/students.js, the legacy CRUD one). Their generic
@@ -489,6 +496,10 @@ app.set('trust proxy', 1);
   // Admin CRUD is separate (/api/admin/social-links, /api/admin/footer-links,
   // /api/admin/footer-settings).
   app.use("/api/footer", footerPublicRoutes);
+  app.use("/api/app-download", appDownloadPublic.router);
+  // Public, read-only: website banner + Flutter update check. Admin writes are
+  // in routes/admin/mobile-app.js (/api/admin/mobile-app).
+  app.use("/api/mobile-app", mobileAppPublicRoutes);
   // Public — no auth. index.html's "Student Feedback & Rating" form
   // (submission) + the "Student Reviews" section (approved-only read).
   // Admin moderation is separate (/api/admin/reviews).
