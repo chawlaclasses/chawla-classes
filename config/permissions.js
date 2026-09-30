@@ -96,6 +96,9 @@ const ROLE_PERMISSIONS = {
     // changes what every visitor sees on the public site, not financial/
     // student-record data.
     'footer:*',
+    // Mobile App settings (Admin -> System -> Mobile App): APK link, version,
+    // force-update flag and the homepage download banner. Admin + super_admin only.
+    'mobile_app:*',
   ],
 
   // Runs classes and tests. No visibility into money or admissions
