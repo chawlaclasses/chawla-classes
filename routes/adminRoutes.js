@@ -237,6 +237,12 @@ router.use('/social-links', require('./admin/social-links'));
 router.use('/footer-links', require('./admin/footer-links'));
 router.use('/footer-settings', require('./admin/footer-settings'));
 
+// App Download — upload the student-app APK / set its link and choose where
+// the download button shows on the public site. Public side: routes/appDownload.js.
+router.use('/app-download', require('./admin/app-download'));
+// Mobile App settings (version / APK link / force update / homepage banner).
+router.use('/mobile-app', require('./admin/mobile-app'));
+
 // ============================================================
 // Review Management
 // ============================================================
