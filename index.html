@@ -103,6 +103,10 @@
           <a href="/admin/login.html"><i class="fas fa-shield-alt"></i> Admin Login</a>
         </div>
       </li>
+      <!-- App download (Student App) -->
+      <li class="nav-app-item" data-app-slot="header" hidden>
+        <a href="/download-app" class="nav-app-link" rel="noopener"><i class="fab fa-android"></i> <span data-app-label>Get App</span></a>
+      </li>
     </ul>
 
     <!-- Login Buttons -->
@@ -150,6 +154,11 @@
     </a>
     <a href="/admin/login.html" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;justify-content:center;">
       <i class="fas fa-user-shield"></i> Admin Login <i class="fas fa-chevron-right arrow"></i>
+    </a>
+  </li>
+  <li style="padding: 0 20px;" data-app-slot="mobileMenu" hidden>
+    <a href="/download-app" class="drawer-app-link" rel="noopener">
+      <i class="fab fa-android"></i> <span data-app-label>Download Student App</span> <i class="fas fa-download arrow"></i>
     </a>
   </li>
 </ul>
@@ -497,6 +506,23 @@
      install until an admin actually adds a section. -->
 <div id="dynamicHomepageSections"></div>
 
+<!-- MOBILE APP DOWNLOAD BANNER (Admin -> System -> Mobile App) --
+     hidden until public/js/mobile-app-banner.js reads GET /api/mobile-app
+     and finds showBanner = true. -->
+<section class="app-banner" id="appDownloadBanner" aria-labelledby="appBannerTitle" hidden>
+  <div class="app-banner-inner">
+    <img class="app-banner-icon" src="/images/app-icon.png" alt="" width="84" height="84" loading="lazy">
+    <div class="app-banner-text">
+      <span class="app-banner-tag"><i class="fab fa-android"></i> Android App<span id="appBannerVersion"></span></span>
+      <h2 id="appBannerTitle"></h2>
+      <p id="appBannerDesc"></p>
+    </div>
+    <a class="app-banner-btn" id="appBannerBtn" href="#" target="_blank" rel="noopener">
+      <i class="fas fa-download"></i> <span id="appBannerBtnText">Download App</span>
+    </a>
+  </div>
+</section>
+
 </main>
 
 <!-- FOOTER -->
@@ -538,10 +564,16 @@ B.Com | BBA
       </a>
     </div>
   </div>
+  <div class="footer-app" data-app-slot="footer" hidden>
+    <span><i class="fas fa-mobile-alt"></i> <span data-app-footer-text>Chawla Classes Student App</span></span>
+    <a href="/download-app" class="footer-app-btn" rel="noopener"><i class="fab fa-android"></i> Download App</a>
+  </div>
   <div class="footer-social" id="footerSocialLinks"></div>
   <div class="footer-bottom" id="footerBottomBar">&copy; 2026 Chawla Classes. All Rights Reserved.</div>
 </footer>
 <script src="/js/footer.js" defer></script>
+<script src="/js/app-download.js" defer></script>
+<script src="/js/mobile-app-banner.js" defer></script>
 
 <!-- SCROLL TO TOP -->
 <button class="scroll-top" id="scrollTop" aria-label="Scroll to top">
