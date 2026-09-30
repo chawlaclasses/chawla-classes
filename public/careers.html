@@ -166,6 +166,10 @@
           <a href="/admin/login.html"><i class="fas fa-shield-alt"></i> Admin Login</a>
         </div>
       </li>
+      <!-- App download (Student App) -->
+      <li class="nav-app-item" data-app-slot="header" hidden>
+        <a href="/download-app" class="nav-app-link" rel="noopener"><i class="fab fa-android"></i> <span data-app-label>Get App</span></a>
+      </li>
     </ul>
 
     <a href="/admission.html" class="call-btn">Admission Open</a>
@@ -202,6 +206,11 @@
         <i class="fas fa-user-shield"></i> Admin Login <i class="fas fa-chevron-right arrow"></i>
       </a>
     </li>
+  <li style="padding: 0 20px;" data-app-slot="mobileMenu" hidden>
+    <a href="/download-app" class="drawer-app-link" rel="noopener">
+      <i class="fab fa-android"></i> <span data-app-label>Download Student App</span> <i class="fas fa-download arrow"></i>
+    </a>
+  </li>
   </ul>
   <div class="drawer-footer">
     <a href="tel:9717914003" class="drawer-call-cta">
@@ -482,10 +491,15 @@ B.Com | BBA
       </a>
     </div>
   </div>
+  <div class="footer-app" data-app-slot="footer" hidden>
+    <span><i class="fas fa-mobile-alt"></i> <span data-app-footer-text>Chawla Classes Student App</span></span>
+    <a href="/download-app" class="footer-app-btn" rel="noopener"><i class="fab fa-android"></i> Download App</a>
+  </div>
   <div class="footer-social" id="footerSocialLinks"></div>
   <div class="footer-bottom" id="footerBottomBar">&copy; 2026 Chawla Classes. All Rights Reserved.</div>
 </footer>
 <script src="/js/footer.js" defer></script>
+<script src="/js/app-download.js" defer></script>
 
 <button class="scroll-top" id="scrollTop" aria-label="Scroll to top"><i class="fas fa-chevron-up"></i></button>
 <a href="tel:9717914003" class="call-floating-btn"><i class="fas fa-phone"></i></a>
