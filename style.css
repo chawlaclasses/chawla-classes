@@ -5680,3 +5680,74 @@ footer { background: #081b36; padding: 60px 8% 20px; color: white; }
   .bannerSwiper .swiper-button-next::after,
   .bannerSwiper .swiper-button-prev::after { font-size: 11px; }
 }}
+
+/* ===== Student App download (header / drawer / footer) ===== */
+.nav-app-item { list-style: none; display: flex; align-items: center; }
+.nav-app-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 999px; white-space: nowrap;
+  background: linear-gradient(135deg, #ffc400, #f5a623); color: #081b36 !important;
+  font-weight: 700; font-size: 14px; text-decoration: none;
+  transition: transform .2s, box-shadow .2s;
+}
+.nav-app-link:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245,166,35,.45); }
+.nav-app-link i { color: #081b36; }
+.drawer-nav a.drawer-app-link {
+  background: linear-gradient(135deg, #ffc400, #f5a623); color: #081b36;
+  border-radius: 8px; margin-top: 8px; justify-content: center; font-weight: 700;
+}
+.drawer-nav a.drawer-app-link i { color: #081b36; }
+.footer-app {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px;
+  margin-top: 30px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.15);
+  color: #ddd; font-size: 15px;
+}
+.footer-app i { color: #ffc400; margin-right: 6px; }
+.footer-app-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px;
+  border-radius: 999px; background: linear-gradient(135deg, #ffc400, #f5a623);
+  color: #081b36; font-weight: 700; text-decoration: none;
+  transition: transform .2s, box-shadow .2s;
+}
+.footer-app-btn i { color: #081b36; margin: 0; }
+.footer-app-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245,166,35,.45); }
+@media (max-width: 1100px) { .nav-app-link { padding: 6px 10px; font-size: 13px; } }
+
+/* App download: `hidden` must win over the display rules above; floating button */
+[data-app-slot][hidden] { display: none !important; }
+.app-float-btn {
+  position: fixed; left: 16px; bottom: 20px; z-index: 900;
+  display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px;
+  border-radius: 999px; background: linear-gradient(135deg, #ffc400, #f5a623);
+  color: #081b36; font-weight: 700; font-size: 14px; text-decoration: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,.28); transition: transform .2s;
+}
+.app-float-btn:hover { transform: translateY(-3px); }
+.app-float-btn i { font-size: 18px; }
+
+/* ===== Homepage app download banner (Admin -> Mobile App) ===== */
+.app-banner { padding: 40px 5%; background: #f4f6fb; }
+.app-banner[hidden] { display: none !important; }
+.app-banner-inner {
+  max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: 24px;
+  padding: 26px 30px; border-radius: 22px; color: #fff;
+  background: linear-gradient(135deg, #0b1f3a 0%, #16386b 100%);
+  box-shadow: 0 14px 34px rgba(11,31,58,.28);
+}
+.app-banner-icon { width: 84px; height: 84px; border-radius: 20px; flex: 0 0 auto; background: #fff; box-shadow: 0 6px 16px rgba(0,0,0,.3); }
+.app-banner-text { flex: 1; min-width: 0; }
+.app-banner-tag { display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .6px; color: #ffc400; margin-bottom: 6px; }
+.app-banner-text h2 { margin: 0 0 6px; font-size: 24px; line-height: 1.25; color: #fff; }
+.app-banner-text p { margin: 0; font-size: 15px; color: #cdd6e3; line-height: 1.5; }
+.app-banner-btn {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px;
+  border-radius: 999px; background: linear-gradient(135deg, #ffc400, #f5a623); color: #081b36;
+  font-weight: 700; font-size: 16px; text-decoration: none; transition: transform .2s, box-shadow .2s;
+}
+.app-banner-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245,166,35,.45); }
+@media (max-width: 720px) {
+  .app-banner { padding: 28px 4%; }
+  .app-banner-inner { flex-direction: column; text-align: center; padding: 26px 20px; gap: 16px; }
+  .app-banner-text h2 { font-size: 20px; }
+  .app-banner-btn { width: 100%; justify-content: center; }
+}
