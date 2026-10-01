@@ -324,6 +324,7 @@ const validators = {
     body("description")
       .optional().trim()
       .isLength({ max: 500 }).withMessage("Description cannot exceed 500 characters"),
+    body("streams").optional().isArray().withMessage("Streams must be a list"),
   ],
 
   // ── Subject validators ────────────────────────────────────────────────────
@@ -346,6 +347,8 @@ const validators = {
       .matches(/^[A-Za-z0-9]+$/).withMessage("Subject code must contain only letters and numbers"),
     body("classId")
       .notEmpty().withMessage("Class ID is required"),   // ⭐ FIX: was .isMongoId()
+    body("stream").optional({ checkFalsy: true })
+      .isIn(["Science", "Commerce", "Arts"]).withMessage("Stream must be Science, Commerce or Arts"),
     body("description")
       .optional().trim()
       .isLength({ max: 500 }).withMessage("Description cannot exceed 500 characters"),
@@ -475,6 +478,7 @@ const validators = {
       .isLength({ min: 2, max: 50 }).withMessage("Display name must be 2–50 characters"),
     body("description").optional().trim()
       .isLength({ max: 500 }).withMessage("Description cannot exceed 500 characters"),
+    body("streams").optional().isArray().withMessage("Streams must be a list"),
     body("isActive").optional().isBoolean(),
   ],
 
@@ -573,6 +577,8 @@ const validators = {
     body("parentEmail").optional({ checkFalsy: true }).trim().isEmail().withMessage("Parent email must be a valid email address"),
     body("parentOccupation").optional().trim().isLength({ max: 100 }),
     body("batch").optional().trim().isLength({ max: 50 }),
+    body("stream").optional({ checkFalsy: true })
+      .isIn(["Science", "Commerce", "Arts"]).withMessage("Stream must be Science, Commerce or Arts"),
   ],
 
   updateEnquiry: [
