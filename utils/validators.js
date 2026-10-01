@@ -579,6 +579,7 @@ const validators = {
     body("batch").optional().trim().isLength({ max: 50 }),
     body("stream").optional({ checkFalsy: true })
       .isIn(["Science", "Commerce", "Arts"]).withMessage("Stream must be Science, Commerce or Arts"),
+    body("subjectIds").optional().isArray({ max: 50 }).withMessage("subjectIds must be an array"),
   ],
 
   updateEnquiry: [
