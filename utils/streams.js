@@ -48,9 +48,35 @@ function resolveStudentStream(cls, rawStream) {
 // Students in a class without streams only ever see stream-less subjects, which
 // is every subject in practice, so Class 9/10 behaviour is unchanged.
 function subjectVisibleToStudent(subject, student) {
+  // Subject enrollment: if the admin picked specific subjects for this
+  // student (student.subjectIds non-empty), only those are visible.
+  // Empty / missing = enrolled in every subject of the class (the old
+  // behaviour, so existing students are unaffected).
+  const enrolled = student && Array.isArray(student.subjectIds) ? student.subjectIds : [];
+  if (enrolled.length > 0 && subject && !enrolled.includes(subject._id)) return false;
+
   const subjectStream = subject && subject.stream ? subject.stream : '';
   if (!subjectStream) return true;
   return subjectStream === (student && student.stream ? student.stream : '');
+}
+
+// Validates a list of subject ids chosen for a student against their class
+// (and stream). Returns { ok, subjectIds, message }. Empty list is valid
+// and means "all subjects of the class".
+function resolveStudentSubjects(subjectsOfClass, student, rawIds) {
+  if (rawIds === undefined || rawIds === null) return { ok: true, subjectIds: [] };
+  if (!Array.isArray(rawIds)) return { ok: false, message: 'subjectIds must be an array' };
+  const ids = [...new Set(rawIds.map(String))];
+  const allowed = new Map((subjectsOfClass || []).map(sub => [String(sub._id), sub]));
+  for (const id of ids) {
+    const sub = allowed.get(id);
+    if (!sub) return { ok: false, message: 'One or more selected subjects do not belong to this class' };
+    const subStream = sub.stream || '';
+    if (subStream && subStream !== ((student && student.stream) || '')) {
+      return { ok: false, message: `${sub.name} is not part of the selected stream` };
+    }
+  }
+  return { ok: true, subjectIds: ids };
 }
 
 function filterSubjectsForStudent(subjects, student) {
@@ -65,4 +91,5 @@ module.exports = {
   resolveStudentStream,
   subjectVisibleToStudent,
   filterSubjectsForStudent,
+  resolveStudentSubjects,
 };
