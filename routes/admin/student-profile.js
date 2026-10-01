@@ -21,6 +21,8 @@ const { requirePermission } = require('../../middleware/permissions');
 const { validate } = require('../../middleware/validation');
 const validators = require('../../utils/validators');
 const { resolveStudentStream, resolveStudentSubjects } = require('../../utils/streams');
+const bcrypt = require('bcryptjs');
+const { sendStudentCredentials } = require('../../utils/studentMail');
 const { uploadStudentDocument, studentDocumentMimeGuard, STUDENT_DOCS_DIR } = require('../../middleware/upload');
 const r2Service = require('../../services/r2Service');
 const studentReportService = require('../../services/studentReport');
@@ -212,7 +214,7 @@ router.get('/students/:id/profile', requirePermission('students:view'), async (r
 });
 
 // Update personal + parent details
-router.put('/students/:id/profile', requirePermission('students:edit'), validators.updateStudentProfile, validate, (req, res) => {
+router.put('/students/:id/profile', requirePermission('students:edit'), validators.updateStudentProfile, validate, async (req, res) => {
     try {
         const student = db.findById('users', req.params.id);
         if (!student || student.role !== 'student') {
@@ -221,7 +223,25 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
         if (!isClassAllowedForUser(req.userData, student.classId)) {
             return res.status(403).json({ success: false, message: "You're not assigned to this student's class." });
         }
-        const { phone, dob, rollNumber, address, parentName, parentPhone, parentEmail, parentOccupation, batch, stream, subjectIds } = req.body;
+        const { phone, dob, rollNumber, address, parentName, parentPhone, parentEmail, parentOccupation, batch, stream, subjectIds, email: rawEmail, password, sendEmail, sendToParent } = req.body;
+
+        // Login email / password change (student's Login ID is their email).
+        let credUpdate = {};
+        if (typeof rawEmail === 'string' && rawEmail.trim() !== '') {
+            const newEmail = rawEmail.toLowerCase().trim();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return res.status(400).json({ success: false, message: 'Enter a valid email address' });
+            if (newEmail !== student.email) {
+                const clash = db.find('users', {}).some(u => u._id !== student._id && ((u.email && u.email.toLowerCase() === newEmail) || (u.loginId && String(u.loginId).toLowerCase() === newEmail)));
+                if (clash) return res.status(409).json({ success: false, message: 'A user with this email already exists' });
+                credUpdate.email = newEmail;
+            }
+        }
+        const wantsNewPassword = typeof password === 'string' && password !== '';
+        if (wantsNewPassword) {
+            if (password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+            credUpdate.password = await bcrypt.hash(password, 10);
+            credUpdate.refreshToken = null;
+        }
 
         // Stream can only be one the student's class offers (and is required
         // for classes that have streams).
@@ -248,6 +268,7 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
         }
 
         const updated = db.updateById('users', req.params.id, {
+            ...credUpdate,
             ...streamUpdate,
             ...subjectUpdate,
             ...(phone !== undefined ? { phone } : {}),
@@ -260,8 +281,22 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
             ...(parentOccupation !== undefined ? { parentOccupation } : {}),
             ...(batch !== undefined ? { batch } : {})
         });
-        logAudit(req, 'edit', 'student', req.params.id, `Updated profile for ${student.name}`);
-        res.json({ success: true, data: { ...updated, password: undefined }, message: 'Profile updated' });
+        logAudit(req, 'edit', 'student', req.params.id, `Updated profile for ${student.name}${wantsNewPassword ? ' (password reset)' : ''}${credUpdate.email ? ' (email changed)' : ''}`);
+
+        // Optionally email the login details (student's email, and parent's if asked).
+        let emailNote = '';
+        let emailSent;
+        if (sendEmail === true) {
+            const loginEmail = updated.email;
+            const recipients = [loginEmail];
+            const pe = String(updated.parentEmail || '').trim().toLowerCase();
+            if (sendToParent === true && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pe) && pe !== loginEmail) recipients.push(pe);
+            const results = await sendStudentCredentials(req, { name: updated.name, loginEmail, password: wantsNewPassword ? password : '', recipients, isUpdate: true });
+            const ok = results.filter(r => r.sent).map(r => r.to);
+            emailSent = ok.length > 0;
+            emailNote = ok.length ? ` Login details emailed to ${ok.join(', ')}.` : ' But the email could not be sent.';
+        }
+        res.json({ success: true, data: { ...updated, password: undefined }, emailSent, message: `Profile updated.${emailNote}` });
     } catch (error) {
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
