@@ -18,6 +18,7 @@ const { requirePermission } = require('../../middleware/permissions');
 const { validate } = require('../../middleware/validation');
 const validators = require('../../utils/validators');
 const { isClassAllowedForUser } = require('../../config/permissions');
+const { normalizeStreams } = require('../../utils/streams');
 
 // Get all classes
 router.get('/', requirePermission('classes:view'), (req, res) => {
@@ -123,7 +124,7 @@ router.get('/:id', requirePermission('classes:view'), (req, res) => {
 // Create class
 router.post('/', requirePermission('classes:create'), validators.createClass, validate, (req, res) => {
   try {
-    const { name, displayName, description } = req.body;
+    const { name, displayName, description, streams } = req.body;
 
     if (!name || !displayName) {
       return res.status(400).json({
@@ -145,6 +146,9 @@ router.post('/', requirePermission('classes:create'), validators.createClass, va
       name,
       displayName,
       description,
+      // Streams this class offers (Science / Commerce / Arts). Empty for
+      // classes without streams (e.g. Class 9, 10).
+      streams: normalizeStreams(streams),
       subjects: [],
       isActive: true,
       order: db.find('classes', {}).length,
@@ -168,17 +172,37 @@ router.post('/', requirePermission('classes:create'), validators.createClass, va
 router.put('/:id', requirePermission('classes:edit'), validators.updateClass, validate, (req, res) => {
   try {
     const { id } = req.params;
-    const { name, displayName, description, isActive } = req.body;
+    const { name, displayName, description, isActive, streams } = req.body;
 
     const existing = db.findById('classes', id);
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Class not found' });
     }
 
+    // Only touch streams when the client actually sent them, so older
+    // callers that don't know about streams can't wipe them by accident.
+    let nextStreams = existing.streams || [];
+    if (streams !== undefined) {
+      nextStreams = normalizeStreams(streams);
+      // Don't let an admin un-offer a stream that students/subjects still use.
+      const removed = (existing.streams || []).filter(s => !nextStreams.includes(s));
+      for (const stream of removed) {
+        const studentsUsing = db.find('users', { role: 'student', classId: id, stream }).length;
+        const subjectsUsing = db.find('subjects', { classId: id, stream }).length;
+        if (studentsUsing > 0 || subjectsUsing > 0) {
+          return res.status(400).json({
+            success: false,
+            message: `Cannot remove ${stream}: ${studentsUsing} student(s) and ${subjectsUsing} subject(s) still use it. Move or delete them first.`
+          });
+        }
+      }
+    }
+
     const updated = db.findByIdAndUpdate('classes', id, {
       name: name || existing.name,
       displayName: displayName || existing.displayName,
       description: description !== undefined ? description : existing.description,
+      streams: nextStreams,
       isActive: isActive !== undefined ? isActive : existing.isActive
     });
 
