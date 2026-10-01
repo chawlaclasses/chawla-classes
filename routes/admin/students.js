@@ -24,41 +24,9 @@ const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { normalizeEmail } = require('../../utils/helpers');
 const { isClassAllowedForUser } = require('../../config/permissions');
-const { sendMail } = require('../../utils/mailer');
+const { sendStudentCredentials } = require('../../utils/studentMail');
 const { resolveStudentStream, classHasStreams, normalizeStream, resolveStudentSubjects } = require('../../utils/streams');
 
-
-// Emails a new student's login details. Students sign in with their email,
-// so Login ID == email here. Optionally also sent to a parent/other address.
-function esc(str) {
-    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-async function sendStudentCredentials(req, { name, loginEmail, password, recipients }) {
-    const loginUrl = `${req.protocol}://${req.get('host')}/`;
-    const html = `
-        <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#222;">
-            <h2 style="color:#4f6ef7;">Chawla Classes</h2>
-            <p>Hello,</p>
-            <p>A student account has been created for <strong>${esc(name)}</strong>. Use the details below to sign in:</p>
-            <table style="border-collapse:collapse;margin:14px 0;">
-                <tr><td style="padding:6px 14px 6px 0;color:#666;">Login ID (Email)</td><td style="padding:6px 0;"><strong>${esc(loginEmail)}</strong></td></tr>
-                <tr><td style="padding:6px 14px 6px 0;color:#666;">Password</td><td style="padding:6px 0;"><strong>${esc(password)}</strong></td></tr>
-            </table>
-            <p><a href="${esc(loginUrl)}" style="background:#4f6ef7;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">Open Chawla Classes</a></p>
-            <p style="color:#888;font-size:12px;">Please keep these details private and change the password after your first login.</p>
-        </div>`;
-    const results = [];
-    for (const to of recipients) {
-        try {
-            const r = await sendMail({ to, subject: 'Your Chawla Classes student login details', html });
-            results.push({ to, sent: !!(r && r.sent), reason: r && r.reason });
-        } catch (err) {
-            logger.error(`Student credentials email failed for ${to}: ${err.message}`);
-            results.push({ to, sent: false, reason: err.message });
-        }
-    }
-    return results;
-}
 
 // Create a new student — this was previously only possible via
 // scripts/create-student.js (a CLI script, run once for the demo
