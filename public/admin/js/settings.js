@@ -613,10 +613,18 @@ function filterStudentTimeline(type) {
     renderStudentTimeline(window._timelineEvents || []);
 }
 
-function showEditProfileModal() {
+async function showEditProfileModal() {
     const p = window._currentProfile;
+    // Make sure the subject list is available (Students page may not have been opened first).
+    if (!window._allSubjects || !window._allSubjects.length) {
+        try { window._allSubjects = (await apiCall('/subjects'))?.data || []; } catch (e) { window._allSubjects = []; }
+    }
+    if (!window._allClasses || !window._allClasses.length) {
+        try { window._allClasses = (await apiCall('/classes'))?.data || []; } catch (e) { window._allClasses = []; }
+    }
     showModal('Edit Student Details', 'Update personal and parent details', `
-        ${(p.personalDetails.classStreams || []).length ? `<div class="form-group"><label>Stream *</label><select id="editStream"><option value="">Select stream</option>${p.personalDetails.classStreams.map(st => `<option value="${st}" ${st === p.personalDetails.stream ? 'selected' : ''}>${st}</option>`).join('')}</select></div>` : ''}
+        ${(p.personalDetails.classStreams || []).length ? `<div class="form-group"><label>Stream *</label><select id="editStream" onchange="renderStudentSubjectPicker('editSubjectsWrap','editSubjectsList','${p.personalDetails.classId || ''}',this.value)"><option value="">Select stream</option>${p.personalDetails.classStreams.map(st => `<option value="${st}" ${st === p.personalDetails.stream ? 'selected' : ''}>${st}</option>`).join('')}</select></div>` : ''}
+        ${studentSubjectsFieldHtml('editSubjectsWrap', 'editSubjectsList')}
         <div class="form-group"><label>Phone</label><input type="text" id="editPhone" value="${escapeHtml(p.personalDetails.phone)}"></div>
         <div class="form-group"><label>Date of Birth</label><input type="date" id="editDob" value="${escapeHtml(p.personalDetails.dob)}"></div>
         <div class="form-group"><label>Roll Number</label><input type="text" id="editRollNumber" value="${escapeHtml(p.personalDetails.rollNumber)}"></div>
@@ -643,12 +651,17 @@ function showEditProfileModal() {
             if (!streamEl.value) { showToast('Error', 'Please select a stream', 'error'); return; }
             body.stream = streamEl.value;
         }
+        // Only send subjects if the picker is on screen (student has a class with subjects).
+        if (document.getElementById('editSubjectsWrap')?.style.display !== 'none') {
+            body.subjectIds = getCheckedStudentSubjects('editSubjectsList');
+        }
         const result = await apiCall(`/students/${window._currentProfileId}/profile`, { method: 'PUT', body: JSON.stringify(body) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update profile', 'error'); return; }
         showToast('Success', 'Profile updated', 'success');
         closeModal();
         showStudentProfile(window._currentProfileId);
     });
+    renderStudentSubjectPicker('editSubjectsWrap', 'editSubjectsList', p.personalDetails.classId || '', p.personalDetails.stream || '', p.personalDetails.subjectIds || []);
 }
 
 function showAddNoteModal() {
