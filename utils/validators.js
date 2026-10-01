@@ -568,12 +568,12 @@ const validators = {
   ],
 
   updateStudentProfile: [
-    body("phone").optional().trim().isLength({ min: 7, max: 15 }).withMessage("Phone must be 7–15 characters"),
-    body("dob").optional().isISO8601().withMessage("Date of birth must be a valid date"),
+    body("phone").optional({ checkFalsy: true }).trim().isLength({ min: 7, max: 15 }).withMessage("Phone must be 7–15 characters"),
+    body("dob").optional({ checkFalsy: true }).isISO8601().withMessage("Date of birth must be a valid date"),
     body("rollNumber").optional().trim().isLength({ max: 30 }),
     body("address").optional().trim().isLength({ max: 500 }),
     body("parentName").optional().trim().isLength({ max: 100 }),
-    body("parentPhone").optional().trim().isLength({ min: 7, max: 15 }).withMessage("Parent phone must be 7–15 characters"),
+    body("parentPhone").optional({ checkFalsy: true }).trim().isLength({ min: 7, max: 15 }).withMessage("Parent phone must be 7–15 characters"),
     body("parentEmail").optional({ checkFalsy: true }).trim().isEmail().withMessage("Parent email must be a valid email address"),
     body("parentOccupation").optional().trim().isLength({ max: 100 }),
     body("batch").optional().trim().isLength({ max: 50 }),
