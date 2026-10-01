@@ -468,6 +468,7 @@ function renderStudentProfile() {
                     <div>Email: <span style="color:var(--white);">${escapeHtml(p.personalDetails.email)}</span></div>
                     <div>Phone: <span style="color:var(--white);">${escapeHtml(p.personalDetails.phone) || 'Not set'}</span></div>
                     <div>Roll No: <span style="color:var(--white);">${escapeHtml(p.personalDetails.rollNumber) || 'Not set'}</span></div>
+                    ${(p.personalDetails.classStreams || []).length ? `<div>Stream: <span style="color:var(--white);">${escapeHtml(p.personalDetails.stream) || 'Not set'}</span></div>` : ''}
                     <div>Batch: <span style="color:var(--white);">${escapeHtml(p.personalDetails.batch) || 'Not set'}</span></div>
                     <div>DOB: <span style="color:var(--white);">${escapeHtml(p.personalDetails.dob) || 'Not set'}</span></div>
                     <div>Address: <span style="color:var(--white);">${escapeHtml(p.personalDetails.address) || 'Not set'}</span></div>
@@ -615,6 +616,7 @@ function filterStudentTimeline(type) {
 function showEditProfileModal() {
     const p = window._currentProfile;
     showModal('Edit Student Details', 'Update personal and parent details', `
+        ${(p.personalDetails.classStreams || []).length ? `<div class="form-group"><label>Stream *</label><select id="editStream"><option value="">Select stream</option>${p.personalDetails.classStreams.map(st => `<option value="${st}" ${st === p.personalDetails.stream ? 'selected' : ''}>${st}</option>`).join('')}</select></div>` : ''}
         <div class="form-group"><label>Phone</label><input type="text" id="editPhone" value="${escapeHtml(p.personalDetails.phone)}"></div>
         <div class="form-group"><label>Date of Birth</label><input type="date" id="editDob" value="${escapeHtml(p.personalDetails.dob)}"></div>
         <div class="form-group"><label>Roll Number</label><input type="text" id="editRollNumber" value="${escapeHtml(p.personalDetails.rollNumber)}"></div>
@@ -636,6 +638,11 @@ function showEditProfileModal() {
             parentEmail: document.getElementById('editParentEmail').value.trim(),
             parentOccupation: document.getElementById('editParentOccupation').value.trim()
         };
+        const streamEl = document.getElementById('editStream');
+        if (streamEl) {
+            if (!streamEl.value) { showToast('Error', 'Please select a stream', 'error'); return; }
+            body.stream = streamEl.value;
+        }
         const result = await apiCall(`/students/${window._currentProfileId}/profile`, { method: 'PUT', body: JSON.stringify(body) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update profile', 'error'); return; }
         showToast('Success', 'Profile updated', 'success');
