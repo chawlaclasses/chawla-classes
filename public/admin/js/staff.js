@@ -61,7 +61,7 @@ function renderStaff() {
         ` : `
             <div class="table-container">
                 <table>
-                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Assigned Classes</th><th>Assigned Subjects</th><th>Status</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Name</th><th>Login ID</th><th>Email</th><th>Role</th><th>Assigned Classes</th><th>Assigned Subjects</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
                         ${staff.map(s => {
                             const classesScoped = Array.isArray(s.assignedClasses) && s.assignedClasses.length > 0;
@@ -69,6 +69,7 @@ function renderStaff() {
                             return `
                                 <tr>
                                     <td><strong>${escapeHtml(s.name)}</strong></td>
+                                    <td>${s.loginId ? `<code>${escapeHtml(s.loginId)}</code>` : '<span style="color:var(--muted);" title="Old account — signs in with email. Edit to set a Login ID.">— (uses email)</span>'}</td>
                                     <td>${escapeHtml(s.email)}</td>
                                     <td>${STAFF_ROLE_LABELS[s.role] || escapeHtml(s.role)}</td>
                                     <td>${s.role === 'teacher' ? (classesScoped ? escapeHtml(s.assignedClasses.map(classNameById).join(', ')) : '<span style="color:var(--muted);">All classes</span>') : '<span style="color:var(--muted);">—</span>'}</td>
@@ -146,9 +147,13 @@ function toggleAssignedClassesVisibility(roleSelectId, classWrapperId, subjectWr
 function showAddStaffModal() {
     showModal('Add Staff', 'Create a staff account', `
         <div class="form-group"><label>Name *</label><input type="text" id="staffName" placeholder="e.g., Rohit Chawla"></div>
-        <div class="form-group"><label>Email *</label><input type="email" id="staffEmail" placeholder="teacher@example.com"></div>
+        <div class="form-group"><label>Login ID * <span style="color:var(--muted);font-weight:normal;">(custom username used to sign in — e.g. rohit.sir)</span></label>
+            <input type="text" id="staffLoginId" placeholder="3-30 chars: letters, numbers, . _ -" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+        <div class="form-group"><label>Email * <span style="color:var(--muted);font-weight:normal;">(login details will be sent to this email)</span></label><input type="email" id="staffEmail" placeholder="teacher@example.com" autocomplete="off"></div>
         <div class="form-group"><label>Phone</label><input type="text" id="staffPhone" placeholder="Optional"></div>
-        <div class="form-group"><label>Password *</label><input type="password" id="staffPassword" placeholder="Min 8 characters"></div>
+        <div class="form-group"><label>Password *</label><input type="password" id="staffPassword" placeholder="Min 8 characters" autocomplete="new-password"></div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
+            <input type="checkbox" id="staffSendEmail" checked> Email the Login ID &amp; password to this staff member</label></div>
         <div class="form-group"><label>Role *</label>
             <select id="staffRole" onchange="toggleAssignedClassesVisibility('staffRole', 'staffAssignedClassesWrap', 'staffAssignedSubjectsWrap')">
                 <option value="">Select Role</option>
@@ -165,16 +170,19 @@ function showAddStaffModal() {
         </div>
     `, async () => {
         const name = document.getElementById('staffName').value.trim();
+        const loginId = document.getElementById('staffLoginId').value.trim();
         const email = document.getElementById('staffEmail').value.trim();
         const phone = document.getElementById('staffPhone').value.trim();
         const password = document.getElementById('staffPassword').value;
         const role = document.getElementById('staffRole').value;
-        if (!name || !email || !password || !role) { showToast('Error', 'Name, email, password, and role are required', 'error'); return; }
+        const sendEmail = document.getElementById('staffSendEmail').checked;
+        if (!name || !loginId || !email || !password || !role) { showToast('Error', 'Name, login ID, email, password, and role are required', 'error'); return; }
+        if (!/^[A-Za-z0-9][A-Za-z0-9._-]{2,29}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-30 characters: letters, numbers, dot, underscore or hyphen (no spaces)', 'error'); return; }
         const assignedClasses = role === 'teacher' ? collectCheckedClasses('staffClass') : [];
         const assignedSubjects = role === 'teacher' ? collectCheckedSubjects('staffSubject') : [];
-        const result = await apiCall('/staff', { method: 'POST', body: JSON.stringify({ name, email, phone, password, role, assignedClasses, assignedSubjects }) });
+        const result = await apiCall('/staff', { method: 'POST', body: JSON.stringify({ name, loginId, email, phone, password, role, assignedClasses, assignedSubjects, sendEmail }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to create staff account', 'error'); return; }
-        showToast('Success', 'Staff account created', 'success');
+        showToast(result.emailSent === false && sendEmail ? 'Created (email not sent)' : 'Success', result.message || 'Staff account created', result.emailSent === false && sendEmail ? 'info' : 'success');
         closeModal();
         loadStaff();
     });
@@ -185,11 +193,15 @@ function editStaff(id) {
     if (!item) return;
     showModal('Edit Staff', 'Update staff account', `
         <div class="form-group"><label>Name *</label><input type="text" id="editStaffName" value="${escapeHtml(item.name)}"></div>
-        <div class="form-group"><label>Email</label><input type="email" value="${escapeHtml(item.email)}" disabled></div>
+        <div class="form-group"><label>Login ID <span style="color:var(--muted);font-weight:normal;">(used to sign in)</span></label>
+            <input type="text" id="editStaffLoginId" value="${escapeHtml(item.loginId || '')}" placeholder="${item.loginId ? '' : 'Not set — currently signs in with email. Set one here.'}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+        <div class="form-group"><label>Email <span style="color:var(--muted);font-weight:normal;">(where login details are sent)</span></label><input type="email" id="editStaffEmail" value="${escapeHtml(item.email)}" autocomplete="off"></div>
         <div class="form-group"><label>Phone</label><input type="text" id="editStaffPhone" value="${escapeHtml(item.phone || '')}"></div>
         <div class="form-group"><label>New Password <span style="color:var(--muted);font-weight:normal;">(leave blank to keep the current password)</span></label>
             <input type="password" id="editStaffPassword" placeholder="Min 8 characters" autocomplete="new-password">
         </div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
+            <input type="checkbox" id="editStaffSendEmail"> Email the updated login details to this staff member</label></div>
         <div class="form-group"><label>Role *</label>
             <select id="editStaffRole" onchange="toggleAssignedClassesVisibility('editStaffRole', 'editStaffAssignedClassesWrap', 'editStaffAssignedSubjectsWrap')">
                 ${Object.entries(STAFF_ROLE_LABELS).map(([v, label]) => `<option value="${v}" ${v === item.role ? 'selected' : ''}>${label}</option>`).join('')}
@@ -208,15 +220,20 @@ function editStaff(id) {
         const phone = document.getElementById('editStaffPhone').value.trim();
         const role = document.getElementById('editStaffRole').value;
         const password = document.getElementById('editStaffPassword').value;
+        const loginId = document.getElementById('editStaffLoginId').value.trim();
+        const email = document.getElementById('editStaffEmail').value.trim();
+        const sendEmail = document.getElementById('editStaffSendEmail').checked;
         if (!name || !role) { showToast('Error', 'Name and role are required', 'error'); return; }
+        if (!email) { showToast('Error', 'Email is required', 'error'); return; }
+        if (loginId && !/^[A-Za-z0-9][A-Za-z0-9._-]{2,29}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-30 characters: letters, numbers, dot, underscore or hyphen (no spaces)', 'error'); return; }
         if (password && password.length < 8) { showToast('Error', 'Password must be at least 8 characters', 'error'); return; }
         const assignedClasses = role === 'teacher' ? collectCheckedClasses('editStaffClass') : [];
         const assignedSubjects = role === 'teacher' ? collectCheckedSubjects('editStaffSubject') : [];
-        const body = { name, phone, role, assignedClasses, assignedSubjects };
+        const body = { name, phone, role, assignedClasses, assignedSubjects, email, loginId, sendEmail };
         if (password) body.password = password; // blank = unchanged
         const result = await apiCall(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(body) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update staff account', 'error'); return; }
-        showToast('Success', 'Staff account updated', 'success');
+        showToast('Success', result.message || 'Staff account updated', 'success');
         closeModal();
         loadStaff();
     });
