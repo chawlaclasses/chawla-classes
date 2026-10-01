@@ -37,7 +37,7 @@ function renderSubjects() {
         ` : `
             <div class="table-container">
                 <table>
-                    <thead><tr><th>Name</th><th>Code</th><th>Class</th><th>Status</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Name</th><th>Code</th><th>Class</th><th>Stream</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
                         ${currentData.map(s => {
                             const cls = classes.find(c => c._id === s.classId);
@@ -46,6 +46,7 @@ function renderSubjects() {
                                     <td><strong>${escapeHtml(s.name)}</strong></td>
                                     <td>${escapeHtml(s.code)}</td>
                                     <td>${escapeHtml(cls?.displayName || 'N/A')}</td>
+                                    <td>${s.stream ? `<span class="status-badge status-draft">${escapeHtml(s.stream)}</span>` : '<span style="color:var(--muted);">Common</span>'}</td>
                                     <td><span class="status-badge ${s.isActive ? 'status-active' : 'status-inactive'}">${s.isActive ? 'Active' : 'Inactive'}</span></td>
                                     <td>
                                         <button class="btn btn-success btn-sm" onclick="editSubject('${s._id}')"><i class="fas fa-edit"></i></button>
@@ -61,6 +62,23 @@ function renderSubjects() {
     `;
 }
 
+// Stream picker for a subject. Only shown when the chosen class offers streams.
+// "Common" = taught to every stream in that class (e.g. English).
+function subjectStreamFieldHtml(selectId, wrapId) {
+    return `<div class="form-group" id="${wrapId}" style="display:none;"><label>Stream <span style="color:var(--muted);font-weight:400;">(Common = for all streams)</span></label><select id="${selectId}"></select></div>`;
+}
+
+function refreshSubjectStreamField(classSelectId, selectId, wrapId, selectedStream) {
+    const cls = (window._classes || []).find(c => c._id === document.getElementById(classSelectId).value);
+    const wrap = document.getElementById(wrapId);
+    const sel = document.getElementById(selectId);
+    const streams = (cls && cls.streams) || [];
+    if (!streams.length) { wrap.style.display = 'none'; sel.innerHTML = ''; return; }
+    sel.innerHTML = `<option value="">Common (all streams)</option>` +
+        streams.map(st => `<option value="${st}" ${st === selectedStream ? 'selected' : ''}>${st}</option>`).join('');
+    wrap.style.display = '';
+}
+
 function showAddSubjectModal() {
     const classes = window._classes || [];
     editingId = null;
@@ -68,18 +86,20 @@ function showAddSubjectModal() {
         <div class="form-group"><label>Subject Name *</label><input type="text" id="subjectName" placeholder="e.g., Mathematics"></div>
         <div class="form-group"><label>Subject Code *</label><input type="text" id="subjectCode" placeholder="e.g., MATH101"></div>
         <div class="form-group"><label>Class *</label>
-            <select id="subjectClass"><option value="">Select Class</option>
+            <select id="subjectClass" onchange="refreshSubjectStreamField('subjectClass','subjectStream','subjectStreamWrap')"><option value="">Select Class</option>
                 ${classes.filter(c => c.isActive).map(c => `<option value="${c._id}">${escapeHtml(c.displayName)}</option>`).join('')}
             </select>
         </div>
+        ${subjectStreamFieldHtml('subjectStream', 'subjectStreamWrap')}
         <div class="form-group"><label>Description</label><textarea id="subjectDescription" placeholder="Optional description"></textarea></div>
     `, async () => {
         const name = document.getElementById('subjectName').value.trim();
         const code = document.getElementById('subjectCode').value.trim();
         const classId = document.getElementById('subjectClass').value;
         const description = document.getElementById('subjectDescription').value.trim();
+        const stream = document.getElementById('subjectStream').value;
         if (!name || !code || !classId) { showToast('Error', 'Name, code, and class are required', 'error'); return; }
-        const result = await apiCall('/subjects', { method: 'POST', body: JSON.stringify({ name, code, classId, description }) });
+        const result = await apiCall('/subjects', { method: 'POST', body: JSON.stringify({ name, code, classId, stream, description }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to create subject', 'error'); return; }
         showToast('Success', 'Subject created', 'success');
         closeModal();
@@ -95,8 +115,9 @@ async function editSubject(id) {
         <div class="form-group"><label>Subject Name *</label><input type="text" id="editSubjectName" value="${escapeHtml(item.name)}"></div>
         <div class="form-group"><label>Subject Code *</label><input type="text" id="editSubjectCode" value="${escapeHtml(item.code)}"></div>
         <div class="form-group"><label>Class *</label>
-            <select id="editSubjectClass">${classes.filter(c => c.isActive).map(c => `<option value="${c._id}" ${c._id === item.classId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>
+            <select id="editSubjectClass" onchange="refreshSubjectStreamField('editSubjectClass','editSubjectStream','editSubjectStreamWrap')">${classes.filter(c => c.isActive).map(c => `<option value="${c._id}" ${c._id === item.classId ? 'selected' : ''}>${escapeHtml(c.displayName)}</option>`).join('')}</select>
         </div>
+        ${subjectStreamFieldHtml('editSubjectStream', 'editSubjectStreamWrap')}
         <div class="form-group"><label>Description</label><textarea id="editSubjectDescription">${escapeHtml(item.description || '')}</textarea></div>
         <div class="form-group"><label><input type="checkbox" id="editSubjectActive" ${item.isActive ? 'checked' : ''}> Active</label></div>
     `, async () => {
@@ -105,13 +126,15 @@ async function editSubject(id) {
         const classId = document.getElementById('editSubjectClass').value;
         const description = document.getElementById('editSubjectDescription').value.trim();
         const isActive = document.getElementById('editSubjectActive').checked;
+        const stream = document.getElementById('editSubjectStream').value;
         if (!name || !code || !classId) { showToast('Error', 'Name, code, and class are required', 'error'); return; }
-        const result = await apiCall(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify({ name, code, classId, description, isActive }) });
+        const result = await apiCall(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify({ name, code, classId, stream, description, isActive }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update subject', 'error'); return; }
         showToast('Success', 'Subject updated', 'success');
         closeModal();
         loadSubjects();
     });
+    refreshSubjectStreamField('editSubjectClass', 'editSubjectStream', 'editSubjectStreamWrap', item.stream || '');
 }
 
 async function deleteSubject(id) {
