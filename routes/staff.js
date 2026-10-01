@@ -34,7 +34,9 @@ const { sendMail } = require('../utils/mailer');
 //   loginId -> custom username the admin chooses; used to sign in.
 //   email   -> where the credentials (and later notifications) are sent.
 // ------------------------------------------------------------
-const LOGIN_ID_RE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
+// 3-50 chars; letters, numbers and . _ - @ + (so email-style IDs also work); no spaces.
+const LOGIN_ID_RE = /^[a-z0-9][a-z0-9._@+-]{2,49}$/;
+const LOGIN_ID_MSG = 'Login ID must be 3-50 characters using letters, numbers and . _ - @ + only (no spaces)';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function normalizeLoginId(v) {
@@ -107,7 +109,7 @@ router.post('/', requirePermission('staff:create'), async (req, res) => {
         }
         const loginId = normalizeLoginId(rawLoginId);
         if (!LOGIN_ID_RE.test(loginId)) {
-            return res.status(400).json({ success: false, message: 'Login ID must be 3-30 characters: letters, numbers, dot, underscore or hyphen (no spaces, no @)' });
+            return res.status(400).json({ success: false, message: LOGIN_ID_MSG });
         }
         if (!STAFF_ROLES.includes(role)) {
             return res.status(400).json({ success: false, message: `Role must be one of: ${STAFF_ROLES.join(', ')}` });
@@ -212,7 +214,7 @@ router.put('/:id', requirePermission('staff:edit'), async (req, res) => {
         if (rawLoginId !== undefined && rawLoginId !== null && String(rawLoginId).trim() !== '') {
             const loginId = normalizeLoginId(rawLoginId);
             if (!LOGIN_ID_RE.test(loginId)) {
-                return res.status(400).json({ success: false, message: 'Login ID must be 3-30 characters: letters, numbers, dot, underscore or hyphen (no spaces, no @)' });
+                return res.status(400).json({ success: false, message: LOGIN_ID_MSG });
             }
             if (loginId !== (existing.loginId || '') ) {
                 if (loginIdTaken(loginId, id)) {
