@@ -580,6 +580,8 @@ const validators = {
     body("stream").optional({ checkFalsy: true })
       .isIn(["Science", "Commerce", "Arts"]).withMessage("Stream must be Science, Commerce or Arts"),
     body("subjectIds").optional().isArray({ max: 50 }).withMessage("subjectIds must be an array"),
+    body("email").optional({ checkFalsy: true }).trim().isEmail().withMessage("Enter a valid email address"),
+    body("password").optional({ checkFalsy: true }).isLength({ min: 6, max: 128 }).withMessage("Password must be at least 6 characters"),
   ],
 
   updateEnquiry: [
