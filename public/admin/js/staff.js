@@ -44,7 +44,12 @@ function renderStaff() {
     const classes = window._classes || [];
     const subjects = window._subjects || [];
     const classNameById = id => classes.find(c => c._id === id)?.displayName || classes.find(c => c._id === id)?.name || '?';
-    const subjectNameById = id => subjects.find(s => s._id === id)?.name || '?';
+    const subjectNameById = id => {
+        const sub = subjects.find(s => s._id === id);
+        if (!sub) return '?';
+        const ctx = subjectContextLabel(sub, classNameById(sub.classId));
+        return ctx ? `${sub.name} (${ctx})` : sub.name;
+    };
 
     contentArea.innerHTML = `
         <div class="toolbar">
@@ -99,8 +104,14 @@ function collectCheckedClasses(idPrefix) {
     return classes.filter(c => document.getElementById(`${idPrefix}_${c._id}`)?.checked).map(c => c._id);
 }
 
-// Subjects are labeled with their class in parentheses, since the same
-// subject name (e.g. "Mathematics") commonly exists once per class.
+// "Class XI · Commerce" — class plus stream (stream only for Class 11/12
+// subjects that belong to one; common subjects show just the class).
+function subjectContextLabel(subject, className) {
+    return [className, subject.stream].filter(Boolean).join(' · ');
+}
+
+// Subjects are labeled with their class (and stream) in parentheses, since the
+// same subject name (e.g. "Mathematics") commonly exists once per class/stream.
 function subjectCheckboxesHtml(idPrefix, checkedIds = []) {
     const subjects = window._subjects || [];
     const classes = window._classes || [];
@@ -109,7 +120,7 @@ function subjectCheckboxesHtml(idPrefix, checkedIds = []) {
     return subjects.filter(s => s.isActive).map(s => `
         <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-bottom:4px;">
             <input type="checkbox" id="${idPrefix}_${s._id}" value="${s._id}" ${checkedIds.includes(s._id) ? 'checked' : ''}>
-            ${escapeHtml(s.name)}${classNameById(s.classId) ? ` <span style="color:var(--muted);">(${escapeHtml(classNameById(s.classId))})</span>` : ''}
+            ${escapeHtml(s.name)}${subjectContextLabel(s, classNameById(s.classId)) ? ` <span style="color:var(--muted);">(${escapeHtml(subjectContextLabel(s, classNameById(s.classId)))})</span>` : ''}
         </label>
     `).join('');
 }
@@ -176,6 +187,9 @@ function editStaff(id) {
         <div class="form-group"><label>Name *</label><input type="text" id="editStaffName" value="${escapeHtml(item.name)}"></div>
         <div class="form-group"><label>Email</label><input type="email" value="${escapeHtml(item.email)}" disabled></div>
         <div class="form-group"><label>Phone</label><input type="text" id="editStaffPhone" value="${escapeHtml(item.phone || '')}"></div>
+        <div class="form-group"><label>New Password <span style="color:var(--muted);font-weight:normal;">(leave blank to keep the current password)</span></label>
+            <input type="password" id="editStaffPassword" placeholder="Min 8 characters" autocomplete="new-password">
+        </div>
         <div class="form-group"><label>Role *</label>
             <select id="editStaffRole" onchange="toggleAssignedClassesVisibility('editStaffRole', 'editStaffAssignedClassesWrap', 'editStaffAssignedSubjectsWrap')">
                 ${Object.entries(STAFF_ROLE_LABELS).map(([v, label]) => `<option value="${v}" ${v === item.role ? 'selected' : ''}>${label}</option>`).join('')}
@@ -193,10 +207,14 @@ function editStaff(id) {
         const name = document.getElementById('editStaffName').value.trim();
         const phone = document.getElementById('editStaffPhone').value.trim();
         const role = document.getElementById('editStaffRole').value;
+        const password = document.getElementById('editStaffPassword').value;
         if (!name || !role) { showToast('Error', 'Name and role are required', 'error'); return; }
+        if (password && password.length < 8) { showToast('Error', 'Password must be at least 8 characters', 'error'); return; }
         const assignedClasses = role === 'teacher' ? collectCheckedClasses('editStaffClass') : [];
         const assignedSubjects = role === 'teacher' ? collectCheckedSubjects('editStaffSubject') : [];
-        const result = await apiCall(`/staff/${id}`, { method: 'PUT', body: JSON.stringify({ name, phone, role, assignedClasses, assignedSubjects }) });
+        const body = { name, phone, role, assignedClasses, assignedSubjects };
+        if (password) body.password = password; // blank = unchanged
+        const result = await apiCall(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(body) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update staff account', 'error'); return; }
         showToast('Success', 'Staff account updated', 'success');
         closeModal();
