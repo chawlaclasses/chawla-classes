@@ -148,7 +148,7 @@ function showAddStaffModal() {
     showModal('Add Staff', 'Create a staff account', `
         <div class="form-group"><label>Name *</label><input type="text" id="staffName" placeholder="e.g., Rohit Chawla"></div>
         <div class="form-group"><label>Login ID * <span style="color:var(--muted);font-weight:normal;">(custom username used to sign in — e.g. rohit.sir)</span></label>
-            <input type="text" id="staffLoginId" placeholder="3-30 chars: letters, numbers, . _ -" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+            <input type="text" id="staffLoginId" name="cc-new-staff-login" placeholder="e.g. rohit.sir" readonly onfocus="this.removeAttribute('readonly')" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
         <div class="form-group"><label>Email * <span style="color:var(--muted);font-weight:normal;">(login details will be sent to this email)</span></label><input type="email" id="staffEmail" placeholder="teacher@example.com" autocomplete="off"></div>
         <div class="form-group"><label>Phone</label><input type="text" id="staffPhone" placeholder="Optional"></div>
         <div class="form-group"><label>Password *</label><input type="password" id="staffPassword" placeholder="Min 8 characters" autocomplete="new-password"></div>
@@ -177,7 +177,7 @@ function showAddStaffModal() {
         const role = document.getElementById('staffRole').value;
         const sendEmail = document.getElementById('staffSendEmail').checked;
         if (!name || !loginId || !email || !password || !role) { showToast('Error', 'Name, login ID, email, password, and role are required', 'error'); return; }
-        if (!/^[A-Za-z0-9][A-Za-z0-9._-]{2,29}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-30 characters: letters, numbers, dot, underscore or hyphen (no spaces)', 'error'); return; }
+        if (!/^[A-Za-z0-9][A-Za-z0-9._@+-]{2,49}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-50 characters using letters, numbers and . _ - @ + only (no spaces)', 'error'); return; }
         const assignedClasses = role === 'teacher' ? collectCheckedClasses('staffClass') : [];
         const assignedSubjects = role === 'teacher' ? collectCheckedSubjects('staffSubject') : [];
         const result = await apiCall('/staff', { method: 'POST', body: JSON.stringify({ name, loginId, email, phone, password, role, assignedClasses, assignedSubjects, sendEmail }) });
@@ -194,7 +194,7 @@ function editStaff(id) {
     showModal('Edit Staff', 'Update staff account', `
         <div class="form-group"><label>Name *</label><input type="text" id="editStaffName" value="${escapeHtml(item.name)}"></div>
         <div class="form-group"><label>Login ID <span style="color:var(--muted);font-weight:normal;">(used to sign in)</span></label>
-            <input type="text" id="editStaffLoginId" value="${escapeHtml(item.loginId || '')}" placeholder="${item.loginId ? '' : 'Not set — currently signs in with email. Set one here.'}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+            <input type="text" id="editStaffLoginId" name="cc-edit-staff-login" readonly onfocus="this.removeAttribute('readonly')" value="${escapeHtml(item.loginId || '')}" placeholder="${item.loginId ? '' : 'Not set — currently signs in with email. Set one here.'}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
         <div class="form-group"><label>Email <span style="color:var(--muted);font-weight:normal;">(where login details are sent)</span></label><input type="email" id="editStaffEmail" value="${escapeHtml(item.email)}" autocomplete="off"></div>
         <div class="form-group"><label>Phone</label><input type="text" id="editStaffPhone" value="${escapeHtml(item.phone || '')}"></div>
         <div class="form-group"><label>New Password <span style="color:var(--muted);font-weight:normal;">(leave blank to keep the current password)</span></label>
@@ -225,11 +225,12 @@ function editStaff(id) {
         const sendEmail = document.getElementById('editStaffSendEmail').checked;
         if (!name || !role) { showToast('Error', 'Name and role are required', 'error'); return; }
         if (!email) { showToast('Error', 'Email is required', 'error'); return; }
-        if (loginId && !/^[A-Za-z0-9][A-Za-z0-9._-]{2,29}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-30 characters: letters, numbers, dot, underscore or hyphen (no spaces)', 'error'); return; }
+        if (loginId && !/^[A-Za-z0-9][A-Za-z0-9._@+-]{2,49}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-50 characters using letters, numbers and . _ - @ + only (no spaces)', 'error'); return; }
         if (password && password.length < 8) { showToast('Error', 'Password must be at least 8 characters', 'error'); return; }
         const assignedClasses = role === 'teacher' ? collectCheckedClasses('editStaffClass') : [];
         const assignedSubjects = role === 'teacher' ? collectCheckedSubjects('editStaffSubject') : [];
-        const body = { name, phone, role, assignedClasses, assignedSubjects, email, loginId, sendEmail };
+        const body = { name, phone, role, assignedClasses, assignedSubjects, email, sendEmail };
+        if (loginId && loginId.toLowerCase() !== (item.loginId || '').toLowerCase()) body.loginId = loginId;
         if (password) body.password = password; // blank = unchanged
         const result = await apiCall(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(body) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update staff account', 'error'); return; }
