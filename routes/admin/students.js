@@ -24,7 +24,7 @@ const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { normalizeEmail } = require('../../utils/helpers');
 const { isClassAllowedForUser } = require('../../config/permissions');
-const { resolveStudentStream, classHasStreams, normalizeStream } = require('../../utils/streams');
+const { resolveStudentStream, classHasStreams, normalizeStream, resolveStudentSubjects } = require('../../utils/streams');
 
 // Create a new student — this was previously only possible via
 // scripts/create-student.js (a CLI script, run once for the demo
@@ -35,7 +35,7 @@ const { resolveStudentStream, classHasStreams, normalizeStream } = require('../.
 // correctly everywhere else in the admin panel immediately.
 router.post('/students', requirePermission('students:create'), async (req, res) => {
     try {
-        const { name, email, password, phone, rollNumber, classId, batch, stream } = req.body;
+        const { name, email, password, phone, rollNumber, classId, batch, stream, subjectIds } = req.body;
 
         if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Name is required' });
         if (!email || !email.trim()) return res.status(400).json({ success: false, message: 'Email is required' });
@@ -56,6 +56,17 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
         const streamCheck = resolveStudentStream(cls, stream);
         if (!streamCheck.ok) return res.status(400).json({ success: false, message: streamCheck.message });
 
+        // Subjects this student actually studies. Empty = all subjects of
+        // the class. Each id must belong to the class (and stream).
+        let chosenSubjectIds = [];
+        if (Array.isArray(subjectIds) && subjectIds.length > 0) {
+            if (!cls) return res.status(400).json({ success: false, message: 'Select a class before choosing subjects' });
+            const classSubjects = db.find('subjects', { classId: cls._id, isActive: true });
+            const subjCheck = resolveStudentSubjects(classSubjects, { stream: streamCheck.stream }, subjectIds);
+            if (!subjCheck.ok) return res.status(400).json({ success: false, message: subjCheck.message });
+            chosenSubjectIds = subjCheck.subjectIds;
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const student = db.insertOne('users', {
@@ -67,6 +78,7 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
             rollNumber: rollNumber ? rollNumber.trim() : '',
             classId: classId || null,
             stream: streamCheck.stream,
+            subjectIds: chosenSubjectIds,
             batch: batch || '',
             isActive: true,
             createdBy: req.user?.id || 'admin',
@@ -111,6 +123,7 @@ router.get('/students-list', requirePermission('students:view'), (req, res) => {
                 classId: s.classId || '',
                 class: cls ? (cls.displayName || cls.name) : 'Not assigned',
                 stream: s.stream || '',
+                subjectIds: Array.isArray(s.subjectIds) ? s.subjectIds : [],
                 classHasStreams: classHasStreams(cls),
                 batch: s.batch || '',
                 isActive: s.isActive !== false,
@@ -169,7 +182,7 @@ router.post('/students/bulk', requirePermission('students:edit'), (req, res) => 
                     nextStream = forcedStream || (cls.streams.includes(student.stream) ? student.stream : '');
                     if (!nextStream) needStream++;
                 }
-                if (db.updateById('users', id, { classId, stream: nextStream })) affected++;
+                if (db.updateById('users', id, { classId, stream: nextStream, subjectIds: [] })) affected++;
             });
             logAudit(req, 'edit', 'student', null, `Bulk-moved ${affected} student(s) to ${cls.displayName || cls.name}`);
             if (needStream > 0) {
