@@ -105,10 +105,10 @@ router.post('/', requirePermission('staff:create'), async (req, res) => {
 // ============================================================
 // Update a staff account (name, phone, role, isActive)
 // ============================================================
-router.put('/:id', requirePermission('staff:edit'), (req, res) => {
+router.put('/:id', requirePermission('staff:edit'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, phone, role, isActive, assignedClasses, assignedSubjects } = req.body;
+        const { name, phone, role, isActive, assignedClasses, assignedSubjects, password } = req.body;
 
         const existing = db.findById('users', id);
         if (!existing || !STAFF_ROLES.includes(existing.role)) {
@@ -135,6 +135,22 @@ router.put('/:id', requirePermission('staff:edit'), (req, res) => {
             return res.status(400).json({ success: false, message: "You can't change your own role. Ask another super admin to do it." });
         }
 
+        // Optional password reset. Blank / missing = keep the current password.
+        // Same minimum length as account creation. (canAssignRole above already
+        // stops an admin from resetting a super_admin / admin password.)
+        const passwordChange = {};
+        const wantsNewPassword = typeof password === 'string' && password.length > 0;
+        if (wantsNewPassword) {
+            if (password.length < 8) {
+                return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+            }
+            passwordChange.password = await bcrypt.hash(password, BCRYPT_ROUNDS);
+            passwordChange.passwordChangedAt = new Date().toISOString();
+            // Drop the stored refresh token so any session still open on the old
+            // password can't silently renew itself.
+            passwordChange.refreshToken = null;
+        }
+
         const updated = db.findByIdAndUpdate('users', id, {
             name: name || existing.name,
             phone: phone !== undefined ? phone : existing.phone,
@@ -142,12 +158,13 @@ router.put('/:id', requirePermission('staff:edit'), (req, res) => {
             isActive: isActive !== undefined ? isActive : existing.isActive,
             assignedClasses: Array.isArray(assignedClasses) ? assignedClasses : (existing.assignedClasses || []),
             assignedSubjects: Array.isArray(assignedSubjects) ? assignedSubjects : (existing.assignedSubjects || []),
+            ...passwordChange,
         });
 
-        logAudit(req, 'edit', 'staff', id, `Updated staff account for ${updated.name}`);
+        logAudit(req, 'edit', 'staff', id, `Updated staff account for ${updated.name}${wantsNewPassword ? ' (password reset)' : ''}`);
 
         const { password: _pw, ...safeStaff } = updated;
-        res.json({ success: true, data: safeStaff, message: 'Staff account updated' });
+        res.json({ success: true, data: safeStaff, message: wantsNewPassword ? 'Staff account updated and password changed' : 'Staff account updated' });
     } catch (error) {
         logger.error(`Update staff error: ${error.message}`, { stack: error.stack, path: req.path });
         res.status(500).json({ success: false, message: 'Failed to update staff account' });
