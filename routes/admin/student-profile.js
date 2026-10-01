@@ -20,7 +20,7 @@ const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { validate } = require('../../middleware/validation');
 const validators = require('../../utils/validators');
-const { resolveStudentStream } = require('../../utils/streams');
+const { resolveStudentStream, resolveStudentSubjects } = require('../../utils/streams');
 const { uploadStudentDocument, studentDocumentMimeGuard, STUDENT_DOCS_DIR } = require('../../middleware/upload');
 const r2Service = require('../../services/r2Service');
 const studentReportService = require('../../services/studentReport');
@@ -181,6 +181,8 @@ router.get('/students/:id/profile', requirePermission('students:view'), async (r
                     class: classData ? (classData.displayName || classData.name) : 'Not assigned',
                     stream: student.stream || '',
                     classStreams: (classData && classData.streams) || [],
+                    classId: student.classId || '',
+                    subjectIds: Array.isArray(student.subjectIds) ? student.subjectIds : [],
                     batch: student.batch || '',
                     isActive: student.isActive !== false,
                     joinedDate: student.createdAt
@@ -219,7 +221,7 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
         if (!isClassAllowedForUser(req.userData, student.classId)) {
             return res.status(403).json({ success: false, message: "You're not assigned to this student's class." });
         }
-        const { phone, dob, rollNumber, address, parentName, parentPhone, parentEmail, parentOccupation, batch, stream } = req.body;
+        const { phone, dob, rollNumber, address, parentName, parentPhone, parentEmail, parentOccupation, batch, stream, subjectIds } = req.body;
 
         // Stream can only be one the student's class offers (and is required
         // for classes that have streams).
@@ -231,8 +233,23 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
             streamUpdate = { stream: streamCheck.stream };
         }
 
+        // Subject enrollment (empty array = all subjects of the class).
+        let subjectUpdate = {};
+        if (subjectIds !== undefined) {
+            const effectiveStream = streamUpdate.stream !== undefined ? streamUpdate.stream : (student.stream || '');
+            const classSubjects = student.classId ? db.find('subjects', { classId: student.classId, isActive: true }) : [];
+            const subjCheck = resolveStudentSubjects(classSubjects, { stream: effectiveStream }, subjectIds);
+            if (!subjCheck.ok) return res.status(400).json({ success: false, message: subjCheck.message });
+            subjectUpdate = { subjectIds: subjCheck.subjectIds };
+        } else if (streamUpdate.stream !== undefined && streamUpdate.stream !== (student.stream || '') && Array.isArray(student.subjectIds) && student.subjectIds.length) {
+            // Stream changed without re-picking subjects: drop selections so a
+            // stale subject from the old stream can't linger.
+            subjectUpdate = { subjectIds: [] };
+        }
+
         const updated = db.updateById('users', req.params.id, {
             ...streamUpdate,
+            ...subjectUpdate,
             ...(phone !== undefined ? { phone } : {}),
             ...(dob !== undefined ? { dob } : {}),
             ...(rollNumber !== undefined ? { rollNumber } : {}),
