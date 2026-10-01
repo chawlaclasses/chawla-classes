@@ -20,6 +20,7 @@ const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { validate } = require('../../middleware/validation');
 const validators = require('../../utils/validators');
+const { resolveStudentStream } = require('../../utils/streams');
 const { uploadStudentDocument, studentDocumentMimeGuard, STUDENT_DOCS_DIR } = require('../../middleware/upload');
 const r2Service = require('../../services/r2Service');
 const studentReportService = require('../../services/studentReport');
@@ -178,6 +179,8 @@ router.get('/students/:id/profile', requirePermission('students:view'), async (r
                     rollNumber: student.rollNumber || '',
                     address: student.address || '',
                     class: classData ? (classData.displayName || classData.name) : 'Not assigned',
+                    stream: student.stream || '',
+                    classStreams: (classData && classData.streams) || [],
                     batch: student.batch || '',
                     isActive: student.isActive !== false,
                     joinedDate: student.createdAt
@@ -216,8 +219,20 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
         if (!isClassAllowedForUser(req.userData, student.classId)) {
             return res.status(403).json({ success: false, message: "You're not assigned to this student's class." });
         }
-        const { phone, dob, rollNumber, address, parentName, parentPhone, parentEmail, parentOccupation, batch } = req.body;
+        const { phone, dob, rollNumber, address, parentName, parentPhone, parentEmail, parentOccupation, batch, stream } = req.body;
+
+        // Stream can only be one the student's class offers (and is required
+        // for classes that have streams).
+        let streamUpdate = {};
+        if (stream !== undefined) {
+            const cls = student.classId ? db.findById('classes', student.classId) : null;
+            const streamCheck = resolveStudentStream(cls, stream);
+            if (!streamCheck.ok) return res.status(400).json({ success: false, message: streamCheck.message });
+            streamUpdate = { stream: streamCheck.stream };
+        }
+
         const updated = db.updateById('users', req.params.id, {
+            ...streamUpdate,
             ...(phone !== undefined ? { phone } : {}),
             ...(dob !== undefined ? { dob } : {}),
             ...(rollNumber !== undefined ? { rollNumber } : {}),
