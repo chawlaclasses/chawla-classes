@@ -24,7 +24,41 @@ const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { normalizeEmail } = require('../../utils/helpers');
 const { isClassAllowedForUser } = require('../../config/permissions');
+const { sendMail } = require('../../utils/mailer');
 const { resolveStudentStream, classHasStreams, normalizeStream, resolveStudentSubjects } = require('../../utils/streams');
+
+
+// Emails a new student's login details. Students sign in with their email,
+// so Login ID == email here. Optionally also sent to a parent/other address.
+function esc(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+async function sendStudentCredentials(req, { name, loginEmail, password, recipients }) {
+    const loginUrl = `${req.protocol}://${req.get('host')}/`;
+    const html = `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#222;">
+            <h2 style="color:#4f6ef7;">Chawla Classes</h2>
+            <p>Hello,</p>
+            <p>A student account has been created for <strong>${esc(name)}</strong>. Use the details below to sign in:</p>
+            <table style="border-collapse:collapse;margin:14px 0;">
+                <tr><td style="padding:6px 14px 6px 0;color:#666;">Login ID (Email)</td><td style="padding:6px 0;"><strong>${esc(loginEmail)}</strong></td></tr>
+                <tr><td style="padding:6px 14px 6px 0;color:#666;">Password</td><td style="padding:6px 0;"><strong>${esc(password)}</strong></td></tr>
+            </table>
+            <p><a href="${esc(loginUrl)}" style="background:#4f6ef7;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">Open Chawla Classes</a></p>
+            <p style="color:#888;font-size:12px;">Please keep these details private and change the password after your first login.</p>
+        </div>`;
+    const results = [];
+    for (const to of recipients) {
+        try {
+            const r = await sendMail({ to, subject: 'Your Chawla Classes student login details', html });
+            results.push({ to, sent: !!(r && r.sent), reason: r && r.reason });
+        } catch (err) {
+            logger.error(`Student credentials email failed for ${to}: ${err.message}`);
+            results.push({ to, sent: false, reason: err.message });
+        }
+    }
+    return results;
+}
 
 // Create a new student — this was previously only possible via
 // scripts/create-student.js (a CLI script, run once for the demo
@@ -35,7 +69,7 @@ const { resolveStudentStream, classHasStreams, normalizeStream, resolveStudentSu
 // correctly everywhere else in the admin panel immediately.
 router.post('/students', requirePermission('students:create'), async (req, res) => {
     try {
-        const { name, email, password, phone, rollNumber, classId, batch, stream, subjectIds } = req.body;
+        const { name, email, password, phone, rollNumber, classId, batch, stream, subjectIds, sendEmail, parentEmail } = req.body;
 
         if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Name is required' });
         if (!email || !email.trim()) return res.status(400).json({ success: false, message: 'Email is required' });
@@ -86,9 +120,25 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
 
         logAudit(req, 'create', 'student', student._id, `Created student "${student.name}" (${student.email})${cls ? ` in ${cls.displayName || cls.name}` : ''}${streamCheck.stream ? ` [${streamCheck.stream}]` : ''}`);
 
+        // Email the login details (default ON). Goes to the student's email and,
+        // if given, a parent/other email as well.
+        let emailNote = '';
+        let emailSent = undefined;
+        if (sendEmail !== false) {
+            const recipients = [normalizedEmail];
+            const pe = typeof parentEmail === 'string' ? parentEmail.trim().toLowerCase() : '';
+            if (pe && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pe) && pe !== normalizedEmail) recipients.push(pe);
+            const results = await sendStudentCredentials(req, { name: student.name, loginEmail: normalizedEmail, password, recipients });
+            const ok = results.filter(r => r.sent).map(r => r.to);
+            emailSent = ok.length > 0;
+            emailNote = ok.length
+                ? ` Login details emailed to ${ok.join(', ')}.`
+                : ' But the email could not be sent — please share the email & password manually.';
+        }
+
         // Never echo the password hash back to the client.
         const { password: _omit, ...safeStudent } = student;
-        res.status(201).json({ success: true, data: safeStudent, message: `Student "${student.name}" created successfully` });
+        res.status(201).json({ success: true, data: safeStudent, emailSent, message: `Student "${student.name}" created successfully.${emailNote}` });
     } catch (error) {
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong while creating the student. Please try again.' });
