@@ -24,6 +24,7 @@ const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { normalizeEmail } = require('../../utils/helpers');
 const { isClassAllowedForUser } = require('../../config/permissions');
+const { resolveStudentStream, classHasStreams, normalizeStream } = require('../../utils/streams');
 
 // Create a new student — this was previously only possible via
 // scripts/create-student.js (a CLI script, run once for the demo
@@ -34,7 +35,7 @@ const { isClassAllowedForUser } = require('../../config/permissions');
 // correctly everywhere else in the admin panel immediately.
 router.post('/students', requirePermission('students:create'), async (req, res) => {
     try {
-        const { name, email, password, phone, rollNumber, classId, batch } = req.body;
+        const { name, email, password, phone, rollNumber, classId, batch, stream } = req.body;
 
         if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Name is required' });
         if (!email || !email.trim()) return res.status(400).json({ success: false, message: 'Email is required' });
@@ -51,6 +52,10 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
             if (!cls) return res.status(404).json({ success: false, message: 'Class not found' });
         }
 
+        // Class 11/12 style classes have streams — stream is mandatory there.
+        const streamCheck = resolveStudentStream(cls, stream);
+        if (!streamCheck.ok) return res.status(400).json({ success: false, message: streamCheck.message });
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const student = db.insertOne('users', {
@@ -61,12 +66,13 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
             phone: phone ? phone.trim() : '',
             rollNumber: rollNumber ? rollNumber.trim() : '',
             classId: classId || null,
+            stream: streamCheck.stream,
             batch: batch || '',
             isActive: true,
             createdBy: req.user?.id || 'admin',
         });
 
-        logAudit(req, 'create', 'student', student._id, `Created student "${student.name}" (${student.email})${cls ? ` in ${cls.displayName || cls.name}` : ''}`);
+        logAudit(req, 'create', 'student', student._id, `Created student "${student.name}" (${student.email})${cls ? ` in ${cls.displayName || cls.name}` : ''}${streamCheck.stream ? ` [${streamCheck.stream}]` : ''}`);
 
         // Never echo the password hash back to the client.
         const { password: _omit, ...safeStudent } = student;
@@ -104,6 +110,8 @@ router.get('/students-list', requirePermission('students:view'), (req, res) => {
                 rollNumber: s.rollNumber || '',
                 classId: s.classId || '',
                 class: cls ? (cls.displayName || cls.name) : 'Not assigned',
+                stream: s.stream || '',
+                classHasStreams: classHasStreams(cls),
                 batch: s.batch || '',
                 isActive: s.isActive !== false,
                 feeStatus: feeStatusByStudent.get(s._id) || 'no_record',
@@ -119,7 +127,7 @@ router.get('/students-list', requirePermission('students:view'), (req, res) => {
 // Bulk actions on students
 router.post('/students/bulk', requirePermission('students:edit'), (req, res) => {
     try {
-        const { action, studentIds, classId, notificationTitle, notificationMessage } = req.body;
+        const { action, studentIds, classId, stream, notificationTitle, notificationMessage } = req.body;
         if (!action || !Array.isArray(studentIds) || studentIds.length === 0) {
             return res.status(400).json({ success: false, message: 'action and studentIds[] are required' });
         }
@@ -139,10 +147,38 @@ router.post('/students/bulk', requirePermission('students:edit'), (req, res) => 
             if (!classId) return res.status(400).json({ success: false, message: 'classId is required for change-class' });
             const cls = db.findById('classes', classId);
             if (!cls) return res.status(404).json({ success: false, message: 'Class not found' });
+            // Stream handling when moving classes:
+            //   - target class has no streams  -> stream cleared
+            //   - admin picked a stream        -> applied to everyone moved (must be valid for the class)
+            //   - otherwise                    -> each student keeps their stream if the target class
+            //                                     offers it (11 Science -> 12 Science), else it's cleared
+            //                                     and they are reported back as needing a stream.
+            let forcedStream = '';
+            if (classHasStreams(cls) && stream) {
+                forcedStream = normalizeStream(stream);
+                if (!forcedStream || !cls.streams.includes(forcedStream)) {
+                    return res.status(400).json({ success: false, message: `${cls.displayName || cls.name} does not offer the selected stream` });
+                }
+            }
+            let needStream = 0;
             studentIds.forEach(id => {
-                if (db.updateById('users', id, { classId })) affected++;
+                const student = db.findById('users', id);
+                if (!student) return;
+                let nextStream = '';
+                if (classHasStreams(cls)) {
+                    nextStream = forcedStream || (cls.streams.includes(student.stream) ? student.stream : '');
+                    if (!nextStream) needStream++;
+                }
+                if (db.updateById('users', id, { classId, stream: nextStream })) affected++;
             });
             logAudit(req, 'edit', 'student', null, `Bulk-moved ${affected} student(s) to ${cls.displayName || cls.name}`);
+            if (needStream > 0) {
+                return res.json({
+                    success: true,
+                    data: { affected, needStream },
+                    message: `Moved ${affected} student(s). ${needStream} of them need a stream selected (open their profile → Edit Details).`
+                });
+            }
         } else if (action === 'notify') {
             if (!notificationMessage) return res.status(400).json({ success: false, message: 'notificationMessage is required' });
             studentIds.forEach(id => {
@@ -179,9 +215,9 @@ router.get('/students/export', requirePermission('students:view'), (req, res) =>
         }
         const rows = students.map(s => {
             const cls = s.classId ? db.findById('classes', s.classId) : null;
-            return [s.name, s.email, s.phone || '', s.rollNumber || '', cls ? (cls.displayName || cls.name) : '', s.isActive !== false ? 'Active' : 'Inactive'];
+            return [s.name, s.email, s.phone || '', s.rollNumber || '', cls ? (cls.displayName || cls.name) : '', s.stream || '', s.isActive !== false ? 'Active' : 'Inactive'];
         });
-        const header = ['Name', 'Email', 'Phone', 'Roll Number', 'Class', 'Status'];
+        const header = ['Name', 'Email', 'Phone', 'Roll Number', 'Class', 'Stream', 'Status'];
         const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
         logAudit(req, 'export', 'student', null, `Exported ${students.length} student record(s) as CSV`);
         res.setHeader('Content-Type', 'text/csv');
