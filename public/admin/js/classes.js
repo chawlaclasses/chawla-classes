@@ -34,7 +34,7 @@ function renderClasses() {
             <div style="color:var(--muted);font-size:12px;margin-bottom:8px;"><i class="fas fa-grip-vertical"></i> Drag a class by the handle to reorder it.</div>
             <div class="table-container">
                 <table>
-                    <thead><tr><th style="width:36px;"></th><th>Name</th><th>Display Name</th><th>Subjects</th><th>Status</th><th>Actions</th></tr></thead>
+                    <thead><tr><th style="width:36px;"></th><th>Name</th><th>Display Name</th><th>Streams</th><th>Subjects</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
                         ${currentData.map(c => `
                             <tr class="class-row" data-class-id="${c._id}"
@@ -47,6 +47,7 @@ function renderClasses() {
                                 <td class="drag-handle-cell" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></td>
                                 <td><strong>${escapeHtml(c.name)}</strong></td>
                                 <td>${escapeHtml(c.displayName)}</td>
+                                <td>${(c.streams && c.streams.length) ? c.streams.map(st => `<span class="status-badge status-draft" style="margin-right:4px;">${escapeHtml(st)}</span>`).join('') : '<span style="color:var(--muted);">—</span>'}</td>
                                 <td>${c.subjects?.length || 0}</td>
                                 <td><span class="status-badge ${c.isActive ? 'status-active' : 'status-inactive'}">${c.isActive ? 'Active' : 'Inactive'}</span></td>
                                 <td>
@@ -115,18 +116,42 @@ function handleClassDragEnd(e) {
     document.querySelectorAll('.class-row').forEach(r => r.classList.remove('drag-over'));
 }
 
+// Streams offered by a class (Class 11/12 -> Science / Commerce / Arts).
+// Leave all unchecked for classes without streams (Class 9, 10).
+const CLASS_STREAM_OPTIONS = ['Science', 'Commerce', 'Arts'];
+
+function classStreamCheckboxesHtml(prefix, selected) {
+    const chosen = selected || [];
+    return `
+        <div class="form-group">
+            <label>Streams <span style="color:var(--muted);font-weight:400;">(select for Class 11 / 12 — leave blank for Class 9, 10)</span></label>
+            <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:4px;">
+                ${CLASS_STREAM_OPTIONS.map(st => `
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer;">
+                        <input type="checkbox" class="${prefix}-stream" value="${st}" ${chosen.includes(st) ? 'checked' : ''}> ${st}
+                    </label>`).join('')}
+            </div>
+        </div>`;
+}
+
+function readClassStreams(prefix) {
+    return [...document.querySelectorAll(`.${prefix}-stream:checked`)].map(cb => cb.value);
+}
+
 function showAddClassModal() {
     editingId = null;
     showModal('Add Class', 'Create a new class', `
         <div class="form-group"><label>Class Name *</label><input type="text" id="className" placeholder="e.g., Class 10"></div>
         <div class="form-group"><label>Display Name *</label><input type="text" id="classDisplayName" placeholder="e.g., Class X"></div>
         <div class="form-group"><label>Description</label><textarea id="classDescription" placeholder="Optional description"></textarea></div>
+        ${classStreamCheckboxesHtml('newClass', [])}
     `, async () => {
         const name = document.getElementById('className').value.trim();
         const displayName = document.getElementById('classDisplayName').value.trim();
         const description = document.getElementById('classDescription').value.trim();
+        const streams = readClassStreams('newClass');
         if (!name || !displayName) { showToast('Error', 'Name and display name are required', 'error'); return; }
-        const result = await apiCall('/classes', { method: 'POST', body: JSON.stringify({ name, displayName, description }) });
+        const result = await apiCall('/classes', { method: 'POST', body: JSON.stringify({ name, displayName, description, streams }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to create class', 'error'); return; }
         showToast('Success', 'Class created', 'success');
         closeModal();
@@ -142,14 +167,16 @@ async function editClass(id) {
         <div class="form-group"><label>Class Name *</label><input type="text" id="editClassName" value="${escapeHtml(item.name)}"></div>
         <div class="form-group"><label>Display Name *</label><input type="text" id="editClassDisplayName" value="${escapeHtml(item.displayName)}"></div>
         <div class="form-group"><label>Description</label><textarea id="editClassDescription">${escapeHtml(item.description || '')}</textarea></div>
+        ${classStreamCheckboxesHtml('editClass', item.streams || [])}
         <div class="form-group"><label><input type="checkbox" id="editClassActive" ${item.isActive ? 'checked' : ''}> Active</label></div>
     `, async () => {
         const name = document.getElementById('editClassName').value.trim();
         const displayName = document.getElementById('editClassDisplayName').value.trim();
         const description = document.getElementById('editClassDescription').value.trim();
         const isActive = document.getElementById('editClassActive').checked;
+        const streams = readClassStreams('editClass');
         if (!name || !displayName) { showToast('Error', 'Name and display name are required', 'error'); return; }
-        const result = await apiCall(`/classes/${id}`, { method: 'PUT', body: JSON.stringify({ name, displayName, description, isActive }) });
+        const result = await apiCall(`/classes/${id}`, { method: 'PUT', body: JSON.stringify({ name, displayName, description, isActive, streams }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update class', 'error'); return; }
         showToast('Success', 'Class updated', 'success');
         closeModal();
