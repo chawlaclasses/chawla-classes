@@ -16,6 +16,7 @@ const aiController = require('../controllers/student/aiController');
 // see routes/adminRoutes.js for the full explanation.
 const { validate } = require('../middleware/validation');
 const validators = require('../utils/validators');
+const { filterSubjectsForStudent, subjectVisibleToStudent } = require('../utils/streams');
 
 // ============================================================
 // Student Dashboard
@@ -41,7 +42,8 @@ router.get('/dashboard', requireApiStudent, async (req, res) => {
         }
         
         // Get subjects for this class
-        const subjects = db.find('subjects', { classId: student.classId, isActive: true });
+        // Only common subjects + the student's own stream (Class 11/12)
+        const subjects = filterSubjectsForStudent(db.find('subjects', { classId: student.classId, isActive: true }), student);
         
         // Get student's results
         const results = db.find('results', { studentId: student._id });
@@ -84,7 +86,12 @@ router.get('/dashboard', requireApiStudent, async (req, res) => {
         // `statistics` (existing, in case anything else reads it) and the
         // `stats`/`upcomingTests` the UI actually consumes, built from real
         // data rather than placeholders.
-        const classTests = db.find('tests', { classId: student.classId, isPublished: true, isDeleted: false });
+        // Hide tests that belong to another stream's subject
+        const classTests = db.find('tests', { classId: student.classId, isPublished: true, isDeleted: false })
+            .filter(t => {
+                const subj = t.subjectId ? db.findById('subjects', t.subjectId) : null;
+                return !subj || subjectVisibleToStudent(subj, student);
+            });
         const totalAvailableTests = classTests.length;
 
         const upcomingTests = classTests
@@ -273,7 +280,7 @@ router.get('/subjects', requireApiStudent, (req, res) => {
             });
         }
         
-        const subjects = db.find('subjects', { classId: student.classId, isActive: true });
+        const subjects = filterSubjectsForStudent(db.find('subjects', { classId: student.classId, isActive: true }), student);
         
         res.json({
             success: true,
@@ -298,7 +305,7 @@ router.get('/subjects/:subjectId/series', requireApiStudent, (req, res) => {
         
         // Verify subject belongs to student's class
         const subject = db.findOne('subjects', { _id: subjectId, classId: student.classId });
-        if (!subject) {
+        if (!subject || !subjectVisibleToStudent(subject, student)) {
             return res.status(404).json({
                 success: false,
                 message: 'Subject not found or not accessible'
@@ -330,7 +337,8 @@ router.get('/series/:seriesId/tests', requireApiStudent, (req, res) => {
         
         // Verify series belongs to student's class
         const series = db.findOne('series', { _id: seriesId, classId: student.classId });
-        if (!series) {
+        const seriesSubject = series && series.subjectId ? db.findById('subjects', series.subjectId) : null;
+        if (!series || (seriesSubject && !subjectVisibleToStudent(seriesSubject, student))) {
             return res.status(404).json({
                 success: false,
                 message: 'Series not found or not accessible'
@@ -395,8 +403,9 @@ router.get('/tests/:testId/details', requireApiStudent, (req, res) => {
             });
         }
         
-        // Verify student's class
-        if (test.classId !== student.classId) {
+        // Verify student's class (and stream, for Class 11/12)
+        const testSubject = test.subjectId ? db.findById('subjects', test.subjectId) : null;
+        if (test.classId !== student.classId || (testSubject && !subjectVisibleToStudent(testSubject, student))) {
             return res.status(403).json({
                 success: false,
                 message: 'You don\'t have access to this test'
@@ -489,8 +498,9 @@ router.post('/tests/start', requireApiStudent, validators.startTest, validate, a
             });
         }
         
-        // Verify student's class
-        if (test.classId !== student.classId) {
+        // Verify student's class (and stream, for Class 11/12)
+        const testSubject = test.subjectId ? db.findById('subjects', test.subjectId) : null;
+        if (test.classId !== student.classId || (testSubject && !subjectVisibleToStudent(testSubject, student))) {
             return res.status(403).json({
                 success: false,
                 message: 'You don\'t have access to this test'
@@ -1818,6 +1828,7 @@ router.get('/tests/active', requireApiStudent, (req, res) => {
         for (const series of seriesList) {
             const tests = db.find('tests', { seriesId: series._id, isPublished: true, isDeleted: false });
             const subject = series.subjectId ? db.findById('subjects', series.subjectId) : null;
+            if (subject && !subjectVisibleToStudent(subject, student)) continue; // other stream's subject
 
             for (const test of tests) {
                 const attempts = db.find('studentAttempts', { studentId: student._id, testId: test._id });
@@ -1904,7 +1915,7 @@ router.get('/attendance/subjects', requireApiStudent, (req, res) => {
         const overallPercentage = records.length ? Math.round((present / records.length) * 100) : 0;
 
         const subjects = student.classId
-            ? db.find('subjects', { classId: student.classId, isActive: true })
+            ? filterSubjectsForStudent(db.find('subjects', { classId: student.classId, isActive: true }), student)
             : [];
 
         const data = subjects.map(s => ({
