@@ -271,6 +271,10 @@ function addStudentModal() {
         <div class="form-group"><label>Name *</label><input type="text" id="newStudentName" placeholder="Full name"></div>
         <div class="form-group"><label>Email *</label><input type="email" id="newStudentEmail" placeholder="student@example.com" autocomplete="off"></div>
         <div class="form-group"><label>Password *</label><input type="password" id="newStudentPassword" placeholder="At least 6 characters" autocomplete="new-password"></div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
+            <input type="checkbox" id="newStudentSendEmail" checked> Email the login details (email &amp; password) to the student</label></div>
+        <div class="form-group"><label>Also send to parent email <span style="color:var(--muted);font-weight:normal;">(optional)</span></label>
+            <input type="email" id="newStudentParentEmail" placeholder="parent@example.com" autocomplete="off"></div>
         <div class="form-row">
             <div class="form-group"><label>Phone</label><input type="text" id="newStudentPhone" placeholder="Optional"></div>
             <div class="form-group"><label>Roll Number</label><input type="text" id="newStudentRoll" placeholder="Optional"></div>
@@ -287,6 +291,8 @@ function addStudentModal() {
         const classId = document.getElementById('newStudentClass').value;
         const stream = document.getElementById('newStudentStream').value;
         const subjectIds = getCheckedStudentSubjects('newStudentSubjectsList');
+        const sendEmail = document.getElementById('newStudentSendEmail').checked;
+        const parentEmail = document.getElementById('newStudentParentEmail').value.trim();
 
         if (!name) { showToast('Error', 'Name is required', 'error'); return; }
         if (!email) { showToast('Error', 'Email is required', 'error'); return; }
@@ -294,10 +300,10 @@ function addStudentModal() {
         const chosenClass = (window._allClasses || []).find(c => c._id === classId);
         if (chosenClass && chosenClass.streams && chosenClass.streams.length && !stream) { showToast('Error', 'Please select a stream for this class', 'error'); return; }
 
-        const result = await apiCall('/students', { method: 'POST', body: JSON.stringify({ name, email, password, phone, rollNumber, classId, stream, subjectIds }) });
+        const result = await apiCall('/students', { method: 'POST', body: JSON.stringify({ name, email, password, phone, rollNumber, classId, stream, subjectIds, sendEmail, parentEmail }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to create student', 'error'); return; }
 
-        showToast('Success', result.message || 'Student created', 'success');
+        showToast(result.emailSent === false ? 'Created (email not sent)' : 'Success', result.message || 'Student created', result.emailSent === false ? 'info' : 'success');
         closeModal();
         loadStudents();
     });
