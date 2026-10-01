@@ -51,12 +51,15 @@ const authRateLimiter = createAuthRateLimiter();
 // ============================================================
 router.post('/api/admin/login', authRateLimiter, async (req, res) => {
     try {
-        const { email, password } = req.body;
+        // Staff sign in with their custom Login ID. `email` is still accepted
+        // as the identifier for older accounts that don't have a Login ID yet.
+        const { password } = req.body;
+        const email = req.body.loginId !== undefined ? req.body.loginId : req.body.email;
         
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Email and password are required'
+                message: 'Login ID and password are required'
             });
         }
 
@@ -81,7 +84,15 @@ router.post('/api/admin/login', authRateLimiter, async (req, res) => {
             });
         }
         
-        const user = db.findOne('users', { email });
+        const identifier = email.trim().toLowerCase();
+        // 1) match a custom Login ID (case-insensitive);
+        // 2) else match email, but only for accounts with no Login ID set, so a
+        //    staff member who has a Login ID can only sign in with that.
+        const user = db.find('users', {}).find(u =>
+            STAFF_ROLES.includes(u.role) &&
+            ((u.loginId && String(u.loginId).toLowerCase() === identifier) ||
+             (!u.loginId && u.email && String(u.email).toLowerCase() === identifier))
+        );
         if (!user || !STAFF_ROLES.includes(user.role)) {
             logAudit(req, 'login_failed', 'admin', null, `Failed login attempt for ${email} (no such staff account)`);
             recordLogin(req, { status: 'failed', email, reason: 'No such staff account' });
