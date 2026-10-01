@@ -26,6 +26,57 @@ const logger = require('../utils/logger');
 const { logAudit } = require('../utils/auditLog');
 const { requirePermission } = require('../middleware/permissions');
 const { STAFF_ROLES, canAssignRole } = require('../config/permissions');
+const { sendMail } = require('../utils/mailer');
+
+// ------------------------------------------------------------
+// Login ID helpers
+// A staff member now has TWO separate identifiers:
+//   loginId -> custom username the admin chooses; used to sign in.
+//   email   -> where the credentials (and later notifications) are sent.
+// ------------------------------------------------------------
+const LOGIN_ID_RE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeLoginId(v) {
+    return typeof v === 'string' ? v.trim().toLowerCase() : '';
+}
+
+// Login ID must be unique across ALL users (case-insensitive) and must not
+// equal anyone's email, otherwise a login identifier could match two accounts.
+function loginIdTaken(loginId, excludeId) {
+    return db.find('users', {}).some(u =>
+        u._id !== excludeId &&
+        ((u.loginId && String(u.loginId).toLowerCase() === loginId) ||
+         (u.email && String(u.email).toLowerCase() === loginId))
+    );
+}
+
+function escapeHtmlServer(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function sendCredentialsEmail(req, { name, email, loginId, password, role, isReset }) {
+    const loginUrl = `${req.protocol}://${req.get('host')}/admin/login.html`;
+    const subject = isReset ? 'Your Chawla Classes login details have been updated' : 'Your Chawla Classes staff account';
+    const html = `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#222;">
+            <h2 style="color:#4f6ef7;">Chawla Classes</h2>
+            <p>Hello ${escapeHtmlServer(name)},</p>
+            <p>${isReset ? 'Your login details were updated.' : `Your <strong>${escapeHtmlServer(role)}</strong> account has been created.`} Use the details below to sign in:</p>
+            <table style="border-collapse:collapse;margin:14px 0;">
+                <tr><td style="padding:6px 14px 6px 0;color:#666;">Login ID</td><td style="padding:6px 0;"><strong>${escapeHtmlServer(loginId)}</strong></td></tr>
+                <tr><td style="padding:6px 14px 6px 0;color:#666;">Password</td><td style="padding:6px 0;"><strong>${escapeHtmlServer(password)}</strong></td></tr>
+            </table>
+            <p><a href="${escapeHtmlServer(loginUrl)}" style="background:#4f6ef7;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">Open Admin Login</a></p>
+            <p style="color:#888;font-size:12px;">Please keep these details private. Sign in with your Login ID (not your email address).</p>
+        </div>`;
+    try {
+        return await sendMail({ to: email, subject, html });
+    } catch (err) {
+        logger.error(`Staff credentials email failed for ${email}: ${err.message}`);
+        return { sent: false, reason: err.message };
+    }
+}
 
 // ============================================================
 // List staff accounts
@@ -46,10 +97,17 @@ router.get('/', requirePermission('staff:view'), (req, res) => {
 // ============================================================
 router.post('/', requirePermission('staff:create'), async (req, res) => {
     try {
-        const { name, email, password, role, phone, assignedClasses, assignedSubjects } = req.body;
+        const { name, email, loginId: rawLoginId, password, role, phone, assignedClasses, assignedSubjects, sendEmail } = req.body;
 
-        if (!name || !email || !password || !role) {
-            return res.status(400).json({ success: false, message: 'Name, email, password and role are required' });
+        if (!name || !email || !rawLoginId || !password || !role) {
+            return res.status(400).json({ success: false, message: 'Name, login ID, email, password and role are required' });
+        }
+        if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
+            return res.status(400).json({ success: false, message: 'Enter a valid email address' });
+        }
+        const loginId = normalizeLoginId(rawLoginId);
+        if (!LOGIN_ID_RE.test(loginId)) {
+            return res.status(400).json({ success: false, message: 'Login ID must be 3-30 characters: letters, numbers, dot, underscore or hyphen (no spaces, no @)' });
         }
         if (!STAFF_ROLES.includes(role)) {
             return res.status(400).json({ success: false, message: `Role must be one of: ${STAFF_ROLES.join(', ')}` });
@@ -66,36 +124,48 @@ router.post('/', requirePermission('staff:create'), async (req, res) => {
             });
         }
 
-        const existing = db.findOne('users', { email: email.toLowerCase().trim() });
-        if (existing) {
+        const normalizedEmail = email.toLowerCase().trim();
+        if (db.findOne('users', { email: normalizedEmail })) {
             return res.status(409).json({ success: false, message: 'A user with this email already exists' });
         }
+        if (loginIdTaken(loginId, null)) {
+            return res.status(409).json({ success: false, message: 'This Login ID is already taken. Please choose another.' });
+        }
 
-        // SECURITY: was a hardcoded bcrypt.hash(password, 10) — the rest of
-        // the app (services/auth.js) already centralizes this as
-        // BCRYPT_ROUNDS (default 12, env-overridable), specifically so cost
-        // can be tuned in one place. This was the one place still hardcoding
-        // its own weaker value.
+        // BCRYPT_ROUNDS is centralised in config (see services/auth.js).
         const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
         const newStaff = db.insertOne('users', {
             name,
-            email: email.toLowerCase().trim(),
+            loginId,
+            email: normalizedEmail,
             password: hashedPassword,
             role,
             phone: phone || '',
             // Empty array/omitted = unrestricted (sees every class). Only
-            // meaningful for 'teacher' today; other roles ignore it since
-            // their permissions already aren't class-scoped.
+            // meaningful for 'teacher' today.
             assignedClasses: Array.isArray(assignedClasses) ? assignedClasses : [],
             assignedSubjects: Array.isArray(assignedSubjects) ? assignedSubjects : [],
             isActive: true,
             createdBy: req.user?.id || null,
         });
 
-        logAudit(req, 'create', 'staff', newStaff._id, `Added ${role} account for ${name} (${email})`);
+        logAudit(req, 'create', 'staff', newStaff._id, `Added ${role} account for ${name} (login: ${loginId}, email: ${normalizedEmail})`);
+
+        // Credentials go to the email address (sendEmail defaults to true).
+        let emailResult = { sent: false, reason: 'Email not requested' };
+        if (sendEmail !== false) {
+            emailResult = await sendCredentialsEmail(req, { name, email: normalizedEmail, loginId, password, role, isReset: false });
+        }
 
         const { password: _pw, ...safeStaff } = newStaff;
-        res.status(201).json({ success: true, data: safeStaff, message: 'Staff account created' });
+        res.status(201).json({
+            success: true,
+            data: safeStaff,
+            emailSent: !!emailResult.sent,
+            message: emailResult.sent
+                ? `Staff account created. Login details emailed to ${normalizedEmail}`
+                : `Staff account created, but the email could not be sent${emailResult.reason ? ` (${emailResult.reason})` : ''}. Please share the Login ID and password manually.`
+        });
     } catch (error) {
         logger.error(`Create staff error: ${error.message}`, { stack: error.stack, path: req.path });
         res.status(500).json({ success: false, message: 'Failed to create staff account' });
@@ -108,7 +178,7 @@ router.post('/', requirePermission('staff:create'), async (req, res) => {
 router.put('/:id', requirePermission('staff:edit'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, phone, role, isActive, assignedClasses, assignedSubjects, password } = req.body;
+        const { name, phone, role, isActive, assignedClasses, assignedSubjects, password, loginId: rawLoginId, email: rawEmail, sendEmail } = req.body;
 
         const existing = db.findById('users', id);
         if (!existing || !STAFF_ROLES.includes(existing.role)) {
@@ -135,6 +205,40 @@ router.put('/:id', requirePermission('staff:edit'), async (req, res) => {
             return res.status(400).json({ success: false, message: "You can't change your own role. Ask another super admin to do it." });
         }
 
+        // Optional Login ID / email change (kept separate from each other).
+        const identityChange = {};
+        let newLoginId = existing.loginId || '';
+        let newEmail = existing.email;
+        if (rawLoginId !== undefined && rawLoginId !== null && String(rawLoginId).trim() !== '') {
+            const loginId = normalizeLoginId(rawLoginId);
+            if (!LOGIN_ID_RE.test(loginId)) {
+                return res.status(400).json({ success: false, message: 'Login ID must be 3-30 characters: letters, numbers, dot, underscore or hyphen (no spaces, no @)' });
+            }
+            if (loginId !== (existing.loginId || '') ) {
+                if (loginIdTaken(loginId, id)) {
+                    return res.status(409).json({ success: false, message: 'This Login ID is already taken. Please choose another.' });
+                }
+                identityChange.loginId = loginId;
+                newLoginId = loginId;
+                // Old sessions stay valid until expiry; drop refresh token so they can't renew.
+                identityChange.refreshToken = null;
+            }
+        }
+        if (typeof rawEmail === 'string' && rawEmail.trim() !== '') {
+            const email = rawEmail.toLowerCase().trim();
+            if (!EMAIL_RE.test(email)) {
+                return res.status(400).json({ success: false, message: 'Enter a valid email address' });
+            }
+            if (email !== existing.email) {
+                const clash = db.findOne('users', { email });
+                if (clash && clash._id !== id) {
+                    return res.status(409).json({ success: false, message: 'A user with this email already exists' });
+                }
+                identityChange.email = email;
+                newEmail = email;
+            }
+        }
+
         // Optional password reset. Blank / missing = keep the current password.
         // Same minimum length as account creation. (canAssignRole above already
         // stops an admin from resetting a super_admin / admin password.)
@@ -158,13 +262,37 @@ router.put('/:id', requirePermission('staff:edit'), async (req, res) => {
             isActive: isActive !== undefined ? isActive : existing.isActive,
             assignedClasses: Array.isArray(assignedClasses) ? assignedClasses : (existing.assignedClasses || []),
             assignedSubjects: Array.isArray(assignedSubjects) ? assignedSubjects : (existing.assignedSubjects || []),
+            ...identityChange,
             ...passwordChange,
         });
 
-        logAudit(req, 'edit', 'staff', id, `Updated staff account for ${updated.name}${wantsNewPassword ? ' (password reset)' : ''}`);
+        logAudit(req, 'edit', 'staff', id, `Updated staff account for ${updated.name}${wantsNewPassword ? ' (password reset)' : ''}${identityChange.loginId ? ' (login ID changed)' : ''}${identityChange.email ? ' (email changed)' : ''}`);
+
+        // Re-send login details when asked (checkbox in the UI), or whenever the
+        // password was just reset / the Login ID or email changed and the
+        // admin didn't opt out.
+        let emailResult = null;
+        const credsChanged = wantsNewPassword || identityChange.loginId || identityChange.email;
+        if (sendEmail === true && newLoginId) {
+            if (wantsNewPassword) {
+                emailResult = await sendCredentialsEmail(req, { name: updated.name, email: newEmail, loginId: newLoginId, password, role: updated.role, isReset: true });
+            } else {
+                // We never store plain passwords, so without a new password we
+                // can only tell them their (new) Login ID.
+                emailResult = await sendCredentialsEmail(req, { name: updated.name, email: newEmail, loginId: newLoginId, password: '(unchanged — use your existing password)', role: updated.role, isReset: true });
+            }
+        }
 
         const { password: _pw, ...safeStaff } = updated;
-        res.json({ success: true, data: safeStaff, message: wantsNewPassword ? 'Staff account updated and password changed' : 'Staff account updated' });
+        const baseMsg = wantsNewPassword ? 'Staff account updated and password changed' : 'Staff account updated';
+        res.json({
+            success: true,
+            data: safeStaff,
+            emailSent: emailResult ? !!emailResult.sent : undefined,
+            message: emailResult
+                ? (emailResult.sent ? `${baseMsg}. Login details emailed to ${newEmail}` : `${baseMsg}, but the email could not be sent${emailResult.reason ? ` (${emailResult.reason})` : ''}`)
+                : baseMsg
+        });
     } catch (error) {
         logger.error(`Update staff error: ${error.message}`, { stack: error.stack, path: req.path });
         res.status(500).json({ success: false, message: 'Failed to update staff account' });
