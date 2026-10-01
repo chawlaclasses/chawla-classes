@@ -194,14 +194,14 @@ function editStaff(id) {
     showModal('Edit Staff', 'Update staff account', `
         <div class="form-group"><label>Name *</label><input type="text" id="editStaffName" value="${escapeHtml(item.name)}"></div>
         <div class="form-group"><label>Login ID <span style="color:var(--muted);font-weight:normal;">(used to sign in)</span></label>
-            <input type="text" id="editStaffLoginId" name="cc-edit-staff-login" readonly onfocus="this.removeAttribute('readonly')" value="${escapeHtml(item.loginId || '')}" placeholder="${item.loginId ? '' : 'Not set — currently signs in with email. Set one here.'}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
-        <div class="form-group"><label>Email <span style="color:var(--muted);font-weight:normal;">(where login details are sent)</span></label><input type="email" id="editStaffEmail" value="${escapeHtml(item.email)}" autocomplete="off"></div>
+            <input type="text" id="editStaffLoginId" oninput="document.getElementById('editStaffSendEmail').checked=true" name="cc-edit-staff-login" readonly onfocus="this.removeAttribute('readonly')" value="${escapeHtml(item.loginId || '')}" placeholder="${item.loginId ? '' : 'Not set — currently signs in with email. Set one here.'}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+        <div class="form-group"><label>Email <span style="color:var(--muted);font-weight:normal;">(where login details are sent)</span></label><input type="email" id="editStaffEmail" oninput="document.getElementById('editStaffSendEmail').checked=true" value="${escapeHtml(item.email)}" autocomplete="off"></div>
         <div class="form-group"><label>Phone</label><input type="text" id="editStaffPhone" value="${escapeHtml(item.phone || '')}"></div>
         <div class="form-group"><label>New Password <span style="color:var(--muted);font-weight:normal;">(leave blank to keep the current password)</span></label>
-            <input type="password" id="editStaffPassword" placeholder="Min 8 characters" autocomplete="new-password">
+            <input type="password" id="editStaffPassword" oninput="document.getElementById('editStaffSendEmail').checked=true" placeholder="Min 8 characters" autocomplete="new-password">
         </div>
         <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
-            <input type="checkbox" id="editStaffSendEmail"> Email the updated login details to this staff member</label></div>
+            <input type="checkbox" id="editStaffSendEmail"> Email the updated login details to this staff member <span style="color:var(--muted);">(password is included only if you enter a new password above)</span></label></div>
         <div class="form-group"><label>Role *</label>
             <select id="editStaffRole" onchange="toggleAssignedClassesVisibility('editStaffRole', 'editStaffAssignedClassesWrap', 'editStaffAssignedSubjectsWrap')">
                 ${Object.entries(STAFF_ROLE_LABELS).map(([v, label]) => `<option value="${v}" ${v === item.role ? 'selected' : ''}>${label}</option>`).join('')}
