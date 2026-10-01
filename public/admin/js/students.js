@@ -13,12 +13,16 @@
 async function loadStudents() {
     showLoading();
     try {
-        const [studentsRes, classesRes] = await Promise.all([
+        const [studentsRes, classesRes, subjectsRes] = await Promise.all([
             apiCall('/students-list'),
-            apiCall('/classes')
+            apiCall('/classes'),
+            // Subjects power the "which subjects does this student study" picker.
+            // Not every staff role can view subjects, so never let this block the page.
+            apiCall('/subjects').catch(() => null)
         ]);
         window._allStudents = studentsRes?.data || [];
         window._allClasses = classesRes?.data || [];
+        window._allSubjects = subjectsRes?.data || [];
         window._selectedStudents = new Set();
         renderStudentsList(window._allStudents);
     } catch (error) {
@@ -186,8 +190,66 @@ async function bulkActivate() {
 
 // Stream picker for students. Shown only when the selected class offers streams
 // (Class 11 / 12). `allowKeep` adds a "keep current stream" choice for bulk moves.
-function studentStreamFieldHtml(selectId, wrapId) {
-    return `<div class="form-group" id="${wrapId}" style="display:none;"><label>Stream *</label><select id="${selectId}"></select></div>`;
+function studentStreamFieldHtml(selectId, wrapId, onchange = '') {
+    return `<div class="form-group" id="${wrapId}" style="display:none;"><label>Stream *</label><select id="${selectId}" ${onchange ? `onchange="${onchange}"` : ''}></select></div>`;
+}
+
+// ------------------------------------------------------------
+// Subject picker — not every student studies every subject, so the admin
+// ticks only the subjects this student takes. Leaving everything unticked
+// keeps the old behaviour (student sees all subjects of the class).
+// Subjects shown = the class's active subjects that are common to all
+// streams, plus the chosen stream's subjects.
+// ------------------------------------------------------------
+function studentSubjectsFieldHtml(wrapId, listId) {
+    return `
+        <div class="form-group" id="${wrapId}" style="display:none;">
+            <label>Subjects <span style="color:var(--muted);font-weight:400;">(tick only the subjects this student studies — leave all unticked = all subjects)</span></label>
+            <div style="margin-bottom:6px;font-size:12px;">
+                <a href="javascript:void(0)" onclick="setAllStudentSubjects('${listId}', true)">Select all</a> &nbsp;|&nbsp;
+                <a href="javascript:void(0)" onclick="setAllStudentSubjects('${listId}', false)">Clear</a>
+            </div>
+            <div id="${listId}" style="max-height:180px;overflow:auto;border:1px solid var(--card-border);border-radius:8px;padding:8px 10px;"></div>
+        </div>`;
+}
+
+function getCheckedStudentSubjects(listId) {
+    const list = document.getElementById(listId);
+    return list ? [...list.querySelectorAll('input.student-subject-cb:checked')].map(cb => cb.value) : [];
+}
+
+function setAllStudentSubjects(listId, checked) {
+    const list = document.getElementById(listId);
+    if (list) list.querySelectorAll('input.student-subject-cb').forEach(cb => { cb.checked = checked; });
+}
+
+// (Re)draws the picker for a class + stream. Anything already ticked that is
+// still visible stays ticked; `presetIds` seeds the first draw (edit mode).
+function renderStudentSubjectPicker(wrapId, listId, classId, stream, presetIds) {
+    const wrap = document.getElementById(wrapId);
+    const list = document.getElementById(listId);
+    if (!wrap || !list) return;
+    const keep = new Set(presetIds !== undefined ? presetIds : getCheckedStudentSubjects(listId));
+    const cls = (window._allClasses || []).find(c => c._id === classId);
+    const hasStreams = !!(cls && cls.streams && cls.streams.length);
+    const subjects = (window._allSubjects || []).filter(sub =>
+        classId && sub.classId === classId && sub.isActive !== false &&
+        (!sub.stream || (hasStreams && sub.stream === stream))
+    );
+    if (!classId || subjects.length === 0) { wrap.style.display = 'none'; list.innerHTML = ''; return; }
+    list.innerHTML = subjects.map(sub => `
+        <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-bottom:4px;">
+            <input type="checkbox" class="student-subject-cb" value="${sub._id}" ${keep.has(sub._id) ? 'checked' : ''}>
+            ${escapeHtml(sub.name)}${sub.stream ? ` <span style="color:var(--muted);">(${escapeHtml(sub.stream)})</span>` : ''}
+        </label>`).join('') +
+        (hasStreams && !stream ? '<p style="color:var(--muted);font-size:12px;margin:6px 0 0;">Select a stream to see its subjects too.</p>' : '');
+    wrap.style.display = '';
+}
+
+function refreshAddStudentSubjects() {
+    const classId = document.getElementById('newStudentClass').value;
+    const stream = document.getElementById('newStudentStream').value;
+    renderStudentSubjectPicker('newStudentSubjectsWrap', 'newStudentSubjectsList', classId, stream);
 }
 
 function refreshStudentStreamField(classSelectId, selectId, wrapId, opts = {}) {
@@ -213,8 +275,9 @@ function addStudentModal() {
             <div class="form-group"><label>Phone</label><input type="text" id="newStudentPhone" placeholder="Optional"></div>
             <div class="form-group"><label>Roll Number</label><input type="text" id="newStudentRoll" placeholder="Optional"></div>
         </div>
-        <div class="form-group"><label>Class</label><select id="newStudentClass" onchange="refreshStudentStreamField('newStudentClass','newStudentStream','newStudentStreamWrap')"><option value="">Not assigned yet</option>${classOptions}</select></div>
-        ${studentStreamFieldHtml('newStudentStream', 'newStudentStreamWrap')}
+        <div class="form-group"><label>Class</label><select id="newStudentClass" onchange="refreshStudentStreamField('newStudentClass','newStudentStream','newStudentStreamWrap');refreshAddStudentSubjects()"><option value="">Not assigned yet</option>${classOptions}</select></div>
+        ${studentStreamFieldHtml('newStudentStream', 'newStudentStreamWrap', 'refreshAddStudentSubjects()')}
+        ${studentSubjectsFieldHtml('newStudentSubjectsWrap', 'newStudentSubjectsList')}
     `, async () => {
         const name = document.getElementById('newStudentName').value.trim();
         const email = document.getElementById('newStudentEmail').value.trim();
@@ -223,6 +286,7 @@ function addStudentModal() {
         const rollNumber = document.getElementById('newStudentRoll').value.trim();
         const classId = document.getElementById('newStudentClass').value;
         const stream = document.getElementById('newStudentStream').value;
+        const subjectIds = getCheckedStudentSubjects('newStudentSubjectsList');
 
         if (!name) { showToast('Error', 'Name is required', 'error'); return; }
         if (!email) { showToast('Error', 'Email is required', 'error'); return; }
@@ -230,7 +294,7 @@ function addStudentModal() {
         const chosenClass = (window._allClasses || []).find(c => c._id === classId);
         if (chosenClass && chosenClass.streams && chosenClass.streams.length && !stream) { showToast('Error', 'Please select a stream for this class', 'error'); return; }
 
-        const result = await apiCall('/students', { method: 'POST', body: JSON.stringify({ name, email, password, phone, rollNumber, classId, stream }) });
+        const result = await apiCall('/students', { method: 'POST', body: JSON.stringify({ name, email, password, phone, rollNumber, classId, stream, subjectIds }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to create student', 'error'); return; }
 
         showToast('Success', result.message || 'Student created', 'success');
