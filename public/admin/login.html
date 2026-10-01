@@ -189,8 +189,8 @@
 
     <form id="loginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
-            <label>Email Address</label>
-            <input type="email" id="email" placeholder="Enter your email" required>
+            <label>Login ID</label>
+            <input type="text" id="email" placeholder="Enter your Login ID" autocomplete="username" autocapitalize="none" spellcheck="false" required>
         </div>
         
         <div class="form-group">
@@ -252,7 +252,7 @@ async function handleLogin(event) {
     
     if (!email || !password) {
         messageEl.className = 'message error';
-        messageEl.textContent = 'Please enter both email and password';
+        messageEl.textContent = 'Please enter both Login ID and password';
         return;
     }
     
@@ -265,7 +265,7 @@ async function handleLogin(event) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ loginId: email, password })
         });
         
         const data = await response.json();
