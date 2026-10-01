@@ -38,6 +38,12 @@ function renderStudentsList(list) {
             <div class="search-field"><i class="fas fa-id-card"></i><input type="text" id="searchRoll" placeholder="Roll No..." oninput="applyStudentFilters()"></div>
             <div class="search-field"><i class="fas fa-phone"></i><input type="text" id="searchMobile" placeholder="Mobile..." oninput="applyStudentFilters()"></div>
             <div class="search-field"><i class="fas fa-school"></i><select id="searchClass" onchange="applyStudentFilters()"><option value="">All Classes</option>${classOptions}</select></div>
+            <div class="search-field"><i class="fas fa-stream"></i><select id="searchStream" onchange="applyStudentFilters()">
+                <option value="">All Streams</option>
+                <option value="Science">Science</option>
+                <option value="Commerce">Commerce</option>
+                <option value="Arts">Arts</option>
+            </select></div>
             <div class="search-field"><i class="fas fa-toggle-on"></i><select id="searchStatus" onchange="applyStudentFilters()">
                 <option value="">All Status</option>
                 <option value="active">Active</option>
@@ -70,7 +76,7 @@ function renderStudentsTable(list) {
             <table>
                 <thead><tr>
                     <th><input type="checkbox" id="selectAllStudents" onchange="toggleSelectAllStudents(this.checked)"></th>
-                    <th>Name</th><th>Roll No</th><th>Mobile</th><th>Email</th><th>Class</th><th>Fee</th><th>Status</th><th>Actions</th>
+                    <th>Name</th><th>Roll No</th><th>Mobile</th><th>Email</th><th>Class</th><th>Stream</th><th>Fee</th><th>Status</th><th>Actions</th>
                 </tr></thead>
                 <tbody>
                     ${list.map(s => `
@@ -81,6 +87,7 @@ function renderStudentsTable(list) {
                             <td>${escapeHtml(s.phone) || '-'}</td>
                             <td>${escapeHtml(s.email)}</td>
                             <td>${escapeHtml(s.class)}</td>
+                            <td>${s.stream ? `<span class="status-badge status-draft">${escapeHtml(s.stream)}</span>` : (s.classHasStreams ? '<span class="status-badge status-inactive" title="Stream not selected yet">Not set</span>' : '<span style="color:var(--muted);">—</span>')}</td>
                             <td>${s.feeStatus === 'paid' ? '<span class="status-badge status-active">Paid</span>' : s.feeStatus === 'due' ? '<span class="status-badge status-inactive">Due</span>' : '<span class="status-badge status-draft">—</span>'}</td>
                             <td><span class="status-badge ${s.isActive ? 'status-active' : 'status-inactive'}">${s.isActive ? 'Active' : 'Inactive'}</span></td>
                             <td><button class="btn btn-gold btn-sm" onclick="showStudentProfile('${s._id}')"><i class="fas fa-user"></i> View</button></td>
@@ -100,12 +107,14 @@ function applyStudentFilters() {
     const mobile = document.getElementById('searchMobile').value.trim().toLowerCase();
     const classId = document.getElementById('searchClass').value;
     const status = document.getElementById('searchStatus').value;
+    const stream = document.getElementById('searchStream').value;
 
     const filtered = window._allStudents.filter(s => {
         if (name && !s.name.toLowerCase().includes(name)) return false;
         if (roll && !(s.rollNumber || '').toLowerCase().includes(roll)) return false;
         if (mobile && !(s.phone || '').toLowerCase().includes(mobile)) return false;
         if (classId && s.classId !== classId) return false;
+        if (stream && s.stream !== stream) return false;
         if (status === 'active' && !s.isActive) return false;
         if (status === 'inactive' && s.isActive) return false;
         return true;
@@ -175,6 +184,25 @@ async function bulkActivate() {
     loadStudents();
 }
 
+// Stream picker for students. Shown only when the selected class offers streams
+// (Class 11 / 12). `allowKeep` adds a "keep current stream" choice for bulk moves.
+function studentStreamFieldHtml(selectId, wrapId) {
+    return `<div class="form-group" id="${wrapId}" style="display:none;"><label>Stream *</label><select id="${selectId}"></select></div>`;
+}
+
+function refreshStudentStreamField(classSelectId, selectId, wrapId, opts = {}) {
+    const cls = (window._allClasses || []).find(c => c._id === document.getElementById(classSelectId).value);
+    const wrap = document.getElementById(wrapId);
+    const sel = document.getElementById(selectId);
+    const streams = (cls && cls.streams) || [];
+    if (!streams.length) { wrap.style.display = 'none'; sel.innerHTML = ''; return; }
+    const first = opts.allowKeep
+        ? `<option value="">Keep each student's current stream</option>`
+        : `<option value="">Select stream</option>`;
+    sel.innerHTML = first + streams.map(st => `<option value="${st}">${st}</option>`).join('');
+    wrap.style.display = '';
+}
+
 function addStudentModal() {
     const classOptions = window._allClasses.map(c => `<option value="${c._id}">${escapeHtml(c.displayName || c.name)}</option>`).join('');
     showModal('Add Student', 'Create a new student account', `
@@ -185,7 +213,8 @@ function addStudentModal() {
             <div class="form-group"><label>Phone</label><input type="text" id="newStudentPhone" placeholder="Optional"></div>
             <div class="form-group"><label>Roll Number</label><input type="text" id="newStudentRoll" placeholder="Optional"></div>
         </div>
-        <div class="form-group"><label>Class</label><select id="newStudentClass"><option value="">Not assigned yet</option>${classOptions}</select></div>
+        <div class="form-group"><label>Class</label><select id="newStudentClass" onchange="refreshStudentStreamField('newStudentClass','newStudentStream','newStudentStreamWrap')"><option value="">Not assigned yet</option>${classOptions}</select></div>
+        ${studentStreamFieldHtml('newStudentStream', 'newStudentStreamWrap')}
     `, async () => {
         const name = document.getElementById('newStudentName').value.trim();
         const email = document.getElementById('newStudentEmail').value.trim();
@@ -193,12 +222,15 @@ function addStudentModal() {
         const phone = document.getElementById('newStudentPhone').value.trim();
         const rollNumber = document.getElementById('newStudentRoll').value.trim();
         const classId = document.getElementById('newStudentClass').value;
+        const stream = document.getElementById('newStudentStream').value;
 
         if (!name) { showToast('Error', 'Name is required', 'error'); return; }
         if (!email) { showToast('Error', 'Email is required', 'error'); return; }
         if (!password || password.length < 6) { showToast('Error', 'Password must be at least 6 characters', 'error'); return; }
+        const chosenClass = (window._allClasses || []).find(c => c._id === classId);
+        if (chosenClass && chosenClass.streams && chosenClass.streams.length && !stream) { showToast('Error', 'Please select a stream for this class', 'error'); return; }
 
-        const result = await apiCall('/students', { method: 'POST', body: JSON.stringify({ name, email, password, phone, rollNumber, classId }) });
+        const result = await apiCall('/students', { method: 'POST', body: JSON.stringify({ name, email, password, phone, rollNumber, classId, stream }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to create student', 'error'); return; }
 
         showToast('Success', result.message || 'Student created', 'success');
@@ -210,13 +242,15 @@ function addStudentModal() {
 function bulkChangeClassModal() {
     const classOptions = window._allClasses.map(c => `<option value="${c._id}">${escapeHtml(c.displayName || c.name)}</option>`).join('');
     showModal('Change Class', `Move ${window._selectedStudents.size} selected student(s) to a new class`, `
-        <div class="form-group"><label>New Class *</label><select id="bulkClassSelect"><option value="">Select a class</option>${classOptions}</select></div>
+        <div class="form-group"><label>New Class *</label><select id="bulkClassSelect" onchange="refreshStudentStreamField('bulkClassSelect','bulkStreamSelect','bulkStreamWrap',{allowKeep:true})"><option value="">Select a class</option>${classOptions}</select></div>
+        ${studentStreamFieldHtml('bulkStreamSelect', 'bulkStreamWrap').replace('Stream *', 'Stream <span style="color:var(--muted);font-weight:400;">(optional — e.g. 11 Science → 12 Science keeps the stream automatically)</span>')}
     `, async () => {
         const classId = document.getElementById('bulkClassSelect').value;
+        const stream = document.getElementById('bulkStreamSelect').value;
         if (!classId) { showToast('Error', 'Please select a class', 'error'); return; }
-        const result = await apiCall('/students/bulk', { method: 'POST', body: JSON.stringify({ action: 'change-class', studentIds: [...window._selectedStudents], classId }) });
+        const result = await apiCall('/students/bulk', { method: 'POST', body: JSON.stringify({ action: 'change-class', studentIds: [...window._selectedStudents], classId, stream }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to change class', 'error'); return; }
-        showToast('Success', 'Class updated for selected students', 'success');
+        showToast(result.data?.needStream ? 'Done — action needed' : 'Success', result.data?.needStream ? result.message : 'Class updated for selected students', result.data?.needStream ? 'info' : 'success');
         closeModal();
         loadStudents();
     });
