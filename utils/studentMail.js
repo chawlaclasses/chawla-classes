@@ -1,6 +1,7 @@
 "use strict";
 const { sendMail } = require("./mailer");
 const logger = require("./logger");
+const { appDownloadUrl, sendCredentialsSms } = require("./credentialMessages");
 
 function esc(str) {
   return String(str).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -24,6 +25,7 @@ async function sendStudentCredentials(req, { name, loginEmail, password, recipie
         <tr><td style="padding:6px 14px 6px 0;color:#666;">Password</td><td style="padding:6px 0;">${pwdCell}</td></tr>
       </table>
       <p><a href="${esc(loginUrl)}" style="background:#4f6ef7;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">Open Chawla Classes</a></p>
+      <p style="margin-top:8px;">Get the app: <a href="${esc(appDownloadUrl(req))}" style="color:#4f6ef7;font-weight:bold;">Download the Chawla Classes app</a></p>
       <p style="color:#888;font-size:12px;">Please keep these details private and change the password after your first login.</p>
     </div>`;
   const results = [];
@@ -39,4 +41,18 @@ async function sendStudentCredentials(req, { name, loginEmail, password, recipie
   return results;
 }
 
-module.exports = { sendStudentCredentials };
+// Same details as a text message (SMS) to a phone number.
+async function sendStudentSms(req, { name, loginEmail, password, phone, isUpdate }) {
+  try {
+    return await sendCredentialsSms({
+      name, loginId: loginEmail, password, isUpdate,
+      loginLink: `${req.protocol}://${req.get("host")}/`,
+      appLink: appDownloadUrl(req),
+    }, phone);
+  } catch (err) {
+    logger.error(`Student credentials SMS failed: ${err.message}`);
+    return { sent: false, reason: err.message };
+  }
+}
+
+module.exports = { sendStudentCredentials, sendStudentSms };
