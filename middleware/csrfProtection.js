@@ -118,10 +118,13 @@ const PUBLIC_UNAUTHENTICATED_WRITE_PATHS = [
   '/api/reviews/send-otp',
   '/api/reviews/verify-otp',
   '/api/reviews/resend-edit-link',
+  '/api/messaging/otp/request',
+  '/api/messaging/otp/verify',
 ];
 
 const PUBLIC_UNAUTHENTICATED_WRITE_PREFIXES = [
   '/api/reviews/edit/', // PUT /api/reviews/edit/:token — dynamic token segment
+  '/api/messaging/webhooks/', // provider delivery receipts (authenticated by provider.verifyWebhook)
 ];
 
 function isPublicUnauthenticatedWrite(req) {

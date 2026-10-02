@@ -103,6 +103,10 @@ db.connect()
     // logged but never blocks startup (same behavior as before this
     // existed, just self-healing when it can) — this part is unrelated to
     // the MongoDB connection itself being up.
+    // Messaging layer (OTP / reminders / bulk). Non-blocking: a failure here must never stop the site from booting.
+    require("./messaging").init()
+      .catch((err) => logger.error(`❌ Messaging init failed: ${err.message}`, { stack: err.stack }));
+
     ensureAdminAccount().finally(() => {
       httpServer = app.listen(PORT, () => {
         logger.info(`🚀 Server running on port ${PORT}`);
@@ -170,6 +174,11 @@ process.on("uncaughtException", (err) => {
 const shutdownDeps = { db, logger };
 Object.defineProperty(shutdownDeps, "httpServer", { get: () => httpServer });
 const gracefulShutdown = createGracefulShutdown(shutdownDeps);
-
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => {
+  require("./messaging").shutdown().catch(() => {});
+  gracefulShutdown("SIGTERM");
+});
+process.on("SIGINT", () => {
+  require("./messaging").shutdown().catch(() => {});
+  gracefulShutdown("SIGINT");
+});

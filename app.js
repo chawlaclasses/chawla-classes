@@ -99,6 +99,7 @@ const teacherRoutes = require("./routes/teacherRoutes");
 // was already calling them. Each file applies its own requireApiStudent
 // internally, so no extra auth middleware is needed at the mount point here.
 const notificationsRoutes = require("./routes/notifications");
+const { messagingGateway } = require("./messaging/mount"); // SMS/WhatsApp-ready messaging layer (mock provider by default)
 // FIX (connections audit 2026-09): see routes/appVersion.js's own header
 // comment — the Flutter app's update-check call had nowhere to land.
 const appVersionRoutes = require("./routes/appVersion");
@@ -470,6 +471,8 @@ app.set('trust proxy', 1);
 
   // ── Previously-unwired student feature routes ─────────────────────────────
   app.use("/api/notifications", notificationsRoutes);
+  // Messaging layer: OTP, enquiry follow-up, fee reminders, notices, parent alerts, bulk. See messaging/README.md
+  app.use("/api/messaging", messagingGateway());
   // Public (no requireApiStudent) — see routes/appVersion.js header comment.
   app.use("/api/app", appVersionRoutes);
   // Public — no auth. Job applicants aren't a user in the system yet;
