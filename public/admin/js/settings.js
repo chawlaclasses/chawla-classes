@@ -628,7 +628,8 @@ async function showEditProfileModal() {
         <div class="form-group"><label>Login Email <span style="color:var(--muted);font-weight:400;">(student signs in with this)</span></label><input type="email" id="editLoginEmail" oninput="document.getElementById('editSendEmail').checked=true" name="cc-edit-student-email" autocomplete="off" value="${escapeHtml(p.personalDetails.email || '')}"></div>
         <div class="form-group"><label>New Password <span style="color:var(--muted);font-weight:400;">(leave blank to keep the current password)</span></label><input type="password" id="editNewPassword" oninput="document.getElementById('editSendEmail').checked=true" placeholder="At least 6 characters" autocomplete="new-password"></div>
         <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" id="editSendEmail"> Email the login details to the student <span style="color:var(--muted);">(password included only if you enter a new one)</span></label>
-            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;"><input type="checkbox" id="editSendParent"> Also send to parent email</label></div>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;"><input type="checkbox" id="editSendParent"> Also send to parent email</label>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;"><input type="checkbox" id="editSendSms"> Also send as text message (SMS) to the student's phone <span style="color:var(--muted);">(goes to the phone number; needs SMS/Twilio set up)</span></label></div>
         <div class="form-group"><label>Phone</label><input type="text" id="editPhone" value="${escapeHtml(p.personalDetails.phone)}"></div>
         <div class="form-group"><label>Date of Birth</label><input type="date" id="editDob" value="${escapeHtml(p.personalDetails.dob)}"></div>
         <div class="form-group"><label>Roll Number</label><input type="text" id="editRollNumber" value="${escapeHtml(p.personalDetails.rollNumber)}"></div>
@@ -664,13 +665,15 @@ async function showEditProfileModal() {
         }
         body.sendEmail = document.getElementById('editSendEmail').checked;
         body.sendToParent = document.getElementById('editSendParent').checked;
+        body.sendSms = document.getElementById('editSendSms').checked;
+        if (body.sendSms && !body.phone) { showToast('Error', 'Enter the student phone number to send the text message', 'error'); return; }
         // Only send subjects if the picker is on screen (student has a class with subjects).
         if (document.getElementById('editSubjectsWrap')?.style.display !== 'none') {
             body.subjectIds = getCheckedStudentSubjects('editSubjectsList');
         }
         const result = await apiCall(`/students/${window._currentProfileId}/profile`, { method: 'PUT', body: JSON.stringify(body) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update profile', 'error'); return; }
-        showToast(result.emailSent === false ? 'Saved (email not sent)' : 'Success', result.message || 'Profile updated', result.emailSent === false ? 'info' : 'success');
+        showToast(result.emailSent === false || result.smsSent === false ? 'Saved (some messages not sent)' : 'Success', result.message || 'Profile updated', result.emailSent === false || result.smsSent === false ? 'info' : 'success');
         closeModal();
         showStudentProfile(window._currentProfileId);
     });
