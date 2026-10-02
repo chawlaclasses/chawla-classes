@@ -22,7 +22,7 @@ const { validate } = require('../../middleware/validation');
 const validators = require('../../utils/validators');
 const { resolveStudentStream, resolveStudentSubjects } = require('../../utils/streams');
 const bcrypt = require('bcryptjs');
-const { sendStudentCredentials } = require('../../utils/studentMail');
+const { sendStudentCredentials, sendStudentSms } = require('../../utils/studentMail');
 const { uploadStudentDocument, studentDocumentMimeGuard, STUDENT_DOCS_DIR } = require('../../middleware/upload');
 const r2Service = require('../../services/r2Service');
 const studentReportService = require('../../services/studentReport');
@@ -223,7 +223,7 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
         if (!isClassAllowedForUser(req.userData, student.classId)) {
             return res.status(403).json({ success: false, message: "You're not assigned to this student's class." });
         }
-        const { phone, dob, rollNumber, address, parentName, parentPhone, parentEmail, parentOccupation, batch, stream, subjectIds, email: rawEmail, password, sendEmail, sendToParent } = req.body;
+        const { phone, dob, rollNumber, address, parentName, parentPhone, parentEmail, parentOccupation, batch, stream, subjectIds, email: rawEmail, password, sendEmail, sendToParent, sendSms } = req.body;
 
         // Login email / password change (student's Login ID is their email).
         let credUpdate = {};
@@ -296,7 +296,13 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
             emailSent = ok.length > 0;
             emailNote = ok.length ? ` Login details emailed to ${ok.join(', ')}.` : ' But the email could not be sent.';
         }
-        res.json({ success: true, data: { ...updated, password: undefined }, emailSent, message: `Profile updated.${emailNote}` });
+        let smsSent;
+        if (sendSms === true) {
+            const sms = await sendStudentSms(req, { name: updated.name, loginEmail: updated.email, password: wantsNewPassword ? password : '', phone: updated.phone, isUpdate: true });
+            smsSent = !!sms.sent;
+            emailNote += sms.sent ? ' Text message sent.' : ` Text message not sent${sms.reason ? ` (${sms.reason})` : ''}.`;
+        }
+        res.json({ success: true, data: { ...updated, password: undefined }, emailSent, smsSent, message: `Profile updated.${emailNote}` });
     } catch (error) {
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
