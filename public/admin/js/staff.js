@@ -153,7 +153,9 @@ function showAddStaffModal() {
         <div class="form-group"><label>Phone</label><input type="text" id="staffPhone" placeholder="Optional"></div>
         <div class="form-group"><label>Password *</label><input type="password" id="staffPassword" placeholder="Min 8 characters" autocomplete="new-password"></div>
         <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
-            <input type="checkbox" id="staffSendEmail" checked> Email the Login ID &amp; password to this staff member</label></div>
+            <input type="checkbox" id="staffSendEmail" checked> Email the Login ID &amp; password to this staff member</label>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;">
+            <input type="checkbox" id="staffSendSms"> Also send as text message (SMS) <span style="color:var(--muted);">(goes to the phone number; needs SMS/Twilio set up)</span></label></div>
         <div class="form-group"><label>Role *</label>
             <select id="staffRole" onchange="toggleAssignedClassesVisibility('staffRole', 'staffAssignedClassesWrap', 'staffAssignedSubjectsWrap')">
                 <option value="">Select Role</option>
@@ -176,13 +178,15 @@ function showAddStaffModal() {
         const password = document.getElementById('staffPassword').value;
         const role = document.getElementById('staffRole').value;
         const sendEmail = document.getElementById('staffSendEmail').checked;
+        const sendSms = document.getElementById('staffSendSms').checked;
+        if (sendSms && !phone) { showToast('Error', 'Enter a phone number to send the text message', 'error'); return; }
         if (!name || !loginId || !email || !password || !role) { showToast('Error', 'Name, login ID, email, password, and role are required', 'error'); return; }
         if (!/^[A-Za-z0-9][A-Za-z0-9._@+-]{2,49}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-50 characters using letters, numbers and . _ - @ + only (no spaces)', 'error'); return; }
         const assignedClasses = role === 'teacher' ? collectCheckedClasses('staffClass') : [];
         const assignedSubjects = role === 'teacher' ? collectCheckedSubjects('staffSubject') : [];
-        const result = await apiCall('/staff', { method: 'POST', body: JSON.stringify({ name, loginId, email, phone, password, role, assignedClasses, assignedSubjects, sendEmail }) });
+        const result = await apiCall('/staff', { method: 'POST', body: JSON.stringify({ name, loginId, email, phone, password, role, assignedClasses, assignedSubjects, sendEmail, sendSms }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to create staff account', 'error'); return; }
-        showToast(result.emailSent === false && sendEmail ? 'Created (email not sent)' : 'Success', result.message || 'Staff account created', result.emailSent === false && sendEmail ? 'info' : 'success');
+        showToast((result.emailSent === false && sendEmail) || result.smsSent === false ? 'Created (some messages not sent)' : 'Success', result.message || 'Staff account created', (result.emailSent === false && sendEmail) || result.smsSent === false ? 'info' : 'success');
         closeModal();
         loadStaff();
     });
@@ -201,7 +205,9 @@ function editStaff(id) {
             <input type="password" id="editStaffPassword" oninput="document.getElementById('editStaffSendEmail').checked=true" placeholder="Min 8 characters" autocomplete="new-password">
         </div>
         <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
-            <input type="checkbox" id="editStaffSendEmail"> Email the updated login details to this staff member <span style="color:var(--muted);">(password is included only if you enter a new password above)</span></label></div>
+            <input type="checkbox" id="editStaffSendEmail"> Email the updated login details to this staff member <span style="color:var(--muted);">(password is included only if you enter a new password above)</span></label>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;">
+            <input type="checkbox" id="editStaffSendSms"> Also send as text message (SMS) <span style="color:var(--muted);">(goes to the phone number; needs SMS/Twilio set up)</span></label></div>
         <div class="form-group"><label>Role *</label>
             <select id="editStaffRole" onchange="toggleAssignedClassesVisibility('editStaffRole', 'editStaffAssignedClassesWrap', 'editStaffAssignedSubjectsWrap')">
                 ${Object.entries(STAFF_ROLE_LABELS).map(([v, label]) => `<option value="${v}" ${v === item.role ? 'selected' : ''}>${label}</option>`).join('')}
@@ -223,13 +229,14 @@ function editStaff(id) {
         const loginId = document.getElementById('editStaffLoginId').value.trim();
         const email = document.getElementById('editStaffEmail').value.trim();
         const sendEmail = document.getElementById('editStaffSendEmail').checked;
+        const sendSms = document.getElementById('editStaffSendSms').checked;
         if (!name || !role) { showToast('Error', 'Name and role are required', 'error'); return; }
         if (!email) { showToast('Error', 'Email is required', 'error'); return; }
         if (loginId && !/^[A-Za-z0-9][A-Za-z0-9._@+-]{2,49}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-50 characters using letters, numbers and . _ - @ + only (no spaces)', 'error'); return; }
         if (password && password.length < 8) { showToast('Error', 'Password must be at least 8 characters', 'error'); return; }
         const assignedClasses = role === 'teacher' ? collectCheckedClasses('editStaffClass') : [];
         const assignedSubjects = role === 'teacher' ? collectCheckedSubjects('editStaffSubject') : [];
-        const body = { name, phone, role, assignedClasses, assignedSubjects, email, sendEmail };
+        const body = { name, phone, role, assignedClasses, assignedSubjects, email, sendEmail, sendSms };
         if (loginId && loginId.toLowerCase() !== (item.loginId || '').toLowerCase()) body.loginId = loginId;
         if (password) body.password = password; // blank = unchanged
         const result = await apiCall(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(body) });
