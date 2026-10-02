@@ -27,6 +27,7 @@ const { logAudit } = require('../utils/auditLog');
 const { requirePermission } = require('../middleware/permissions');
 const { STAFF_ROLES, canAssignRole } = require('../config/permissions');
 const { sendMail } = require('../utils/mailer');
+const { appDownloadUrl, sendCredentialsSms } = require('../utils/credentialMessages');
 
 // ------------------------------------------------------------
 // Login ID helpers
@@ -70,12 +71,27 @@ async function sendCredentialsEmail(req, { name, email, loginId, password, role,
                 <tr><td style="padding:6px 14px 6px 0;color:#666;">Password</td><td style="padding:6px 0;"><strong>${escapeHtmlServer(password)}</strong></td></tr>
             </table>
             <p><a href="${escapeHtmlServer(loginUrl)}" style="background:#4f6ef7;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">Open Admin Login</a></p>
+            <p style="margin-top:8px;">Get the app: <a href="${escapeHtmlServer(appDownloadUrl(req))}" style="color:#4f6ef7;font-weight:bold;">Download the Chawla Classes app</a></p>
             <p style="color:#888;font-size:12px;">Please keep these details private. Sign in with your Login ID (not your email address).</p>
         </div>`;
     try {
         return await sendMail({ to: email, subject, html });
     } catch (err) {
         logger.error(`Staff credentials email failed for ${email}: ${err.message}`);
+        return { sent: false, reason: err.message };
+    }
+}
+
+// Sends the same details as a text message (SMS) to the staff member's phone.
+async function sendStaffSms(req, { name, loginId, password, phone, isUpdate }) {
+    try {
+        return await sendCredentialsSms({
+            name, loginId, password, isUpdate,
+            loginLink: `${req.protocol}://${req.get('host')}/admin/login.html`,
+            appLink: appDownloadUrl(req),
+        }, phone);
+    } catch (err) {
+        logger.error(`Staff credentials SMS failed: ${err.message}`);
         return { sent: false, reason: err.message };
     }
 }
@@ -99,7 +115,7 @@ router.get('/', requirePermission('staff:view'), (req, res) => {
 // ============================================================
 router.post('/', requirePermission('staff:create'), async (req, res) => {
     try {
-        const { name, email, loginId: rawLoginId, password, role, phone, assignedClasses, assignedSubjects, sendEmail } = req.body;
+        const { name, email, loginId: rawLoginId, password, role, phone, assignedClasses, assignedSubjects, sendEmail, sendSms } = req.body;
 
         if (!name || !email || !rawLoginId || !password || !role) {
             return res.status(400).json({ success: false, message: 'Name, login ID, email, password and role are required' });
@@ -159,14 +175,23 @@ router.post('/', requirePermission('staff:create'), async (req, res) => {
             emailResult = await sendCredentialsEmail(req, { name, email: normalizedEmail, loginId, password, role, isReset: false });
         }
 
+        let smsResult = null;
+        if (sendSms === true) {
+            smsResult = await sendStaffSms(req, { name, loginId, password, phone, isUpdate: false });
+        }
+
         const { password: _pw, ...safeStaff } = newStaff;
+        const parts = ['Staff account created.'];
+        if (sendEmail !== false) parts.push(emailResult.sent ? `Login details emailed to ${normalizedEmail}.` : `Email could not be sent${emailResult.reason ? ` (${emailResult.reason})` : ''}.`);
+        if (smsResult) parts.push(smsResult.sent ? 'Text message sent.' : `Text message not sent${smsResult.reason ? ` (${smsResult.reason})` : ''}.`);
+        const anyFailed = (sendEmail !== false && !emailResult.sent) || (smsResult && !smsResult.sent);
+        if (anyFailed) parts.push('Please share the Login ID and password manually where needed.');
         res.status(201).json({
             success: true,
             data: safeStaff,
-            emailSent: !!emailResult.sent,
-            message: emailResult.sent
-                ? `Staff account created. Login details emailed to ${normalizedEmail}`
-                : `Staff account created, but the email could not be sent${emailResult.reason ? ` (${emailResult.reason})` : ''}. Please share the Login ID and password manually.`
+            emailSent: sendEmail !== false ? !!emailResult.sent : undefined,
+            smsSent: smsResult ? !!smsResult.sent : undefined,
+            message: parts.join(' ')
         });
     } catch (error) {
         logger.error(`Create staff error: ${error.message}`, { stack: error.stack, path: req.path });
@@ -180,7 +205,7 @@ router.post('/', requirePermission('staff:create'), async (req, res) => {
 router.put('/:id', requirePermission('staff:edit'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, phone, role, isActive, assignedClasses, assignedSubjects, password, loginId: rawLoginId, email: rawEmail, sendEmail } = req.body;
+        const { name, phone, role, isActive, assignedClasses, assignedSubjects, password, loginId: rawLoginId, email: rawEmail, sendEmail, sendSms } = req.body;
 
         const existing = db.findById('users', id);
         if (!existing || !STAFF_ROLES.includes(existing.role)) {
@@ -285,15 +310,22 @@ router.put('/:id', requirePermission('staff:edit'), async (req, res) => {
             }
         }
 
+        let smsResult = null;
+        if (sendSms === true && newLoginId) {
+            smsResult = await sendStaffSms(req, { name: updated.name, loginId: newLoginId, password: wantsNewPassword ? password : '', phone: updated.phone, isUpdate: true });
+        }
+
         const { password: _pw, ...safeStaff } = updated;
         const baseMsg = wantsNewPassword ? 'Staff account updated and password changed' : 'Staff account updated';
+        const parts = [baseMsg + '.'];
+        if (emailResult) parts.push(emailResult.sent ? `Login details emailed to ${newEmail}.` : `Email could not be sent${emailResult.reason ? ` (${emailResult.reason})` : ''}.`);
+        if (smsResult) parts.push(smsResult.sent ? 'Text message sent.' : `Text message not sent${smsResult.reason ? ` (${smsResult.reason})` : ''}.`);
         res.json({
             success: true,
             data: safeStaff,
             emailSent: emailResult ? !!emailResult.sent : undefined,
-            message: emailResult
-                ? (emailResult.sent ? `${baseMsg}. Login details emailed to ${newEmail}` : `${baseMsg}, but the email could not be sent${emailResult.reason ? ` (${emailResult.reason})` : ''}`)
-                : baseMsg
+            smsSent: smsResult ? !!smsResult.sent : undefined,
+            message: parts.join(' ')
         });
     } catch (error) {
         logger.error(`Update staff error: ${error.message}`, { stack: error.stack, path: req.path });
