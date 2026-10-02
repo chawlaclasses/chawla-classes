@@ -24,7 +24,7 @@ const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
 const { normalizeEmail } = require('../../utils/helpers');
 const { isClassAllowedForUser } = require('../../config/permissions');
-const { sendStudentCredentials } = require('../../utils/studentMail');
+const { sendStudentCredentials, sendStudentSms } = require('../../utils/studentMail');
 const { resolveStudentStream, classHasStreams, normalizeStream, resolveStudentSubjects } = require('../../utils/streams');
 
 
@@ -37,7 +37,7 @@ const { resolveStudentStream, classHasStreams, normalizeStream, resolveStudentSu
 // correctly everywhere else in the admin panel immediately.
 router.post('/students', requirePermission('students:create'), async (req, res) => {
     try {
-        const { name, email, password, phone, rollNumber, classId, batch, stream, subjectIds, sendEmail, parentEmail } = req.body;
+        const { name, email, password, phone, rollNumber, classId, batch, stream, subjectIds, sendEmail, parentEmail, sendSms } = req.body;
 
         if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Name is required' });
         if (!email || !email.trim()) return res.status(400).json({ success: false, message: 'Email is required' });
@@ -104,9 +104,17 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
                 : ' But the email could not be sent — please share the email & password manually.';
         }
 
+        // Optional text message (SMS) to the student's phone.
+        let smsSent;
+        if (sendSms === true) {
+            const sms = await sendStudentSms(req, { name: student.name, loginEmail: normalizedEmail, password, phone: student.phone, isUpdate: false });
+            smsSent = !!sms.sent;
+            emailNote += sms.sent ? ' Text message sent.' : ` Text message not sent${sms.reason ? ` (${sms.reason})` : ''}.`;
+        }
+
         // Never echo the password hash back to the client.
         const { password: _omit, ...safeStudent } = student;
-        res.status(201).json({ success: true, data: safeStudent, emailSent, message: `Student "${student.name}" created successfully.${emailNote}` });
+        res.status(201).json({ success: true, data: safeStudent, emailSent, smsSent, message: `Student "${student.name}" created successfully.${emailNote}` });
     } catch (error) {
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong while creating the student. Please try again.' });
