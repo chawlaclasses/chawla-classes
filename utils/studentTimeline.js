@@ -21,6 +21,7 @@
 "use strict";
 
 const db = require('../services/jsonDb');
+const { attendanceRecordsFor } = require('./profileFields');
 
 /**
  * @param {object} student - a full user record with role === 'student'
@@ -40,7 +41,7 @@ function buildStudentTimeline(student) {
     });
 
     // ── Attendance ─────────────────────────────────────────────────────
-    const attendanceRecords = db.find('attendance', { email: student.email });
+    const attendanceRecords = attendanceRecordsFor(student);
     attendanceRecords.forEach(a => {
         events.push({
             type: 'attendance',

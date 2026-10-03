@@ -676,16 +676,43 @@
             justify-content: center; align-items: center;
         }
         .modal-overlay.active { display: flex; }
+        /* Shared dialog shell (used by every Add/Edit/View dialog via showModal()).
+           Layout is a 3-row flex column:  .modal-header (fixed)  /
+           .modal-body (the ONLY scrolling part)  /  .modal-footer (fixed).
+           Horizontal padding lives on the three rows (not on .modal) so the
+           scrollbar hugs the modal edge and input focus-glows aren't clipped. */
         .modal {
+            --modal-pad-x: 32px;
             background: var(--navy-mid);
             border: 1px solid var(--card-border);
             border-radius: var(--radius);
-            padding: 32px;
             max-width: 600px;
             width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
+            max-height: 85vh;              /* fallback for browsers without dvh */
+            max-height: 85dvh;             /* tracks mobile browser toolbars */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;              /* rows below handle their own scrolling */
             box-shadow: 0 20px 60px rgba(20,30,60,0.25);
+        }
+        .modal-header { flex: 0 0 auto; padding: 28px var(--modal-pad-x) 0; }
+        .modal-body {
+            flex: 1 1 auto;
+            min-height: 0;                 /* required, otherwise a flex child never shrinks/scrolls */
+            overflow-y: auto;
+            overscroll-behavior: contain;  /* don't scroll the page behind the dialog */
+            -webkit-overflow-scrolling: touch;
+            padding: 0 var(--modal-pad-x) 4px;
+        }
+        /* Reusable sticky action bar - works for any dialog that uses the
+           .modal > .modal-header + .modal-body + .modal-footer structure. */
+        .modal-footer {
+            flex: 0 0 auto;
+            display: flex; gap: 12px; justify-content: flex-end; align-items: center;
+            padding: 14px var(--modal-pad-x) calc(14px + env(safe-area-inset-bottom, 0px));
+            border-top: 1px solid var(--card-border);
+            background: var(--navy-mid);
+            box-shadow: 0 -6px 12px -8px rgba(20,30,60,0.12);
         }
         .modal h2 { color: var(--white); font-size: 22px; margin-bottom: 8px; }
         .modal .subtitle { color: var(--muted); margin-bottom: 20px; }
@@ -716,6 +743,23 @@
         .form-group textarea { min-height: 60px; resize: vertical; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
+        /* Edit Student / Edit Staff: grouped sections, "(Optional)" tags, photo picker */
+        .form-section { border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 14px 14px 2px; margin-bottom: 14px; }
+        .form-section-title { color: var(--white); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 12px; opacity: .85; }
+        .opt-tag { color: var(--muted); font-weight: 400; font-size: 12px; }
+        .field-hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+        .photo-field { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+        .photo-preview { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: var(--gold-glow); border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 28px; font-weight: 700; }
+        .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-actions { min-width: 0; }
+        .photo-actions label { display: block; color: var(--text); font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+        .photo-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+        .photo-hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+        @media (max-width: 600px) {
+            .modal .form-row { grid-template-columns: 1fr; gap: 0; }
+            .form-section { padding: 12px 12px 0; }
+        }
+
         .search-filter-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
         .search-filter-bar .search-field { position: relative; }
         .search-filter-bar .search-field i {
@@ -744,7 +788,20 @@
         .search-filter-bar input:focus + i, .search-filter-bar .search-field:has(select:focus) i { color: var(--gold); }
         .search-filter-bar input::placeholder { color: var(--muted); opacity: 0.7; }
 
-        .modal .btn-group { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+        .modal-body .btn-group { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; } /* backward-compat: button rows built inside a form body */
+
+        /* Phones: more vertical room, and Cancel/Save share the footer width */
+        @media (max-width: 600px) {
+            .modal { max-height: 92vh; max-height: 92dvh; }
+            .modal-footer .btn { flex: 1; }
+        }
+        /* Landscape phones / very short viewports: compact chrome so the form keeps room */
+        @media (max-height: 520px) {
+            .modal-header { padding-top: 16px; }
+            .modal h2 { font-size: 18px; margin-bottom: 4px; }
+            .modal .subtitle { margin-bottom: 12px; }
+            .modal-footer { padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+        }
 
         /* ── TOAST ── */
         .toast-container { position: fixed; top: 80px; right: 20px; left: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
@@ -1098,7 +1155,8 @@
         /* MOBILE VERTICAL (< 480) */
         @media (max-width: 479px) {
             .stats-grid { grid-template-columns: 1fr; }
-            .modal { padding: 20px; }
+            .modal { --modal-pad-x: 20px; }
+            .modal-header { padding-top: 20px; }
             .header { flex-direction: column; align-items: stretch; }
             .header-right { justify-content: space-between; }
             .toolbar { flex-direction: column; align-items: stretch; }
@@ -1524,12 +1582,18 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- MODAL -->
+<!-- Header + footer stay fixed; only #modalBody scrolls. Clicking the dark
+     overlay or pressing Esc closes the dialog (see AdminModal in js/ui-helpers.js).
+     Keep Cancel as the ".btn-secondary" inside #modalOverlay - ai-question-studio.js
+     looks it up by that selector. -->
 <div class="modal-overlay" id="modalOverlay">
-    <div class="modal">
-        <h2 id="modalTitle">Modal</h2>
-        <div class="subtitle" id="modalSubtitle">Fill in the details</div>
-        <div id="modalBody"></div>
-        <div class="btn-group">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-header">
+            <h2 id="modalTitle">Modal</h2>
+            <div class="subtitle" id="modalSubtitle">Fill in the details</div>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
             <button class="btn btn-gold" id="modalSaveBtn" onclick="saveModal()">Save</button>
         </div>
@@ -1673,6 +1737,7 @@
 <script src="js/fees.js" defer></script>
 <script src="js/attendance.js" defer></script>
 <script src="js/reports.js" defer></script>
+<script src="js/profile-form.js" defer></script>
 <script src="js/students.js" defer></script>
 <script src="js/sessions.js" defer></script>
 <script src="js/audit-logs.js" defer></script>
@@ -1681,6 +1746,8 @@
 <script src="js/staff.js" defer></script>
 <script src="js/recruitment.js" defer></script>
 <script src="js/marketing.js" defer></script>
+<script src="js/campaign-selection.js" defer></script>
+<script src="js/campaign-recipients.js" defer></script>
 <script src="js/reviews.js" defer></script>
 <script src="js/categories.js" defer></script>
 <script src="js/website-builder.js" defer></script>

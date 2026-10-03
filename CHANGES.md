@@ -240,3 +240,12 @@ well-formed-but-unreachable one (this sandbox has no route to Google's
 servers — that part only proves the error handling, not that a real
 push actually lands, which you'll only be able to confirm once step 2
 above is done on Render).
+
+## Edit Student / Edit Staff improvements (2026-10)
+
+- **Email is optional** for students and staff (Add + Edit). Blank saves; a non-blank email is format-checked and duplicate-checked, blank is never duplicate-checked. Old records without an email keep working.
+- **Edit Student** (`PUT|PATCH /api/admin/students/:id/profile`): now also edits Full Name, Class (+stream/subjects revalidated), Status, Section, Notes, plus the existing contact/parent fields. New private profile photo endpoints: `POST|GET|DELETE /api/admin/students/:id/photo`.
+- **Edit Staff** (`PUT|PATCH /api/admin/staff/:id`): now also edits Status, Designation, Qualification, Address, Joining Date, Notes. Photo endpoints: `POST|GET|DELETE /api/admin/staff/:id/photo`. Staff list no longer returns `refreshToken`.
+- Mobile number and Class cannot be blanked once set (older records that never had one still save).
+- Attendance used to be matched by student **email**; with optional email it is now matched by `studentId` (email only as a fallback for old rows) — see `utils/profileFields.js`.
+- New: `utils/profileFields.js`, `public/admin/js/profile-form.js`, `__tests__/routes/edit-student-staff.test.js`.

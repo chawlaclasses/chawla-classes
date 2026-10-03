@@ -3,7 +3,7 @@
 //  - appDownloadUrl(req): the public "Download App" link (admin-configured
 //    in Admin -> App Download; /download-app redirects/streams to it).
 //  - buildCredentialsText(): plain-text body used for SMS.
-//  - sendCredentialsSms(): sends that text via utils/sms.js (Twilio).
+//  - sendCredentialsSms(): sends that text via utils/sms.js (Fast2SMS).
 const { sendSms, isConfigured } = require("./sms");
 
 function appDownloadUrl(req) {

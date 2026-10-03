@@ -11,6 +11,7 @@
 // /api/admin/attendance/mark) are unchanged.
 
 const express = require('express');
+const { findAttendanceOn } = require('../../utils/profileFields');
 const router = express.Router();
 
 const db = require('../../services/jsonDb');
@@ -94,7 +95,8 @@ router.post('/mark', requirePermission('attendance:create'), (req, res) => {
             const student = db.findById('users', studentId);
             if (!student || student.role !== 'student') continue;
 
-            const existing = db.findOne('attendance', { email: student.email, date: targetDate });
+            // Match by studentId (email may be blank — it's optional now).
+            const existing = findAttendanceOn(student, targetDate);
             if (existing) {
                 db.findByIdAndUpdate('attendance', existing._id, { name: student.name, class: className, status });
             } else {

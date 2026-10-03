@@ -198,6 +198,9 @@ router.use('/recruitment', require('./admin/recruitment'));
 // separate and unauthenticated (routes/marketing.js), mounted directly
 // in app.js. Final URLs: /api/admin/marketing/banners,
 // /api/admin/marketing/campaigns/send, etc.
+// Recipient selection (groups / class filters / table / estimate) for
+// campaigns — mounted BEFORE '/marketing' so its path is matched first.
+router.use('/marketing/recipients', require('./admin/marketing-recipients'));
 router.use('/marketing', require('./admin/marketing'));
 router.use('/marketing/campaigns', require('./admin/marketing-campaigns'));
 

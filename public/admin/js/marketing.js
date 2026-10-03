@@ -8,6 +8,8 @@
 //   'campaigns' → routes/admin/marketing-campaigns.js
 //                 (/api/admin/marketing/campaigns/*)
 //                 Bulk promotional Email/WhatsApp/SMS to leads & students.
+//                 "Custom Recipient Selection" (targetType 'selection') shows
+//                 the checkbox picker from campaign-selection.js.
 
 const MARKETING_TARGET_LABELS = {
     students: 'All Active Students',
@@ -15,11 +17,14 @@ const MARKETING_TARGET_LABELS = {
     admissions: 'Admission Form Leads',
     all_leads: 'All Leads (Enquiries + Admissions)',
     everyone: 'Everyone (Students + All Leads)',
+    selection: 'Custom Recipient Selection', // campaigns sent from the "New Campaign" tab
 };
 const ENQUIRY_STATUS_OPTIONS = ['new', 'contacted', 'converted', 'closed'];
 const ADMISSION_STATUS_OPTIONS = ['new', 'contacted', 'admitted', 'rejected'];
 
-let marketingView = 'banners'; // 'banners' | 'campaigns'
+// 'banners' | 'campaigns' (Quick Send) | 'compose' (New Campaign) | 'history'
+// 'compose' and 'history' live in campaign-recipients.js (loaded after this file).
+let marketingView = 'banners';
 
 async function loadMarketing() {
     showLoading();
@@ -45,14 +50,18 @@ function renderMarketing() {
     contentArea.innerHTML = `
         <div class="toolbar">
             <h2>📣 Marketing</h2>
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn ${marketingView === 'banners' ? 'btn-gold' : 'btn-secondary'} btn-sm" onclick="switchMarketingView('banners')"><i class="fas fa-flag"></i> Banners &amp; Offers</button>
-                <button class="btn ${marketingView === 'campaigns' ? 'btn-gold' : 'btn-secondary'} btn-sm" onclick="switchMarketingView('campaigns')"><i class="fas fa-paper-plane"></i> Campaigns</button>
+                <button class="btn ${marketingView === 'compose' ? 'btn-gold' : 'btn-secondary'} btn-sm" onclick="switchMarketingView('compose')"><i class="fas fa-bullhorn"></i> New Campaign</button>
+                <button class="btn ${marketingView === 'history' ? 'btn-gold' : 'btn-secondary'} btn-sm" onclick="switchMarketingView('history')"><i class="fas fa-clock-rotate-left"></i> Campaign History</button>
+                <button class="btn ${marketingView === 'campaigns' ? 'btn-gold' : 'btn-secondary'} btn-sm" onclick="switchMarketingView('campaigns')"><i class="fas fa-paper-plane"></i> Quick Send</button>
             </div>
         </div>
         <div id="marketingViewWrap"></div>
     `;
     if (marketingView === 'campaigns') renderCampaignsView();
+    else if (marketingView === 'compose') renderCampaignComposerView();
+    else if (marketingView === 'history') renderCampaignHistoryView();
     else renderBannersView();
 }
 
@@ -389,7 +398,7 @@ function renderCampaignsView() {
                         <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;"><input type="checkbox" class="camp-channel" value="whatsapp"> 💬 WhatsApp</label>
                         <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;"><input type="checkbox" class="camp-channel" value="sms"> 📱 SMS</label>
                     </div>
-                    <p style="font-size:11px;color:var(--muted);margin-top:4px;">Email/WhatsApp/SMS need SMTP/Twilio configured in .env — otherwise they're logged but not actually sent.</p>
+                    <p style="font-size:11px;color:var(--muted);margin-top:4px;">Email/WhatsApp/SMS need SMTP/Fast2SMS configured in .env — otherwise they're logged but not actually sent.</p>
                 </div>
 
                 <div class="form-group">
@@ -405,7 +414,7 @@ function renderCampaignsView() {
                     <span id="campPreviewResult" style="font-size:13px;color:var(--muted);"></span>
                 </div>
 
-                <button class="btn btn-gold" onclick="sendCampaign()"><i class="fas fa-paper-plane"></i> Send Campaign</button>
+                <button class="btn btn-gold" id="campSendBtn" onclick="sendCampaign()"><i class="fas fa-paper-plane"></i> Send Campaign</button>
             </div>
 
             <div class="builder-panel">
@@ -454,6 +463,11 @@ function renderCampTargetSubfield() {
         container.innerHTML = `<p style="font-size:12px;color:var(--muted);">Targets every active student.</p>`;
     } else if (targetType === 'all_leads') {
         container.innerHTML = `<p style="font-size:12px;color:var(--muted);">Targets every website enquiry and admission-form lead, deduplicated by phone/email.</p>`;
+    } else if (targetType === 'selection') {
+        // Checkbox picker lives in campaign-selection.js (loaded after this file).
+        container.innerHTML = `<div id="campSelectionWrap"></div>`;
+        if (typeof crsRender === 'function') crsRender();
+        else container.innerHTML = `<p style="font-size:12px;color:#f87171;">The recipient picker failed to load. Please refresh the page.</p>`;
     } else {
         container.innerHTML = `<p style="font-size:12px;color:var(--muted);">Targets every student, enquiry, and admission-form lead, deduplicated by phone/email.</p>`;
     }
@@ -467,6 +481,9 @@ function getCampTargetValue() {
 
 async function previewCampTargets() {
     const targetType = document.getElementById('campTargetType').value;
+    // A hand-picked list is too long for a query string and must be validated
+    // server-side by id — campaign-selection.js POSTs it.
+    if (targetType === 'selection') return crsPreview();
     const targetValue = getCampTargetValue();
     const resultEl = document.getElementById('campPreviewResult');
     resultEl.textContent = 'Loading…';
@@ -490,13 +507,33 @@ async function sendCampaign() {
 
     if (!title || !message) { showToast('Error', 'Title and message are required', 'error'); return; }
     if (channels.length === 0) { showToast('Error', 'Select at least one channel', 'error'); return; }
-    if (!confirm(`Send "${title}" via ${channels.join(', ')} to ${MARKETING_TARGET_LABELS[targetType]}? This cannot be undone.`)) return;
 
-    const result = await apiCall('/marketing/campaigns/send', {
-        method: 'POST',
-        body: JSON.stringify({ title, message, channels, targetType, targetValue }),
-    });
-    if (!result || !result.success) { showToast('Error', result?.message || 'Failed to send campaign', 'error'); return; }
+    // Custom Recipient Selection: send ONLY the ticked people (as id references).
+    let selection;
+    let targetLabel = MARKETING_TARGET_LABELS[targetType];
+    if (targetType === 'selection') {
+        const problem = crsValidate();
+        if (problem) { crsShowMessage(problem); showToast('Error', problem, 'error'); return; }
+        selection = crsPayload();
+        targetLabel = `${crsSelectedCount()} selected recipient(s)`;
+    }
+    if (!confirm(`Send "${title}" via ${channels.join(', ')} to ${targetLabel}? This cannot be undone.`)) return;
+
+    // Disable the button while the request runs so a double-click can't send twice.
+    const sendBtn = document.getElementById('campSendBtn');
+    if (sendBtn) sendBtn.disabled = true;
+
+    const body = { title, message, channels, targetType, targetValue };
+    if (selection) body.selection = selection;
+    const result = await apiCall('/marketing/campaigns/send', { method: 'POST', body: JSON.stringify(body) });
+    if (sendBtn) sendBtn.disabled = false;
+
+    if (!result || !result.success) {
+        if (targetType === 'selection' && result?.code) crsShowMessage(result.message); // inline, next to the list
+        showToast('Error', result?.message || 'Failed to send campaign', 'error');
+        return;
+    }
+    if (targetType === 'selection') crsReset(); // sent — start the next campaign from a clean slate
     showToast('Success', result.message, 'success');
     const historyRes = await apiCall('/marketing/campaigns/history');
     window._marketingHistory = historyRes?.data || [];

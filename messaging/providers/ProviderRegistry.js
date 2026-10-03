@@ -4,7 +4,7 @@ const { MessagingError } = require("../utils/errors");
 const log = require("../utils/log");
 
 const MockProvider = require("./MockProvider");
-const Fast2SmsProvider = require("./stubs/fast2sms");
+const Fast2SmsProvider = require("./Fast2SmsProvider");
 const Msg91Provider = require("./stubs/msg91");
 const WhatsAppCloudProvider = require("./stubs/whatsappCloud");
 

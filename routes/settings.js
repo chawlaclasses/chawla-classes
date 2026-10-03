@@ -8,7 +8,7 @@
 // NOTE on WhatsApp: there is no WhatsApp Business API account connected
 // here. The config fields (provider/accountSid/authToken/fromNumber) are
 // stored and validated for shape, but actually sending a WhatsApp message
-// requires real credentials from a provider (Twilio, Meta Cloud API, etc.)
+// requires real credentials from a provider (e.g. Meta WhatsApp Cloud API)
 // that only the person deploying this app can obtain — this can't be
 // tested end-to-end without them. The test-email feature, by contrast,
 // uses nodemailer directly and will really send mail once given valid
@@ -86,11 +86,26 @@ function validateGoogleReviewsPatch(gr) {
     return null;
 }
 
+// Marketing -> Campaigns cost per message (INR). Must be a non-negative
+// number; capped so a typo (e.g. 20 instead of 0.20) is caught early.
+const CAMPAIGN_COST_CHANNELS = ['sms', 'whatsapp', 'email'];
+function validateCampaignCostsPatch(costs) {
+    if (!costs || typeof costs !== 'object' || Array.isArray(costs)) return 'Campaign costs must be an object';
+    for (const ch of CAMPAIGN_COST_CHANNELS) {
+        if (costs[ch] === undefined) continue;
+        const n = Number(costs[ch]);
+        if (costs[ch] === '' || costs[ch] === null || Number.isNaN(n) || n < 0 || n > 100) {
+            return `Cost per ${ch === 'sms' ? 'SMS' : ch} must be a number between 0 and 100`;
+        }
+    }
+    return null;
+}
+
 // Update settings
 router.put('/', requirePermission('settings:edit'), (req, res) => {
     try {
         const allowed = ['instituteName', 'academicSession', 'passingCriteria', 'themeColor',
-            'email', 'whatsapp', 'backup', 'socialLinks', 'googleReviews', 'maintenanceMode', 'maintenanceMessage'];
+            'email', 'whatsapp', 'backup', 'socialLinks', 'googleReviews', 'campaignCosts', 'maintenanceMode', 'maintenanceMessage'];
         const patch = {};
         for (const key of allowed) {
             if (req.body[key] !== undefined) patch[key] = req.body[key];
@@ -100,6 +115,18 @@ router.put('/', requirePermission('settings:edit'), (req, res) => {
             if (validationError) {
                 return res.status(400).json({ success: false, message: validationError });
             }
+        }
+        if (patch.campaignCosts) {
+            const costError = validateCampaignCostsPatch(patch.campaignCosts);
+            if (costError) {
+                return res.status(400).json({ success: false, message: costError });
+            }
+            // Store real numbers, only the known channel keys
+            const cleaned = {};
+            for (const ch of CAMPAIGN_COST_CHANNELS) {
+                if (patch.campaignCosts[ch] !== undefined) cleaned[ch] = Number(patch.campaignCosts[ch]);
+            }
+            patch.campaignCosts = cleaned;
         }
         const updated = settingsService.updateSettings(patch);
         logAudit(req, 'edit', 'settings', null, 'Updated application settings');

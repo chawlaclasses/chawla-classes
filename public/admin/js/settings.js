@@ -93,12 +93,22 @@ function renderSettings() {
 
             ${settingsCard('WhatsApp Configuration', '💬', `
                 <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">
-                    ⚠️ Requires a real WhatsApp Business API account (e.g. Twilio). These fields save your credentials for future use — actually sending messages needs a valid account, which isn't connected here yet.
+                    ⚠️ Requires a real WhatsApp Business API account (Meta WhatsApp Cloud API). These fields only store your details for reference — actual sending uses WHATSAPP_PHONE_NUMBER_ID and WHATSAPP_ACCESS_TOKEN from the server's .env.
                 </p>
-                <div class="form-group"><label>Account SID</label><input type="text" id="setWaSid" value="${escapeHtml(s.whatsapp?.accountSid || '')}"></div>
-                <div class="form-group"><label>Auth Token</label><input type="password" id="setWaToken" value="${escapeHtml(s.whatsapp?.authToken || '')}"></div>
-                <div class="form-group"><label>From Number</label><input type="text" id="setWaFrom" placeholder="whatsapp:+14155238886" value="${escapeHtml(s.whatsapp?.fromNumber || '')}"></div>
+                <div class="form-group"><label>Business Account ID</label><input type="text" id="setWaSid" value="${escapeHtml(s.whatsapp?.accountSid || '')}"></div>
+                <div class="form-group"><label>Access Token</label><input type="password" id="setWaToken" value="${escapeHtml(s.whatsapp?.authToken || '')}"></div>
+                <div class="form-group"><label>From Number</label><input type="text" id="setWaFrom" placeholder="+91XXXXXXXXXX" value="${escapeHtml(s.whatsapp?.fromNumber || '')}"></div>
                 <button class="btn btn-gold" onclick="saveWhatsAppSettings()"><i class="fas fa-save"></i> Save</button>
+            `)}
+
+            ${settingsCard('Campaign Costs', '💰', `
+                <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">
+                    Used by Marketing → New Campaign to estimate what a send will cost (in ₹). SMS is charged per SMS <em>unit</em> — a message over 160 characters (or 70 with Hindi / the ₹ sign) is split into several units. Match these to your provider's rates.
+                </p>
+                <div class="form-group"><label>Cost per SMS unit (₹)</label><input type="number" id="setCostSms" min="0" max="100" step="0.01" value="${Number(s.campaignCosts?.sms ?? 0.2)}"></div>
+                <div class="form-group"><label>Cost per WhatsApp message (₹)</label><input type="number" id="setCostWhatsapp" min="0" max="100" step="0.01" value="${Number(s.campaignCosts?.whatsapp ?? 0)}"></div>
+                <div class="form-group"><label>Cost per Email (₹)</label><input type="number" id="setCostEmail" min="0" max="100" step="0.01" value="${Number(s.campaignCosts?.email ?? 0)}"></div>
+                <button class="btn btn-gold" onclick="saveCampaignCosts()"><i class="fas fa-save"></i> Save</button>
             `)}
 
             ${settingsCard('Social Links', '📸', `
@@ -303,6 +313,21 @@ async function saveWhatsAppSettings() {
     showToast('Success', 'WhatsApp settings saved', 'success');
 }
 
+async function saveCampaignCosts() {
+    const read = id => document.getElementById(id).value.trim();
+    const campaignCosts = { sms: read('setCostSms'), whatsapp: read('setCostWhatsapp'), email: read('setCostEmail') };
+    for (const [channel, value] of Object.entries(campaignCosts)) {
+        const n = Number(value);
+        if (value === '' || Number.isNaN(n) || n < 0 || n > 100) {
+            showToast('Error', `Cost per ${channel === 'sms' ? 'SMS' : channel} must be a number between 0 and 100`, 'error');
+            return;
+        }
+    }
+    const result = await apiCall('/settings', { method: 'PUT', body: JSON.stringify({ campaignCosts }) });
+    if (!result || !result.success) { showToast('Error', result?.message || 'Failed to save', 'error'); return; }
+    showToast('Success', 'Campaign costs saved', 'success');
+}
+
 async function saveBackupSettings() {
     const backup = {
         autoBackupEnabled: document.getElementById('setAutoBackup').checked,
@@ -432,7 +457,7 @@ function renderStudentProfile() {
         <div class="toolbar">
             <h2>👨‍🎓 ${escapeHtml(p.personalDetails.name)} <span class="count">${escapeHtml(p.personalDetails.class)}</span></h2>
             <div>
-                <button class="btn btn-success btn-sm" onclick="showEditProfileModal()"><i class="fas fa-edit"></i> Edit Details</button>
+                <button class="btn btn-success btn-sm" onclick="showEditProfileModal()"><i class="fas fa-edit"></i> Edit Student</button>
                 <button class="btn" style="background:var(--card-bg);border:1px solid var(--card-border);color:var(--muted);" onclick="switchSection('students')"><i class="fas fa-arrow-left"></i> Back</button>
             </div>
         </div>
@@ -464,16 +489,19 @@ function renderStudentProfile() {
 
             <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:18px;">
                 <strong style="color:var(--white);display:block;margin-bottom:10px;">👤 Personal Details</strong>
+                ${p.personalDetails.hasPhoto ? `<div class="photo-preview" style="margin-bottom:10px;"><img id="profileViewPhoto" alt="Profile photo" style="display:none;"></div>` : ''}
                 <div style="color:var(--muted);font-size:13px;line-height:1.8;">
-                    <div>Email: <span style="color:var(--white);">${escapeHtml(p.personalDetails.email)}</span></div>
+                    <div>Email: <span style="color:var(--white);">${escapeHtml(p.personalDetails.email) || 'Not set'}</span></div>
                     <div>Phone: <span style="color:var(--white);">${escapeHtml(p.personalDetails.phone) || 'Not set'}</span></div>
                     <div>Roll No: <span style="color:var(--white);">${escapeHtml(p.personalDetails.rollNumber) || 'Not set'}</span></div>
+                    <div>Section: <span style="color:var(--white);">${escapeHtml(p.personalDetails.section) || 'Not set'}</span></div>
                     ${(p.personalDetails.classStreams || []).length ? `<div>Stream: <span style="color:var(--white);">${escapeHtml(p.personalDetails.stream) || 'Not set'}</span></div>` : ''}
                     <div>Batch: <span style="color:var(--white);">${escapeHtml(p.personalDetails.batch) || 'Not set'}</span></div>
                     <div>DOB: <span style="color:var(--white);">${escapeHtml(p.personalDetails.dob) || 'Not set'}</span></div>
                     <div>Address: <span style="color:var(--white);">${escapeHtml(p.personalDetails.address) || 'Not set'}</span></div>
                     <div>Joined: <span style="color:var(--white);">${new Date(p.personalDetails.joinedDate).toLocaleDateString()}</span></div>
                     <div>Status: <span class="status-badge ${p.personalDetails.isActive ? 'status-active' : 'status-inactive'}">${p.personalDetails.isActive ? 'Active' : 'Inactive'}</span></div>
+                    ${p.personalDetails.notes ? `<div>Notes: <span style="color:var(--white);white-space:pre-wrap;">${escapeHtml(p.personalDetails.notes)}</span></div>` : ''}
                 </div>
             </div>
 
@@ -561,6 +589,12 @@ function renderStudentProfile() {
         </div>
     `;
     renderStudentTimeline(p.timeline || []);
+    if (p.personalDetails.hasPhoto) {
+        fetchProfilePhotoUrl(`/students/${id}/photo`).then(url => {
+            const img = document.getElementById('profileViewPhoto');
+            if (url && img) { img.src = url; img.style.display = ''; }
+        });
+    }
 }
 
 const TIMELINE_TYPE_LABELS = {
@@ -613,8 +647,21 @@ function filterStudentTimeline(type) {
     renderStudentTimeline(window._timelineEvents || []);
 }
 
+// ------------------------------------------------------------
+// Edit Student — one modal, grouped sections. Required: Full Name, Mobile
+// Number, Class, Status (Mobile/Class can't be blanked once set, but old
+// records that never had them still save). Everything else is (Optional).
+// ------------------------------------------------------------
+function onEditStudentClassChange() {
+    const classId = document.getElementById('editClass').value;
+    refreshStudentStreamField('editClass', 'editStream', 'editStreamWrap');
+    const stream = document.getElementById('editStream').value;
+    renderStudentSubjectPicker('editSubjectsWrap', 'editSubjectsList', classId, stream, []);
+}
+
 async function showEditProfileModal() {
     const p = window._currentProfile;
+    const d = p.personalDetails;
     // Make sure the subject list is available (Students page may not have been opened first).
     if (!window._allSubjects || !window._allSubjects.length) {
         try { window._allSubjects = (await apiCall('/subjects'))?.data || []; } catch (e) { window._allSubjects = []; }
@@ -622,62 +669,142 @@ async function showEditProfileModal() {
     if (!window._allClasses || !window._allClasses.length) {
         try { window._allClasses = (await apiCall('/classes'))?.data || []; } catch (e) { window._allClasses = []; }
     }
-    showModal('Edit Student Details', 'Update personal and parent details', `
-        ${(p.personalDetails.classStreams || []).length ? `<div class="form-group"><label>Stream *</label><select id="editStream" onchange="renderStudentSubjectPicker('editSubjectsWrap','editSubjectsList','${p.personalDetails.classId || ''}',this.value)"><option value="">Select stream</option>${p.personalDetails.classStreams.map(st => `<option value="${st}" ${st === p.personalDetails.stream ? 'selected' : ''}>${st}</option>`).join('')}</select></div>` : ''}
-        ${studentSubjectsFieldHtml('editSubjectsWrap', 'editSubjectsList')}
-        <div class="form-group"><label>Login Email <span style="color:var(--muted);font-weight:400;">(student signs in with this)</span></label><input type="email" id="editLoginEmail" oninput="document.getElementById('editSendEmail').checked=true" name="cc-edit-student-email" autocomplete="off" value="${escapeHtml(p.personalDetails.email || '')}"></div>
-        <div class="form-group"><label>New Password <span style="color:var(--muted);font-weight:400;">(leave blank to keep the current password)</span></label><input type="password" id="editNewPassword" oninput="document.getElementById('editSendEmail').checked=true" placeholder="At least 6 characters" autocomplete="new-password"></div>
-        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" id="editSendEmail"> Email the login details to the student <span style="color:var(--muted);">(password included only if you enter a new one)</span></label>
-            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;"><input type="checkbox" id="editSendParent"> Also send to parent email</label>
-            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;"><input type="checkbox" id="editSendSms"> Also send as text message (SMS) to the student's phone <span style="color:var(--muted);">(goes to the phone number; needs SMS/Twilio set up)</span></label></div>
-        <div class="form-group"><label>Phone</label><input type="text" id="editPhone" value="${escapeHtml(p.personalDetails.phone)}"></div>
-        <div class="form-group"><label>Date of Birth</label><input type="date" id="editDob" value="${escapeHtml(p.personalDetails.dob)}"></div>
-        <div class="form-group"><label>Roll Number</label><input type="text" id="editRollNumber" value="${escapeHtml(p.personalDetails.rollNumber)}"></div>
-        <div class="form-group"><label>Batch <span style="color:var(--muted);font-weight:400;">(e.g., Morning, Evening — used for Communication targeting)</span></label><input type="text" id="editBatch" value="${escapeHtml(p.personalDetails.batch || '')}" placeholder="e.g., Morning Batch"></div>
-        <div class="form-group"><label>Address</label><textarea id="editAddress">${escapeHtml(p.personalDetails.address)}</textarea></div>
-        <div class="form-group"><label>Parent Name</label><input type="text" id="editParentName" value="${escapeHtml(p.parentDetails.parentName)}"></div>
-        <div class="form-group"><label>Parent Phone</label><input type="text" id="editParentPhone" value="${escapeHtml(p.parentDetails.parentPhone)}"></div>
-        <div class="form-group"><label>Parent Email</label><input type="text" id="editParentEmail" value="${escapeHtml(p.parentDetails.parentEmail)}"></div>
-        <div class="form-group"><label>Parent Occupation</label><input type="text" id="editParentOccupation" value="${escapeHtml(p.parentDetails.parentOccupation)}"></div>
+    const classOptions = (window._allClasses || []).map(c => `<option value="${c._id}" ${c._id === d.classId ? 'selected' : ''}>${escapeHtml(c.displayName || c.name)}</option>`).join('');
+    const originalClassId = d.classId || '';
+
+    showModal('Edit Student', 'Update student details — fields marked (Optional) can be left blank', `
+        ${formSection('Basic Details', `
+            ${profilePhotoFieldHtml('editStudent', d.name)}
+            <div class="form-group"><label>Full Name *</label><input type="text" id="editName" value="${escapeHtml(d.name)}" maxlength="100"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Mobile Number *</label><input type="tel" id="editPhone" value="${escapeHtml(d.phone)}" placeholder="e.g., 9876543210"></div>
+                <div class="form-group"><label>Status *</label>
+                    <select id="editStatus">
+                        <option value="active" ${d.isActive ? 'selected' : ''}>Active</option>
+                        <option value="inactive" ${d.isActive ? '' : 'selected'}>Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Email ID${optionalTag()}</label><input type="email" id="editLoginEmail" name="cc-edit-student-email" autocomplete="off" placeholder="student@example.com" value="${escapeHtml(d.email || '')}" oninput="document.getElementById('editSendEmail').checked=true">
+                <div class="field-hint">The student signs in with this email. Leave it blank if they don't have one — they just won't be able to log in until you add one.</div></div>
+            <div class="form-row">
+                <div class="form-group"><label>Date of Birth${optionalTag()}</label><input type="date" id="editDob" value="${escapeHtml(d.dob)}"></div>
+                <div class="form-group"><label>Batch${optionalTag()}</label><input type="text" id="editBatch" value="${escapeHtml(d.batch || '')}" placeholder="e.g., Morning Batch"></div>
+            </div>
+            <div class="form-group"><label>Address${optionalTag()}</label><textarea id="editAddress" maxlength="500">${escapeHtml(d.address)}</textarea></div>
+        `)}
+        ${formSection('Class & Academics', `
+            <div class="form-group"><label>Class *</label><select id="editClass" onchange="onEditStudentClassChange()"><option value="">Not assigned yet</option>${classOptions}</select></div>
+            <div class="form-group" id="editStreamWrap" style="display:none;"><label>Stream *</label><select id="editStream" onchange="renderStudentSubjectPicker('editSubjectsWrap','editSubjectsList',document.getElementById('editClass').value,this.value)"></select></div>
+            <div class="form-row">
+                <div class="form-group"><label>Roll Number${optionalTag()}</label><input type="text" id="editRollNumber" value="${escapeHtml(d.rollNumber)}" maxlength="30"></div>
+                <div class="form-group"><label>Section${optionalTag()}</label><input type="text" id="editSection" value="${escapeHtml(d.section || '')}" maxlength="20" placeholder="e.g., A"></div>
+            </div>
+            ${studentSubjectsFieldHtml('editSubjectsWrap', 'editSubjectsList')}
+        `)}
+        ${formSection('Parent / Guardian', `
+            <div class="form-row">
+                <div class="form-group"><label>Parent Name${optionalTag()}</label><input type="text" id="editParentName" value="${escapeHtml(p.parentDetails.parentName)}" maxlength="100"></div>
+                <div class="form-group"><label>Parent Mobile Number${optionalTag()}</label><input type="tel" id="editParentPhone" value="${escapeHtml(p.parentDetails.parentPhone)}"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Parent Email${optionalTag()}</label><input type="email" id="editParentEmail" value="${escapeHtml(p.parentDetails.parentEmail)}"></div>
+                <div class="form-group"><label>Parent Occupation${optionalTag()}</label><input type="text" id="editParentOccupation" value="${escapeHtml(p.parentDetails.parentOccupation)}" maxlength="100"></div>
+            </div>
+        `)}
+        ${formSection('Login & Messages', `
+            <div class="form-group"><label>New Password${optionalTag()} <span style="color:var(--muted);font-weight:400;">(leave blank to keep the current password)</span></label><input type="password" id="editNewPassword" oninput="document.getElementById('editSendEmail').checked=true" placeholder="At least 6 characters" autocomplete="new-password"></div>
+            <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;"><input type="checkbox" id="editSendEmail"> Email the login details to the student <span style="color:var(--muted);">(password included only if you enter a new one)</span></label>
+                <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;"><input type="checkbox" id="editSendParent"> Also send to parent email</label>
+                <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;"><input type="checkbox" id="editSendSms"> Also send as text message (SMS) to the student's phone <span style="color:var(--muted);">(needs Fast2SMS set up)</span></label></div>
+        `)}
+        ${formSection('Notes', `
+            <div class="form-group"><label>Notes${optionalTag()}</label><textarea id="editNotes" maxlength="2000" placeholder="Anything worth remembering about this student">${escapeHtml(d.notes || '')}</textarea></div>
+        `)}
     `, async () => {
-        const body = {
-            phone: document.getElementById('editPhone').value.trim(),
-            dob: document.getElementById('editDob').value.trim(),
-            rollNumber: document.getElementById('editRollNumber').value.trim(),
-            batch: document.getElementById('editBatch').value.trim(),
-            address: document.getElementById('editAddress').value.trim(),
-            parentName: document.getElementById('editParentName').value.trim(),
-            parentPhone: document.getElementById('editParentPhone').value.trim(),
-            parentEmail: document.getElementById('editParentEmail').value.trim(),
-            parentOccupation: document.getElementById('editParentOccupation').value.trim()
-        };
-        const streamEl = document.getElementById('editStream');
-        if (streamEl) {
-            if (!streamEl.value) { showToast('Error', 'Please select a stream', 'error'); return; }
-            body.stream = streamEl.value;
-        }
-        const newEmail = document.getElementById('editLoginEmail').value.trim();
-        if (newEmail && newEmail.toLowerCase() !== (p.personalDetails.email || '').toLowerCase()) body.email = newEmail;
+        const val = id => document.getElementById(id).value.trim();
+        const name = val('editName');
+        const phone = val('editPhone');
+        const classId = document.getElementById('editClass').value;
+        const email = val('editLoginEmail');
+        const parentEmail = val('editParentEmail');
+
+        // Required fields. Mobile/Class can't be emptied once the student has them;
+        // older records that never had one can still be saved without.
+        if (!name) { showToast('Error', 'Full name is required', 'error'); return; }
+        if (!phone && d.phone) { showToast('Error', 'Mobile number is required', 'error'); return; }
+        if (!classId && originalClassId) { showToast('Error', 'Please select a class', 'error'); return; }
+        // Optional fields: validated only when filled in.
+        if (!isValidOptionalEmail(email)) { showToast('Error', 'Enter a valid email address (or leave it blank)', 'error'); return; }
+        if (!isValidOptionalEmail(parentEmail)) { showToast('Error', 'Enter a valid parent email address (or leave it blank)', 'error'); return; }
         const newPwd = document.getElementById('editNewPassword').value;
-        if (newPwd) {
-            if (newPwd.length < 6) { showToast('Error', 'Password must be at least 6 characters', 'error'); return; }
-            body.password = newPwd;
+        if (newPwd && newPwd.length < 6) { showToast('Error', 'Password must be at least 6 characters', 'error'); return; }
+        if (newPwd && !email) { showToast('Error', 'Add an email address first — students sign in with their email', 'error'); return; }
+
+        const body = {
+            name,
+            phone,
+            classId: classId || null,
+            isActive: document.getElementById('editStatus').value === 'active',
+            email,
+            dob: val('editDob'),
+            batch: val('editBatch'),
+            address: val('editAddress'),
+            rollNumber: val('editRollNumber'),
+            section: val('editSection'),
+            parentName: val('editParentName'),
+            parentPhone: val('editParentPhone'),
+            parentEmail,
+            parentOccupation: val('editParentOccupation'),
+            notes: val('editNotes'),
+        };
+        const streamWrap = document.getElementById('editStreamWrap');
+        if (streamWrap && streamWrap.style.display !== 'none') {
+            const streamVal = document.getElementById('editStream').value;
+            if (!streamVal) { showToast('Error', 'Please select a stream', 'error'); return; }
+            body.stream = streamVal;
         }
-        body.sendEmail = document.getElementById('editSendEmail').checked;
+        if (newPwd) body.password = newPwd;
+        body.sendEmail = document.getElementById('editSendEmail').checked && !!email;
         body.sendToParent = document.getElementById('editSendParent').checked;
-        body.sendSms = document.getElementById('editSendSms').checked;
-        if (body.sendSms && !body.phone) { showToast('Error', 'Enter the student phone number to send the text message', 'error'); return; }
+        body.sendSms = document.getElementById('editSendSms').checked && !!email;
+        if (document.getElementById('editSendSms').checked && !phone) { showToast('Error', 'Enter the student mobile number to send the text message', 'error'); return; }
         // Only send subjects if the picker is on screen (student has a class with subjects).
         if (document.getElementById('editSubjectsWrap')?.style.display !== 'none') {
             body.subjectIds = getCheckedStudentSubjects('editSubjectsList');
         }
-        const result = await apiCall(`/students/${window._currentProfileId}/profile`, { method: 'PUT', body: JSON.stringify(body) });
-        if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update profile', 'error'); return; }
-        showToast(result.emailSent === false || result.smsSent === false ? 'Saved (some messages not sent)' : 'Success', result.message || 'Profile updated', result.emailSent === false || result.smsSent === false ? 'info' : 'success');
-        closeModal();
-        showStudentProfile(window._currentProfileId);
+
+        const saveBtn = document.getElementById('modalSaveBtn');
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+        try {
+            const result = await apiCall(`/students/${window._currentProfileId}/profile`, { method: 'PUT', body: JSON.stringify(body) });
+            if (!result || !result.success) {
+                const firstDetail = Array.isArray(result?.errors) && result.errors[0]?.message;
+                showToast('Error', firstDetail || result?.message || 'Failed to update student', 'error');
+                return;
+            }
+            const photo = await applyProfilePhotoChange('editStudent', `/students/${window._currentProfileId}/photo`);
+            if (!photo.ok) {
+                showToast('Saved (photo not updated)', `Details were saved, but the photo failed: ${photo.message}`, 'info');
+            } else {
+                const partial = result.emailSent === false || result.smsSent === false;
+                showToast(partial ? 'Saved (some messages not sent)' : 'Success', result.message || 'Student updated successfully', partial ? 'info' : 'success');
+            }
+            closeModal();
+            showStudentProfile(window._currentProfileId);
+        } finally {
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        }
     });
-    renderStudentSubjectPicker('editSubjectsWrap', 'editSubjectsList', p.personalDetails.classId || '', p.personalDetails.stream || '', p.personalDetails.subjectIds || []);
+
+    // Pre-fill stream + subjects for the student's current class, and load the current photo.
+    if (originalClassId) {
+        refreshStudentStreamField('editClass', 'editStream', 'editStreamWrap');
+        const streamSel = document.getElementById('editStream');
+        if (streamSel && d.stream) streamSel.value = d.stream;
+    }
+    renderStudentSubjectPicker('editSubjectsWrap', 'editSubjectsList', originalClassId, d.stream || '', d.subjectIds || []);
+    initProfilePhoto('editStudent', `/students/${window._currentProfileId}/photo`, d.hasPhoto);
 }
 
 function showAddNoteModal() {

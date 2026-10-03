@@ -26,6 +26,7 @@ async function apiCall(endpoint, options = {}) {
 
         if (response.status === 401) {
             localStorage.removeItem('adminToken');
+            if (typeof clearSavedSection === 'function') clearSavedSection();
             window.location.href = '/admin/login.html';
             return null;
         }

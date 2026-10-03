@@ -31,6 +31,7 @@ const db = require('../services/jsonDb');
 const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
 const { isClassAllowedForUser, isSubjectAllowedForUser } = require('../config/permissions');
+const { findAttendanceOn, attendanceMatches } = require('../utils/profileFields');
 const notificationService = require('../services/notifications');
 // Same helper routes/admin/test-questions.js uses after attaching
 // questions to a test — keeps totalMarks/totalQuestions always derived
@@ -77,7 +78,7 @@ router.get('/dashboard', (req, res) => {
 
         const today = new Date().toLocaleDateString('en-US');
         const todaysAttendance = db.findAll('attendance').filter(
-            a => a.date === today && students.some(s => s.email === a.email)
+            a => a.date === today && students.some(s => attendanceMatches(a, s))
         );
 
         res.json({
@@ -189,7 +190,7 @@ router.post('/attendance', (req, res) => {
             const student = db.findById('users', studentId);
             if (!student || student.role !== 'student' || student.classId !== classId) continue;
 
-            const existing = db.findOne('attendance', { email: student.email, date: targetDate });
+            const existing = findAttendanceOn(student, targetDate);
             if (existing) {
                 db.findByIdAndUpdate('attendance', existing._id, { name: student.name, class: className, status });
             } else {

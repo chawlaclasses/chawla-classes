@@ -1,6 +1,6 @@
 # Chawla Classes — Messaging Layer (SMS / WhatsApp, provider-agnostic)
 
-Status: **mock mode only.** No real SMS/WhatsApp provider is integrated. Every message is printed to the server
+Status: **SMS = Fast2SMS** (live when `FAST2SMS_API_KEY` is set; otherwise mock mode). WhatsApp is still mock/stub only. Every message is printed to the server
 console and stored in `NotificationLog`. Going live later = implement one provider class + set env vars.
 Business code (OTP, fees, notices …) never changes.
 
@@ -19,7 +19,7 @@ messaging/
 │   ├── BaseProvider.js          ★ provider interface (contract + DTO docs)
 │   ├── MockProvider.js          ★ console provider (dev / CI / today's production)
 │   ├── ProviderRegistry.js      env → provider instance per channel
-│   └── stubs/                   fast2sms.js · msg91.js · whatsappCloud.js  (plug-in templates, no HTTP)
+│   └── stubs/                   msg91.js · whatsappCloud.js  (plug-in templates, no HTTP);  Fast2SmsProvider.js is live
 ├── models/                      MessageTemplate · NotificationLog (also the queue) · OtpRequest · OptOut · Campaign
 ├── services/
 │   ├── MessagingService.js      ★ render → policy → log → dispatch → retry/fallback
@@ -95,7 +95,7 @@ class MyProvider extends BaseProvider {
 `ProviderError.retryable = true` → exponential backoff; `false` (bad number, template rejected) → fail immediately.
 
 ### Going live later — the whole procedure
-1. Open `providers/stubs/fast2sms.js` (or msg91 / whatsappCloud) — the header comment lists endpoint, payload mapping and env vars. Replace the `throw` in `send()` with the HTTP call.
+1. (Fast2SMS is already implemented in `providers/Fast2SmsProvider.js`.) For another vendor, open `providers/stubs/msg91.js` (or whatsappCloud) — the header comment lists endpoint, payload mapping and env vars. Replace the `throw` in `send()` with the HTTP call.
 2. `ProviderRegistry.js` already has the name registered.
 3. Register your templates with the vendor, then store ids: `PUT /api/messaging/templates` with `providerRefs: { fast2sms: { templateId: "…", variableOrder: ["name","amount"] } }`.
 4. Set `MESSAGING_SMS_PROVIDER=fast2sms` + the vendor's credentials. Restart. Done — no service/controller edits.
@@ -183,5 +183,5 @@ In mock mode set `MESSAGING_OTP_EXPOSE_CODE_DEV=true` (non-production only) and 
 
 ## Notes about this codebase
 - `jsonDb` uses the native MongoDB driver, but nothing connected **mongoose** at runtime. `messaging.init()` now opens a mongoose connection to the same `MONGODB_URI` (only if none is open). This also means the existing `models/DeviceToken.js` has a connection now.
-- The older `utils/sms.js` (Twilio) and `utils/whatsapp.js` are untouched; migrate `routes/admin/communication.js` to this layer when you're ready.
+- The older `utils/sms.js` (Fast2SMS) and `utils/whatsapp.js` (Meta WhatsApp Cloud API) are still used directly by `routes/admin/communication.js`, marketing campaigns and credential texts; migrate those to this layer when you're ready.
 - `sift` was added to `devDependencies` (tests only). Run `npm install`.

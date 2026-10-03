@@ -160,9 +160,48 @@ var sectionLoaders = {
     'settings': function() { return window.loadSettings && window.loadSettings(); }
 };
 
+// ============================================================
+// REMEMBER ACTIVE SECTION (survives F5; reset by hard refresh / logout)
+// ============================================================
+// Stored in sessionStorage: per-tab, gone when the tab closes, and never
+// shared with another admin's tab. init.js reads it on load; the hard-refresh
+// check (Ctrl+F5) also lives there.
+var ACTIVE_SECTION_KEY = 'cc_adminActiveSection';
+
+function isKnownSection(section) {
+    // hasOwnProperty, not `in`/typeof: a tampered value like "constructor" must not pass.
+    return typeof section === 'string' && Object.prototype.hasOwnProperty.call(sectionLoaders, section);
+}
+
+function saveActiveSection(section) {
+    if (!isKnownSection(section)) return;
+    try { sessionStorage.setItem(ACTIVE_SECTION_KEY, section); } catch (e) { /* storage blocked: feature simply no-ops */ }
+}
+
+function clearSavedSection() {
+    try { sessionStorage.removeItem(ACTIVE_SECTION_KEY); } catch (e) { /* ignore */ }
+}
+
+// Returns the section to restore, or null to use the default Dashboard.
+// Guards: unknown/renamed sections, and sections this role can't see (config.js
+// hides sidebar items the role has no permission for).
+function getRestorableSection() {
+    var saved = null;
+    try { saved = sessionStorage.getItem(ACTIVE_SECTION_KEY); } catch (e) { return null; }
+    if (!saved || saved === 'dashboard' || !isKnownSection(saved)) return null;
+    var item = document.querySelector('.sidebar-item[data-section="' + saved + '"]');
+    if (!item || item.style.display === 'none') return null;
+    return saved;
+}
+
 function switchSection(section) {
     window.currentSection = section;
-    
+    // state.js declares its own `let currentSection` (a different variable from the
+    // window property above); showError()'s Retry button and dashboard.js read that
+    // one, and it was stuck on 'dashboard'. Keep both in sync.
+    currentSection = section;
+    saveActiveSection(section);
+
     // Update sidebar items using cached DOM elements with fallback
     var items = getSidebarItems();
     for (var i = 0; i < items.length; i++) {
@@ -309,6 +348,7 @@ async function logout(reason) {
     // Clear local storage
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminName');
+    clearSavedSection(); // next login in this tab should open the Dashboard
     
     // Stash the reason so login.html can show it after the redirect —
     // by the time the user lands there, this page (and any toast on it)

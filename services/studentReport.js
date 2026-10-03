@@ -2,6 +2,7 @@
 "use strict";
 
 const db = require('./jsonDb');
+const { attendanceRecordsFor } = require('../utils/profileFields');
 const { feeWithComputed } = require('./feeCalc');
 const gamificationService = require('./gamification');
 
@@ -15,7 +16,7 @@ class StudentReportService {
         const cls = student.classId ? db.findById('classes', student.classId) : null;
 
         const [attendance, results, fees, homework, submissions, gamification] = await Promise.all([
-            db.find('attendance', { email: student.email }),
+            attendanceRecordsFor(student),
             db.find('results', { studentId }),
             db.find('fees-v2', { studentId }),
             student.classId ? db.find('homework', { classId: student.classId, isActive: true }) : [],

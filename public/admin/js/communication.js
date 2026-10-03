@@ -54,7 +54,7 @@ function renderCommunication() {
                         <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;"><input type="checkbox" class="comm-channel" value="whatsapp"> 💬 WhatsApp</label>
                         <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;"><input type="checkbox" class="comm-channel" value="sms"> 📱 SMS</label>
                     </div>
-                    <p style="font-size:11px;color:var(--muted);margin-top:4px;">Email/WhatsApp/SMS need SMTP/Twilio configured in .env — otherwise they're logged but not actually sent.</p>
+                    <p style="font-size:11px;color:var(--muted);margin-top:4px;">Email/WhatsApp/SMS need SMTP/Fast2SMS configured in .env — otherwise they're logged but not actually sent.</p>
                 </div>
 
                 <div class="form-group">

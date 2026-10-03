@@ -568,6 +568,14 @@ const validators = {
   ],
 
   updateStudentProfile: [
+    // Edit Student (2026-10): name/class/status/section/notes are now editable
+    // here too. Email stays OPTIONAL — a blank value is valid (clears it) and
+    // is only format-checked when non-blank.
+    body("name").optional().isString().trim().isLength({ min: 2, max: 100 }).withMessage("Name must be 2–100 characters"),
+    body("classId").optional({ nullable: true }).isString().isLength({ max: 100 }),
+    body("section").optional().isString().trim().isLength({ max: 20 }).withMessage("Section cannot exceed 20 characters"),
+    body("notes").optional().isString().trim().isLength({ max: 2000 }).withMessage("Notes cannot exceed 2000 characters"),
+    body("isActive").optional().isBoolean({ strict: true }).withMessage("Status must be Active or Inactive"),
     body("phone").optional({ checkFalsy: true }).trim().isLength({ min: 7, max: 15 }).withMessage("Phone must be 7–15 characters"),
     body("dob").optional({ checkFalsy: true }).isISO8601().withMessage("Date of birth must be a valid date"),
     body("rollNumber").optional().trim().isLength({ max: 30 }),

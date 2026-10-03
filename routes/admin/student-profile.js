@@ -23,7 +23,8 @@ const validators = require('../../utils/validators');
 const { resolveStudentStream, resolveStudentSubjects } = require('../../utils/streams');
 const bcrypt = require('bcryptjs');
 const { sendStudentCredentials, sendStudentSms } = require('../../utils/studentMail');
-const { uploadStudentDocument, studentDocumentMimeGuard, STUDENT_DOCS_DIR } = require('../../middleware/upload');
+const { uploadStudentDocument, studentDocumentMimeGuard, uploadProfilePhoto, profilePhotoMimeGuard, handleUpload, STUDENT_DOCS_DIR } = require('../../middleware/upload');
+const { EMAIL_RE, parseOptionalEmail, parseOptionalText, parseOptionalPhone, parseOptionalDate, attendanceRecordsFor, pinAttendanceToStudent } = require('../../utils/profileFields');
 const r2Service = require('../../services/r2Service');
 const studentReportService = require('../../services/studentReport');
 const { sendPdf, sendCsv } = require('../../utils/reportGenerator');
@@ -91,7 +92,7 @@ router.get('/students/:id/profile', requirePermission('students:view'), async (r
             .slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         // Attendance (legacy schema, keyed by email)
-        const attendanceRecords = db.find('attendance', { email: student.email });
+        const attendanceRecords = attendanceRecordsFor(student);
         const presentCount = attendanceRecords.filter(a => (a.status || '').toLowerCase() === 'present').length;
         const attendance = {
             percentage: attendanceRecords.length > 0 ? Math.round((presentCount / attendanceRecords.length) * 100) : null,
@@ -179,6 +180,10 @@ router.get('/students/:id/profile', requirePermission('students:view'), async (r
                     phone: student.phone || '',
                     dob: student.dob || '',
                     rollNumber: student.rollNumber || '',
+                    section: student.section || '',
+                    notes: student.notes || '',
+                    hasPhoto: !!student.photoKey,
+                    photoVersion: student.photoUpdatedAt || '',
                     address: student.address || '',
                     class: classData ? (classData.displayName || classData.name) : 'Not assigned',
                     stream: student.stream || '',
@@ -213,8 +218,22 @@ router.get('/students/:id/profile', requirePermission('students:view'), async (r
     }
 });
 
-// Update personal + parent details
-router.put('/students/:id/profile', requirePermission('students:edit'), validators.updateStudentProfile, validate, async (req, res) => {
+// ============================================================
+// Update a student (personal + parent details, class, status, optional
+// email, photo-less fields). Mounted for both PUT and PATCH — it is a
+// partial update either way: any field left out of the body is untouched.
+//
+// Rules:
+//   * name           — required whenever sent (cannot be blanked)
+//   * email          — OPTIONAL. Blank clears it (valid); non-blank must be a
+//                      well-formed address and unique across users. Duplicate
+//                      checking is skipped entirely for a blank email.
+//   * phone, dob, rollNumber, section, address, parent*, batch, notes —
+//                      optional free fields; blank clears them
+//   * classId        — optional; changing it re-validates stream/subjects
+//   * isActive       — Active / Inactive
+// ============================================================
+async function updateStudentHandler(req, res) {
     try {
         const student = db.findById('users', req.params.id);
         if (!student || student.role !== 'student') {
@@ -223,78 +242,149 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
         if (!isClassAllowedForUser(req.userData, student.classId)) {
             return res.status(403).json({ success: false, message: "You're not assigned to this student's class." });
         }
-        const { phone, dob, rollNumber, address, parentName, parentPhone, parentEmail, parentOccupation, batch, stream, subjectIds, email: rawEmail, password, sendEmail, sendToParent, sendSms } = req.body;
+        const body = req.body || {};
+        const { stream, subjectIds, password, sendEmail, sendToParent, sendSms } = body;
 
-        // Login email / password change (student's Login ID is their email).
-        let credUpdate = {};
-        if (typeof rawEmail === 'string' && rawEmail.trim() !== '') {
-            const newEmail = rawEmail.toLowerCase().trim();
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return res.status(400).json({ success: false, message: 'Enter a valid email address' });
-            if (newEmail !== student.email) {
-                const clash = db.find('users', {}).some(u => u._id !== student._id && ((u.email && u.email.toLowerCase() === newEmail) || (u.loginId && String(u.loginId).toLowerCase() === newEmail)));
-                if (clash) return res.status(409).json({ success: false, message: 'A user with this email already exists' });
-                credUpdate.email = newEmail;
-            }
+        // ── Plain fields ───────────────────────────────────────────────
+        const fieldUpdate = {};
+        const nameP = parseOptionalText(body.name, 'Name', 100);
+        if (nameP.error) return res.status(400).json({ success: false, message: nameP.error });
+        if (nameP.provided) {
+            if (!nameP.value) return res.status(400).json({ success: false, message: 'Name is required' });
+            fieldUpdate.name = nameP.value;
         }
+        for (const [key, label, max] of [
+            ['rollNumber', 'Roll number', 30], ['section', 'Section', 20], ['address', 'Address', 500],
+            ['parentName', 'Parent name', 100], ['parentOccupation', 'Parent occupation', 100],
+            ['batch', 'Batch', 50], ['notes', 'Notes', 2000],
+        ]) {
+            const t = parseOptionalText(body[key], label, max);
+            if (t.error) return res.status(400).json({ success: false, message: t.error });
+            if (t.provided) fieldUpdate[key] = t.value;
+        }
+        for (const [key, label] of [['phone', 'Mobile number'], ['parentPhone', 'Parent mobile number']]) {
+            const p = parseOptionalPhone(body[key], label);
+            if (p.error) return res.status(400).json({ success: false, message: p.error });
+            if (p.provided) fieldUpdate[key] = p.value;
+        }
+        // Mobile number is a required field: once a student has one it can't be blanked
+        // (older records that never had one still save fine).
+        if (fieldUpdate.phone === '' && student.phone) return res.status(400).json({ success: false, message: 'Mobile number is required' });
+        const dobP = parseOptionalDate(body.dob, 'Date of birth');
+        if (dobP.error) return res.status(400).json({ success: false, message: dobP.error });
+        if (dobP.provided) fieldUpdate.dob = dobP.value;
+
+        const parentEmailP = parseOptionalEmail(body.parentEmail);
+        if (parentEmailP.error) return res.status(400).json({ success: false, message: 'Parent email must be a valid email address' });
+        if (parentEmailP.provided) fieldUpdate.parentEmail = parentEmailP.value;
+
+        if (body.isActive !== undefined) {
+            if (typeof body.isActive !== 'boolean') return res.status(400).json({ success: false, message: 'Status must be Active or Inactive' });
+            fieldUpdate.isActive = body.isActive;
+        }
+
+        // ── Login email (OPTIONAL) / password ──────────────────────────
+        let credUpdate = {};
+        const emailP = parseOptionalEmail(body.email);
+        if (emailP.error) return res.status(400).json({ success: false, message: emailP.error });
+        if (emailP.provided && emailP.value !== (student.email || '')) {
+            if (emailP.value !== '') {
+                // Duplicate check ONLY for a non-blank email.
+                const clash = db.find('users', {}).some(u => u._id !== student._id && ((u.email && u.email.toLowerCase() === emailP.value) || (u.loginId && String(u.loginId).toLowerCase() === emailP.value)));
+                if (clash) return res.status(409).json({ success: false, message: 'A user with this email already exists' });
+            }
+            credUpdate.email = emailP.value;
+            // Changing/clearing the login email invalidates any open session's renewal.
+            credUpdate.refreshToken = null;
+        }
+        const effectiveEmail = credUpdate.email !== undefined ? credUpdate.email : (student.email || '');
+
         const wantsNewPassword = typeof password === 'string' && password !== '';
         if (wantsNewPassword) {
             if (password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+            if (!effectiveEmail) return res.status(400).json({ success: false, message: 'Add an email address first — students sign in with their email, so a password needs one.' });
             credUpdate.password = await bcrypt.hash(password, 10);
             credUpdate.refreshToken = null;
         }
 
-        // Stream can only be one the student's class offers (and is required
-        // for classes that have streams).
+        // ── Class (optional change) ────────────────────────────────────
+        let classUpdate = {};
+        let effectiveClassId = student.classId || null;
+        let effectiveCls = student.classId ? db.findById('classes', student.classId) : null;
+        let classChanged = false;
+        if (body.classId !== undefined) {
+            const newClassId = body.classId || null;
+            if (newClassId !== (student.classId || null)) {
+                if (newClassId) {
+                    const cls = db.findById('classes', newClassId);
+                    if (!cls) return res.status(404).json({ success: false, message: 'Class not found' });
+                    if (!isClassAllowedForUser(req.userData, newClassId)) {
+                        return res.status(403).json({ success: false, message: "You're not assigned to that class." });
+                    }
+                    effectiveCls = cls;
+                } else {
+                    // Class is a required field: an assigned student can't be un-assigned via edit.
+                    return res.status(400).json({ success: false, message: 'Class is required' });
+                }
+                effectiveClassId = newClassId;
+                classUpdate = { classId: newClassId };
+                classChanged = true;
+            }
+        }
+
+        // ── Stream (required only for classes that have streams) ───────
         let streamUpdate = {};
-        if (stream !== undefined) {
-            const cls = student.classId ? db.findById('classes', student.classId) : null;
-            const streamCheck = resolveStudentStream(cls, stream);
+        if (stream !== undefined || classChanged) {
+            // Moving classes without picking a stream: keep the current one if the new class offers it.
+            const streamInput = stream !== undefined ? stream : student.stream;
+            const streamCheck = resolveStudentStream(effectiveCls, streamInput);
             if (!streamCheck.ok) return res.status(400).json({ success: false, message: streamCheck.message });
             streamUpdate = { stream: streamCheck.stream };
         }
 
-        // Subject enrollment (empty array = all subjects of the class).
+        // ── Subject enrollment (empty array = all subjects of the class) ─
         let subjectUpdate = {};
+        const effectiveStream = streamUpdate.stream !== undefined ? streamUpdate.stream : (student.stream || '');
         if (subjectIds !== undefined) {
-            const effectiveStream = streamUpdate.stream !== undefined ? streamUpdate.stream : (student.stream || '');
-            const classSubjects = student.classId ? db.find('subjects', { classId: student.classId, isActive: true }) : [];
+            const classSubjects = effectiveClassId ? db.find('subjects', { classId: effectiveClassId, isActive: true }) : [];
             const subjCheck = resolveStudentSubjects(classSubjects, { stream: effectiveStream }, subjectIds);
             if (!subjCheck.ok) return res.status(400).json({ success: false, message: subjCheck.message });
             subjectUpdate = { subjectIds: subjCheck.subjectIds };
-        } else if (streamUpdate.stream !== undefined && streamUpdate.stream !== (student.stream || '') && Array.isArray(student.subjectIds) && student.subjectIds.length) {
-            // Stream changed without re-picking subjects: drop selections so a
-            // stale subject from the old stream can't linger.
+        } else if ((classChanged || (streamUpdate.stream !== undefined && streamUpdate.stream !== (student.stream || ''))) && Array.isArray(student.subjectIds) && student.subjectIds.length) {
+            // Class or stream changed without re-picking subjects: drop selections so a
+            // stale subject from the old class/stream can't linger.
             subjectUpdate = { subjectIds: [] };
         }
 
+        // Keep old email-keyed attendance attached to the student before the email moves.
+        if (credUpdate.email !== undefined) pinAttendanceToStudent(student);
+
         const updated = db.updateById('users', req.params.id, {
+            ...fieldUpdate,
             ...credUpdate,
+            ...classUpdate,
             ...streamUpdate,
             ...subjectUpdate,
-            ...(phone !== undefined ? { phone } : {}),
-            ...(dob !== undefined ? { dob } : {}),
-            ...(rollNumber !== undefined ? { rollNumber } : {}),
-            ...(address !== undefined ? { address } : {}),
-            ...(parentName !== undefined ? { parentName } : {}),
-            ...(parentPhone !== undefined ? { parentPhone } : {}),
-            ...(parentEmail !== undefined ? { parentEmail } : {}),
-            ...(parentOccupation !== undefined ? { parentOccupation } : {}),
-            ...(batch !== undefined ? { batch } : {})
         });
-        logAudit(req, 'edit', 'student', req.params.id, `Updated profile for ${student.name}${wantsNewPassword ? ' (password reset)' : ''}${credUpdate.email ? ' (email changed)' : ''}`);
+        logAudit(req, 'edit', 'student', req.params.id,
+            `Updated profile for ${student.name}${wantsNewPassword ? ' (password reset)' : ''}${credUpdate.email !== undefined ? (credUpdate.email ? ' (email changed)' : ' (email removed)') : ''}${classChanged ? ' (class changed)' : ''}${fieldUpdate.isActive !== undefined && fieldUpdate.isActive !== (student.isActive !== false) ? (fieldUpdate.isActive ? ' (activated)' : ' (deactivated)') : ''}`);
 
         // Optionally email the login details (student's email, and parent's if asked).
         let emailNote = '';
         let emailSent;
         if (sendEmail === true) {
             const loginEmail = updated.email;
-            const recipients = [loginEmail];
-            const pe = String(updated.parentEmail || '').trim().toLowerCase();
-            if (sendToParent === true && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pe) && pe !== loginEmail) recipients.push(pe);
-            const results = await sendStudentCredentials(req, { name: updated.name, loginEmail, password: wantsNewPassword ? password : '', recipients, isUpdate: true });
-            const ok = results.filter(r => r.sent).map(r => r.to);
-            emailSent = ok.length > 0;
-            emailNote = ok.length ? ` Login details emailed to ${ok.join(', ')}.` : ' But the email could not be sent.';
+            if (!loginEmail) {
+                emailNote = ' No email on file, so login details were not emailed.';
+            } else {
+                const recipients = [loginEmail];
+                const pe = String(updated.parentEmail || '').trim().toLowerCase();
+                if (sendToParent === true && EMAIL_RE.test(pe) && pe !== loginEmail) recipients.push(pe);
+                const results = await sendStudentCredentials(req, { name: updated.name, loginEmail, password: wantsNewPassword ? password : '', recipients, isUpdate: true });
+                const ok = results.filter(r => r.sent).map(r => r.to);
+                emailSent = ok.length > 0;
+                emailNote = ok.length ? ` Login details emailed to ${ok.join(', ')}.` : ' But the email could not be sent.';
+            }
         }
         let smsSent;
         if (sendSms === true) {
@@ -302,7 +392,71 @@ router.put('/students/:id/profile', requirePermission('students:edit'), validato
             smsSent = !!sms.sent;
             emailNote += sms.sent ? ' Text message sent.' : ` Text message not sent${sms.reason ? ` (${sms.reason})` : ''}.`;
         }
-        res.json({ success: true, data: { ...updated, password: undefined }, emailSent, smsSent, message: `Profile updated.${emailNote}` });
+        const { password: _pw, refreshToken: _rt, ...safeStudent } = updated;
+        res.json({ success: true, data: safeStudent, emailSent, smsSent, message: `Student updated successfully.${emailNote}` });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+}
+router.put('/students/:id/profile', requirePermission('students:edit'), validators.updateStudentProfile, validate, updateStudentHandler);
+router.patch('/students/:id/profile', requirePermission('students:edit'), validators.updateStudentProfile, validate, updateStudentHandler);
+
+// ============================================================
+// Profile photo (private, stored in R2 under profile-photos/, streamed back
+// through an authenticated route — never a public URL).
+// ============================================================
+function loadScopedStudent(req, res) {
+    const student = db.findById('users', req.params.id);
+    if (!student || student.role !== 'student') {
+        res.status(404).json({ success: false, message: 'Student not found' });
+        return null;
+    }
+    if (!isClassAllowedForUser(req.userData, student.classId)) {
+        res.status(403).json({ success: false, message: "You're not assigned to this student's class." });
+        return null;
+    }
+    return student;
+}
+
+router.post('/students/:id/photo', requirePermission('students:edit'), handleUpload(uploadProfilePhoto.single('photo')), profilePhotoMimeGuard, async (req, res) => {
+    try {
+        const student = loadScopedStudent(req, res);
+        if (!student) { if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key).catch(() => {}); return; }
+        if (!req.file?.r2Key) return res.status(400).json({ success: false, message: 'No photo uploaded' });
+        const oldKey = student.photoKey;
+        db.updateById('users', student._id, { photoKey: req.file.r2Key, photoUpdatedAt: new Date().toISOString() });
+        if (oldKey) await r2Service.deleteObject(oldKey).catch(() => {});
+        logAudit(req, 'edit', 'student', student._id, `Updated profile photo for ${student.name}`);
+        res.json({ success: true, message: 'Profile photo updated' });
+    } catch (error) {
+        if (req.file?.r2Key) await r2Service.deleteObject(req.file.r2Key).catch(() => {});
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.get('/students/:id/photo', requirePermission('students:view'), async (req, res) => {
+    try {
+        const student = loadScopedStudent(req, res);
+        if (!student) return;
+        if (!student.photoKey) return res.status(404).json({ success: false, message: 'No photo' });
+        res.setHeader('Cache-Control', 'private, max-age=300');
+        return r2Service.streamToResponse(student.photoKey, res, { downloadName: 'photo', inline: true });
+    } catch (error) {
+        logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+});
+
+router.delete('/students/:id/photo', requirePermission('students:edit'), async (req, res) => {
+    try {
+        const student = loadScopedStudent(req, res);
+        if (!student) return;
+        if (student.photoKey) await r2Service.deleteObject(student.photoKey).catch(() => {});
+        db.updateById('users', student._id, { photoKey: null, photoUpdatedAt: null });
+        logAudit(req, 'edit', 'student', student._id, `Removed profile photo for ${student.name}`);
+        res.json({ success: true, message: 'Profile photo removed' });
     } catch (error) {
         logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
         res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });

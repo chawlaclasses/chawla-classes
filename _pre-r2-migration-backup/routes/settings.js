@@ -8,7 +8,7 @@
 // NOTE on WhatsApp: there is no WhatsApp Business API account connected
 // here. The config fields (provider/accountSid/authToken/fromNumber) are
 // stored and validated for shape, but actually sending a WhatsApp message
-// requires real credentials from a provider (Twilio, Meta Cloud API, etc.)
+// requires real credentials from a provider (e.g. Meta Cloud API)
 // that only the person deploying this app can obtain — this can't be
 // tested end-to-end without them. The test-email feature, by contrast,
 // uses nodemailer directly and will really send mail once given valid

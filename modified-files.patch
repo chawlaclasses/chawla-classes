@@ -1,0 +1,262 @@
+diff -u a/public/admin/dashboard.html b/public/admin/dashboard.html
+--- a/public/admin/dashboard.html	2026-10-03 12:00:23.306366203 +0000
++++ b/public/admin/dashboard.html	2026-10-03 12:00:23.311665946 +0000
+@@ -1681,6 +1681,7 @@
+ <script src="js/staff.js" defer></script>
+ <script src="js/recruitment.js" defer></script>
+ <script src="js/marketing.js" defer></script>
++<script src="js/campaign-selection.js" defer></script>
+ <script src="js/campaign-recipients.js" defer></script>
+ <script src="js/reviews.js" defer></script>
+ <script src="js/categories.js" defer></script>
+diff -u a/public/admin/js/marketing.js b/public/admin/js/marketing.js
+--- a/public/admin/js/marketing.js	2026-10-03 12:00:23.304985074 +0000
++++ b/public/admin/js/marketing.js	2026-10-03 12:00:23.309815207 +0000
+@@ -8,6 +8,8 @@
+ //   'campaigns' → routes/admin/marketing-campaigns.js
+ //                 (/api/admin/marketing/campaigns/*)
+ //                 Bulk promotional Email/WhatsApp/SMS to leads & students.
++//                 "Custom Recipient Selection" (targetType 'selection') shows
++//                 the checkbox picker from campaign-selection.js.
+ 
+ const MARKETING_TARGET_LABELS = {
+     students: 'All Active Students',
+@@ -412,7 +414,7 @@
+                     <span id="campPreviewResult" style="font-size:13px;color:var(--muted);"></span>
+                 </div>
+ 
+-                <button class="btn btn-gold" onclick="sendCampaign()"><i class="fas fa-paper-plane"></i> Send Campaign</button>
++                <button class="btn btn-gold" id="campSendBtn" onclick="sendCampaign()"><i class="fas fa-paper-plane"></i> Send Campaign</button>
+             </div>
+ 
+             <div class="builder-panel">
+@@ -461,6 +463,11 @@
+         container.innerHTML = `<p style="font-size:12px;color:var(--muted);">Targets every active student.</p>`;
+     } else if (targetType === 'all_leads') {
+         container.innerHTML = `<p style="font-size:12px;color:var(--muted);">Targets every website enquiry and admission-form lead, deduplicated by phone/email.</p>`;
++    } else if (targetType === 'selection') {
++        // Checkbox picker lives in campaign-selection.js (loaded after this file).
++        container.innerHTML = `<div id="campSelectionWrap"></div>`;
++        if (typeof crsRender === 'function') crsRender();
++        else container.innerHTML = `<p style="font-size:12px;color:#f87171;">The recipient picker failed to load. Please refresh the page.</p>`;
+     } else {
+         container.innerHTML = `<p style="font-size:12px;color:var(--muted);">Targets every student, enquiry, and admission-form lead, deduplicated by phone/email.</p>`;
+     }
+@@ -474,6 +481,9 @@
+ 
+ async function previewCampTargets() {
+     const targetType = document.getElementById('campTargetType').value;
++    // A hand-picked list is too long for a query string and must be validated
++    // server-side by id — campaign-selection.js POSTs it.
++    if (targetType === 'selection') return crsPreview();
+     const targetValue = getCampTargetValue();
+     const resultEl = document.getElementById('campPreviewResult');
+     resultEl.textContent = 'Loading…';
+@@ -497,13 +507,33 @@
+ 
+     if (!title || !message) { showToast('Error', 'Title and message are required', 'error'); return; }
+     if (channels.length === 0) { showToast('Error', 'Select at least one channel', 'error'); return; }
+-    if (!confirm(`Send "${title}" via ${channels.join(', ')} to ${MARKETING_TARGET_LABELS[targetType]}? This cannot be undone.`)) return;
+ 
+-    const result = await apiCall('/marketing/campaigns/send', {
+-        method: 'POST',
+-        body: JSON.stringify({ title, message, channels, targetType, targetValue }),
+-    });
+-    if (!result || !result.success) { showToast('Error', result?.message || 'Failed to send campaign', 'error'); return; }
++    // Custom Recipient Selection: send ONLY the ticked people (as id references).
++    let selection;
++    let targetLabel = MARKETING_TARGET_LABELS[targetType];
++    if (targetType === 'selection') {
++        const problem = crsValidate();
++        if (problem) { crsShowMessage(problem); showToast('Error', problem, 'error'); return; }
++        selection = crsPayload();
++        targetLabel = `${crsSelectedCount()} selected recipient(s)`;
++    }
++    if (!confirm(`Send "${title}" via ${channels.join(', ')} to ${targetLabel}? This cannot be undone.`)) return;
++
++    // Disable the button while the request runs so a double-click can't send twice.
++    const sendBtn = document.getElementById('campSendBtn');
++    if (sendBtn) sendBtn.disabled = true;
++
++    const body = { title, message, channels, targetType, targetValue };
++    if (selection) body.selection = selection;
++    const result = await apiCall('/marketing/campaigns/send', { method: 'POST', body: JSON.stringify(body) });
++    if (sendBtn) sendBtn.disabled = false;
++
++    if (!result || !result.success) {
++        if (targetType === 'selection' && result?.code) crsShowMessage(result.message); // inline, next to the list
++        showToast('Error', result?.message || 'Failed to send campaign', 'error');
++        return;
++    }
++    if (targetType === 'selection') crsReset(); // sent — start the next campaign from a clean slate
+     showToast('Success', result.message, 'success');
+     const historyRes = await apiCall('/marketing/campaigns/history');
+     window._marketingHistory = historyRes?.data || [];
+diff -u a/routes/admin/marketing-campaigns.js b/routes/admin/marketing-campaigns.js
+--- a/routes/admin/marketing-campaigns.js	2026-10-03 12:00:23.303651359 +0000
++++ b/routes/admin/marketing-campaigns.js	2026-10-03 12:00:23.308076637 +0000
+@@ -30,6 +30,7 @@
+ const { sendWhatsApp } = require("../../utils/whatsapp");
+ const { sendSms } = require("../../utils/sms");
+ const campaignEngine = require("../../services/campaignEngine");
++const marketingSelection = require("../../services/marketingSelection");
+ 
+ const VALID_CHANNELS = ["email", "whatsapp", "sms"];
+ const TARGET_TYPES = ["students", "enquiries", "admissions", "all_leads", "everyone", "selection"];
+@@ -81,25 +82,87 @@
+     case "everyone":
+       return dedupeContacts([...getStudentContacts(), ...getEnquiryContacts(), ...getAdmissionContacts()]);
+     case "selection":
+-      return dedupeContacts(targetValue || []);
++      // Hand-picked audience: the client only sends { source, id } references.
++      // They are looked up in the database here (services/marketingSelection.js)
++      // — contact details sent by the browser are never used.
++      return marketingSelection.resolveSelection(targetValue).contacts;
+     default:
+       return [];
+   }
+ }
+ 
+-// Preview who a targeting selection would reach, before sending
+-router.get("/targets/preview", requirePermission("marketing:view"), (req, res) => {
++// Preview who a targeting selection would reach, before sending.
++//
++//   GET  /targets/preview?targetType=students            (all non-selection types — unchanged)
++//   POST /targets/preview  { targetType: "selection", selection: { recipients: [...] } }
++//
++// A hand-picked list can be up to MAX_SELECTED ids, far too long for a query
++// string, so the picker uses POST. GET still accepts targetType=selection (a
++// comma-separated "source:id" list in `selection`/`targetValue`) so an old
++// client or a bare ?targetType=selection never gets a 400.
++function handleTargetPreview(req, res) {
+   try {
+-    const { targetType, targetValue } = req.query;
+-    if (!targetType || !TARGET_TYPES.includes(targetType)) {
++    const src = req.method === "GET" ? req.query : (req.body || {});
++    const { targetType, targetValue } = src;
++
++    if (!targetType || typeof targetType !== "string" || !TARGET_TYPES.includes(targetType)) {
+       return res.status(400).json({ success: false, message: "A valid targetType is required" });
+     }
++
++    if (targetType === "selection") {
++      const rawSelection = src.selection !== undefined && src.selection !== null ? src.selection : targetValue;
++      const resolved = marketingSelection.resolveSelection(rawSelection);
++      // A preview *answers a question* ("who would this reach?"). "Nobody yet —
++      // pick someone" is a valid answer, so it is a 200 with a friendly message,
++      // not an error status. (Sending is different — see POST /send.)
++      if (!resolved.ok) {
++        return res.json({
++          success: true,
++          data: { count: 0, contacts: [], valid: false, code: resolved.code, message: resolved.message, summary: resolved.summary },
++        });
++      }
++      return res.json({
++        success: true,
++        data: {
++          valid: true,
++          count: resolved.contacts.length,
++          contacts: resolved.contacts.slice(0, 50),
++          summary: resolved.summary,
++        },
++      });
++    }
++
+     const contacts = resolveMarketingTargets(targetType, targetValue);
+     res.json({ success: true, data: { count: contacts.length, contacts: contacts.slice(0, 50) } });
+   } catch (error) {
+     logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
+     res.status(500).json({ success: false, message: "Something went wrong. Please try again." });
+   }
++}
++
++router.get("/targets/preview", requirePermission("marketing:view"), handleTargetPreview);
++router.post("/targets/preview", requirePermission("marketing:view"), handleTargetPreview);
++
++// Everyone the "Custom Recipient Selection" picker can offer: students,
++// enquiries and admission leads, each as { key, source, name, phone, email }.
++// Filtering/search/paging happen in the browser; the server re-validates the
++// ids on preview and send, so this list is purely a convenience for the UI.
++router.get("/targets/recipients", requirePermission("marketing:view"), (req, res) => {
++  try {
++    const rows = marketingSelection.getDirectory();
++    res.json({
++      success: true,
++      data: {
++        rows,
++        total: rows.length,
++        counts: marketingSelection.countsBySource(rows),
++        maxSelectable: marketingSelection.MAX_SELECTED,
++      },
++    });
++  } catch (error) {
++    logger.error(`${req.method} ${req.originalUrl} failed: ${error.message}`, { stack: error.stack });
++    res.status(500).json({ success: false, message: "Something went wrong. Please try again." });
++  }
+ });
+ 
+ // Compose and send — fans the message out across every selected channel to
+@@ -109,7 +172,7 @@
+ // Center's /communication/send.
+ router.post("/send", requirePermission("marketing:send"), async (req, res) => {
+   try {
+-    const { title, message, channels, targetType, targetValue } = req.body;
++    const { title, message, channels, targetType, targetValue, selection } = req.body;
+ 
+     if (!title || !message || !message.trim()) {
+       return res.status(400).json({ success: false, message: "Title and message are required" });
+@@ -122,9 +185,35 @@
+       return res.status(400).json({ success: false, message: "Select at least one channel" });
+     }
+ 
+-    const contacts = resolveMarketingTargets(targetType, targetValue);
+-    if (contacts.length === 0) {
+-      return res.status(400).json({ success: false, message: "No contacts match this target — nothing was sent" });
++    let contacts;
++    let selectionSummary = null;
++    if (targetType === "selection") {
++      // Only the ids the admin ticked are sent to — re-resolved from the
++      // database here, so a tampered/stale request can't widen the audience.
++      // Validation problems are 422 (well-formed request, unusable selection)
++      // with a `code` the UI can act on.
++      const resolved = marketingSelection.resolveSelection(selection !== undefined && selection !== null ? selection : targetValue);
++      if (!resolved.ok) {
++        return res.status(422).json({ success: false, code: resolved.code, message: resolved.message });
++      }
++      contacts = resolved.contacts;
++      selectionSummary = resolved.summary;
++
++      // Don't "send" to a channel nobody on the list can receive.
++      const reachable = { email: selectionSummary.reach.email, whatsapp: selectionSummary.reach.phone, sms: selectionSummary.reach.phone };
++      if (selectedChannels.every(c => reachable[c] === 0)) {
++        const needs = selectedChannels.every(c => c === "email") ? "an email address" : selectedChannels.every(c => c !== "email") ? "a phone number" : "a phone number or email address";
++        return res.status(422).json({
++          success: false,
++          code: "NO_REACHABLE_RECIPIENTS",
++          message: `None of the selected recipients have ${needs} for the channel(s) you chose. Pick different recipients or another channel.`,
++        });
++      }
++    } else {
++      contacts = resolveMarketingTargets(targetType, targetValue);
++      if (contacts.length === 0) {
++        return res.status(400).json({ success: false, message: "No contacts match this target — nothing was sent" });
++      }
+     }
+ 
+     const channelResults = {
+@@ -157,11 +246,14 @@
+       message: message.trim(),
+       channels: selectedChannels,
+       targetType,
+-      targetValue: targetValue || null,
++      // For hand-picked audiences, history shows "12 selected: 5 students, ..."
++      // instead of a raw id list.
++      targetValue: selectionSummary ? marketingSelection.describeSummary(selectionSummary) : (targetValue || null),
+       recipientCount: contacts.length,
+       channelResults,
+       sentBy: req.userData._id,
+       sentByName: req.userData.name,
++      ...(selectionSummary ? { selectionSummary } : {}),
+     });
+ 
+     logAudit(req, "create", "marketing-campaign", campaign._id, `Sent "${title}" to ${contacts.length} contact(s) via ${selectedChannels.join(", ")}`);

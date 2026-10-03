@@ -96,7 +96,7 @@ router.get('/targets/preview', requirePermission('communication:view'), (req, re
 
 // Compose and send — fans the message out across every selected channel to
 // every resolved recipient, and logs one 'broadcasts' record summarizing
-// the result. Channel failures (e.g. SMTP/Twilio not configured) don't
+// the result. Channel failures (e.g. SMTP/Fast2SMS not configured) don't
 // block the other channels — each is attempted independently.
 router.post('/send', requirePermission('communication:send'), async (req, res) => {
     try {

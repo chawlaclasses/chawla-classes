@@ -68,9 +68,9 @@ function renderStaff() {
                             const subjectsScoped = Array.isArray(s.assignedSubjects) && s.assignedSubjects.length > 0;
                             return `
                                 <tr>
-                                    <td><strong>${escapeHtml(s.name)}</strong></td>
+                                    <td><strong>${escapeHtml(s.name)}</strong>${s.designation ? `<div style="color:var(--muted);font-size:12px;">${escapeHtml(s.designation)}</div>` : ''}</td>
                                     <td>${s.loginId ? `<code>${escapeHtml(s.loginId)}</code>` : '<span style="color:var(--muted);" title="Old account — signs in with email. Edit to set a Login ID.">— (uses email)</span>'}</td>
-                                    <td>${escapeHtml(s.email)}</td>
+                                    <td>${escapeHtml(s.email) || '<span style="color:var(--muted);">—</span>'}</td>
                                     <td>${STAFF_ROLE_LABELS[s.role] || escapeHtml(s.role)}</td>
                                     <td>${s.role === 'teacher' ? (classesScoped ? escapeHtml(s.assignedClasses.map(classNameById).join(', ')) : '<span style="color:var(--muted);">All classes</span>') : '<span style="color:var(--muted);">—</span>'}</td>
                                     <td>${s.role === 'teacher' ? (subjectsScoped ? escapeHtml(s.assignedSubjects.map(subjectNameById).join(', ')) : '<span style="color:var(--muted);">All subjects</span>') : '<span style="color:var(--muted);">—</span>'}</td>
@@ -145,23 +145,43 @@ function toggleAssignedClassesVisibility(roleSelectId, classWrapperId, subjectWr
 }
 
 function showAddStaffModal() {
-    showModal('Add Staff', 'Create a staff account', `
-        <div class="form-group"><label>Name *</label><input type="text" id="staffName" placeholder="e.g., Rohit Chawla"></div>
-        <div class="form-group"><label>Login ID * <span style="color:var(--muted);font-weight:normal;">(custom username used to sign in — e.g. rohit.sir)</span></label>
-            <input type="text" id="staffLoginId" name="cc-new-staff-login" placeholder="e.g. rohit.sir" readonly onfocus="this.removeAttribute('readonly')" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
-        <div class="form-group"><label>Email * <span style="color:var(--muted);font-weight:normal;">(login details will be sent to this email)</span></label><input type="email" id="staffEmail" placeholder="teacher@example.com" autocomplete="off"></div>
-        <div class="form-group"><label>Phone</label><input type="text" id="staffPhone" placeholder="Optional"></div>
-        <div class="form-group"><label>Password *</label><input type="password" id="staffPassword" placeholder="Min 8 characters" autocomplete="new-password"></div>
-        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
-            <input type="checkbox" id="staffSendEmail" checked> Email the Login ID &amp; password to this staff member</label>
-            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;">
-            <input type="checkbox" id="staffSendSms"> Also send as text message (SMS) <span style="color:var(--muted);">(goes to the phone number; needs SMS/Twilio set up)</span></label></div>
-        <div class="form-group"><label>Role *</label>
-            <select id="staffRole" onchange="toggleAssignedClassesVisibility('staffRole', 'staffAssignedClassesWrap', 'staffAssignedSubjectsWrap')">
-                <option value="">Select Role</option>
-                ${Object.entries(STAFF_ROLE_LABELS).map(([v, label]) => `<option value="${v}">${label}</option>`).join('')}
-            </select>
-        </div>
+    showModal('Add Staff', 'Create a staff account — fields marked (Optional) can be left blank', `
+        ${formSection('Basic Details', `
+            <div class="form-group"><label>Name *</label><input type="text" id="staffName" placeholder="e.g., Rohit Chawla" maxlength="100"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Role *</label>
+                    <select id="staffRole" onchange="toggleAssignedClassesVisibility('staffRole', 'staffAssignedClassesWrap', 'staffAssignedSubjectsWrap')">
+                        <option value="">Select Role</option>
+                        ${Object.entries(STAFF_ROLE_LABELS).map(([v, label]) => `<option value="${v}">${label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group"><label>Designation${optionalTag()}</label><input type="text" id="staffDesignation" placeholder="e.g., Senior Maths Teacher" maxlength="100"></div>
+            </div>
+        `)}
+        ${formSection('Contact', `
+            <div class="form-row">
+                <div class="form-group"><label>Mobile Number${optionalTag()}</label><input type="tel" id="staffPhone" placeholder="e.g., 9876543210"></div>
+                <div class="form-group"><label>Email ID${optionalTag()}</label><input type="email" id="staffEmail" placeholder="teacher@example.com" autocomplete="off"></div>
+            </div>
+            <div class="field-hint" style="margin:-6px 0 12px;">Login details are emailed only if an email is entered.</div>
+            <div class="form-group"><label>Address${optionalTag()}</label><textarea id="staffAddress" maxlength="500"></textarea></div>
+        `)}
+        ${formSection('Professional', `
+            <div class="form-row">
+                <div class="form-group"><label>Qualification${optionalTag()}</label><input type="text" id="staffQualification" placeholder="e.g., M.Sc., B.Ed." maxlength="200"></div>
+                <div class="form-group"><label>Joining Date${optionalTag()}</label><input type="date" id="staffJoiningDate"></div>
+            </div>
+            <div class="form-group"><label>Notes${optionalTag()}</label><textarea id="staffNotes" maxlength="2000"></textarea></div>
+        `)}
+        ${formSection('Login', `
+            <div class="form-group"><label>Login ID * <span style="color:var(--muted);font-weight:normal;">(custom username used to sign in — e.g. rohit.sir)</span></label>
+                <input type="text" id="staffLoginId" name="cc-new-staff-login" placeholder="e.g. rohit.sir" readonly onfocus="this.removeAttribute('readonly')" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+            <div class="form-group"><label>Password *</label><input type="password" id="staffPassword" placeholder="Min 8 characters" autocomplete="new-password"></div>
+            <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
+                <input type="checkbox" id="staffSendEmail" checked> Email the Login ID &amp; password to this staff member <span style="color:var(--muted);">(needs an email)</span></label>
+                <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;">
+                <input type="checkbox" id="staffSendSms"> Also send as text message (SMS) <span style="color:var(--muted);">(goes to the mobile number; needs Fast2SMS set up)</span></label></div>
+        `)}
         <div class="form-group" id="staffAssignedClassesWrap" style="display:none;">
             <label>Assigned Classes <span style="color:var(--muted);font-weight:normal;">(leave all unchecked = this teacher sees every class)</span></label>
             ${classCheckboxesHtml('staffClass')}
@@ -171,20 +191,27 @@ function showAddStaffModal() {
             ${subjectCheckboxesHtml('staffSubject')}
         </div>
     `, async () => {
-        const name = document.getElementById('staffName').value.trim();
-        const loginId = document.getElementById('staffLoginId').value.trim();
-        const email = document.getElementById('staffEmail').value.trim();
-        const phone = document.getElementById('staffPhone').value.trim();
+        const val = id => document.getElementById(id).value.trim();
+        const name = val('staffName');
+        const loginId = val('staffLoginId');
+        const email = val('staffEmail');
+        const phone = val('staffPhone');
         const password = document.getElementById('staffPassword').value;
         const role = document.getElementById('staffRole').value;
-        const sendEmail = document.getElementById('staffSendEmail').checked;
+        const sendEmail = document.getElementById('staffSendEmail').checked && !!email;
         const sendSms = document.getElementById('staffSendSms').checked;
-        if (sendSms && !phone) { showToast('Error', 'Enter a phone number to send the text message', 'error'); return; }
-        if (!name || !loginId || !email || !password || !role) { showToast('Error', 'Name, login ID, email, password, and role are required', 'error'); return; }
+        if (sendSms && !phone) { showToast('Error', 'Enter a mobile number to send the text message', 'error'); return; }
+        if (!name || !loginId || !password || !role) { showToast('Error', 'Name, role, login ID and password are required', 'error'); return; }
+        if (!isValidOptionalEmail(email)) { showToast('Error', 'Enter a valid email address (or leave it blank)', 'error'); return; }
         if (!/^[A-Za-z0-9][A-Za-z0-9._@+-]{2,49}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-50 characters using letters, numbers and . _ - @ + only (no spaces)', 'error'); return; }
+        if (password.length < 8) { showToast('Error', 'Password must be at least 8 characters', 'error'); return; }
         const assignedClasses = role === 'teacher' ? collectCheckedClasses('staffClass') : [];
         const assignedSubjects = role === 'teacher' ? collectCheckedSubjects('staffSubject') : [];
-        const result = await apiCall('/staff', { method: 'POST', body: JSON.stringify({ name, loginId, email, phone, password, role, assignedClasses, assignedSubjects, sendEmail, sendSms }) });
+        const result = await apiCall('/staff', { method: 'POST', body: JSON.stringify({
+            name, loginId, email, phone, password, role, assignedClasses, assignedSubjects, sendEmail, sendSms,
+            designation: val('staffDesignation'), qualification: val('staffQualification'), address: val('staffAddress'),
+            joiningDate: val('staffJoiningDate'), notes: val('staffNotes'),
+        }) });
         if (!result || !result.success) { showToast('Error', result?.message || 'Failed to create staff account', 'error'); return; }
         showToast((result.emailSent === false && sendEmail) || result.smsSent === false ? 'Created (some messages not sent)' : 'Success', result.message || 'Staff account created', (result.emailSent === false && sendEmail) || result.smsSent === false ? 'info' : 'success');
         closeModal();
@@ -195,24 +222,51 @@ function showAddStaffModal() {
 function editStaff(id) {
     const item = (window._staff || []).find(s => s._id === id);
     if (!item) return;
-    showModal('Edit Staff', 'Update staff account', `
-        <div class="form-group"><label>Name *</label><input type="text" id="editStaffName" value="${escapeHtml(item.name)}"></div>
-        <div class="form-group"><label>Login ID <span style="color:var(--muted);font-weight:normal;">(used to sign in)</span></label>
-            <input type="text" id="editStaffLoginId" oninput="document.getElementById('editStaffSendEmail').checked=true" name="cc-edit-staff-login" readonly onfocus="this.removeAttribute('readonly')" value="${escapeHtml(item.loginId || '')}" placeholder="${item.loginId ? '' : 'Not set — currently signs in with email. Set one here.'}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
-        <div class="form-group"><label>Email <span style="color:var(--muted);font-weight:normal;">(where login details are sent)</span></label><input type="email" id="editStaffEmail" oninput="document.getElementById('editStaffSendEmail').checked=true" value="${escapeHtml(item.email)}" autocomplete="off"></div>
-        <div class="form-group"><label>Phone</label><input type="text" id="editStaffPhone" value="${escapeHtml(item.phone || '')}"></div>
-        <div class="form-group"><label>New Password <span style="color:var(--muted);font-weight:normal;">(leave blank to keep the current password)</span></label>
-            <input type="password" id="editStaffPassword" oninput="document.getElementById('editStaffSendEmail').checked=true" placeholder="Min 8 characters" autocomplete="new-password">
-        </div>
-        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
-            <input type="checkbox" id="editStaffSendEmail"> Email the updated login details to this staff member <span style="color:var(--muted);">(password is included only if you enter a new password above)</span></label>
-            <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;">
-            <input type="checkbox" id="editStaffSendSms"> Also send as text message (SMS) <span style="color:var(--muted);">(goes to the phone number; needs SMS/Twilio set up)</span></label></div>
-        <div class="form-group"><label>Role *</label>
-            <select id="editStaffRole" onchange="toggleAssignedClassesVisibility('editStaffRole', 'editStaffAssignedClassesWrap', 'editStaffAssignedSubjectsWrap')">
-                ${Object.entries(STAFF_ROLE_LABELS).map(([v, label]) => `<option value="${v}" ${v === item.role ? 'selected' : ''}>${label}</option>`).join('')}
-            </select>
-        </div>
+    const isActive = item.isActive !== false;
+    showModal('Edit Staff', 'Update staff account — fields marked (Optional) can be left blank', `
+        ${formSection('Basic Details', `
+            ${profilePhotoFieldHtml('editStaff', item.name)}
+            <div class="form-group"><label>Name *</label><input type="text" id="editStaffName" value="${escapeHtml(item.name)}" maxlength="100"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Role *</label>
+                    <select id="editStaffRole" onchange="toggleAssignedClassesVisibility('editStaffRole', 'editStaffAssignedClassesWrap', 'editStaffAssignedSubjectsWrap')">
+                        ${Object.entries(STAFF_ROLE_LABELS).map(([v, label]) => `<option value="${v}" ${v === item.role ? 'selected' : ''}>${label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group"><label>Status *</label>
+                    <select id="editStaffStatus">
+                        <option value="active" ${isActive ? 'selected' : ''}>Active</option>
+                        <option value="inactive" ${isActive ? '' : 'selected'}>Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Designation${optionalTag()}</label><input type="text" id="editStaffDesignation" value="${escapeHtml(item.designation || '')}" placeholder="e.g., Senior Maths Teacher" maxlength="100"></div>
+        `)}
+        ${formSection('Contact', `
+            <div class="form-row">
+                <div class="form-group"><label>Mobile Number *</label><input type="tel" id="editStaffPhone" value="${escapeHtml(item.phone || '')}" placeholder="e.g., 9876543210"></div>
+                <div class="form-group"><label>Email ID${optionalTag()}</label><input type="email" id="editStaffEmail" oninput="document.getElementById('editStaffSendEmail').checked=true" value="${escapeHtml(item.email || '')}" autocomplete="off" placeholder="teacher@example.com"></div>
+            </div>
+            <div class="form-group"><label>Address${optionalTag()}</label><textarea id="editStaffAddress" maxlength="500">${escapeHtml(item.address || '')}</textarea></div>
+        `)}
+        ${formSection('Professional', `
+            <div class="form-row">
+                <div class="form-group"><label>Qualification${optionalTag()}</label><input type="text" id="editStaffQualification" value="${escapeHtml(item.qualification || '')}" maxlength="200"></div>
+                <div class="form-group"><label>Joining Date${optionalTag()}</label><input type="date" id="editStaffJoiningDate" value="${escapeHtml(item.joiningDate || '')}"></div>
+            </div>
+            <div class="form-group"><label>Notes${optionalTag()}</label><textarea id="editStaffNotes" maxlength="2000">${escapeHtml(item.notes || '')}</textarea></div>
+        `)}
+        ${formSection('Login', `
+            <div class="form-group"><label>Login ID <span style="color:var(--muted);font-weight:normal;">(used to sign in)</span></label>
+                <input type="text" id="editStaffLoginId" oninput="document.getElementById('editStaffSendEmail').checked=true" name="cc-edit-staff-login" readonly onfocus="this.removeAttribute('readonly')" value="${escapeHtml(item.loginId || '')}" placeholder="${item.loginId ? '' : 'Not set — currently signs in with email. Set one here.'}" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+            <div class="form-group"><label>New Password${optionalTag()} <span style="color:var(--muted);font-weight:normal;">(leave blank to keep the current password)</span></label>
+                <input type="password" id="editStaffPassword" oninput="document.getElementById('editStaffSendEmail').checked=true" placeholder="Min 8 characters" autocomplete="new-password">
+            </div>
+            <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
+                <input type="checkbox" id="editStaffSendEmail"> Email the updated login details to this staff member <span style="color:var(--muted);">(needs an email; password is included only if you enter a new one)</span></label>
+                <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;">
+                <input type="checkbox" id="editStaffSendSms"> Also send as text message (SMS) <span style="color:var(--muted);">(goes to the mobile number; needs Fast2SMS set up)</span></label></div>
+        `)}
         <div class="form-group" id="editStaffAssignedClassesWrap" style="display:${item.role === 'teacher' ? 'block' : 'none'};">
             <label>Assigned Classes <span style="color:var(--muted);font-weight:normal;">(leave all unchecked = this teacher sees every class)</span></label>
             ${classCheckboxesHtml('editStaffClass', item.assignedClasses || [])}
@@ -222,29 +276,52 @@ function editStaff(id) {
             ${subjectCheckboxesHtml('editStaffSubject', item.assignedSubjects || [])}
         </div>
     `, async () => {
-        const name = document.getElementById('editStaffName').value.trim();
-        const phone = document.getElementById('editStaffPhone').value.trim();
+        const val = id => document.getElementById(id).value.trim();
+        const name = val('editStaffName');
+        const phone = val('editStaffPhone');
         const role = document.getElementById('editStaffRole').value;
         const password = document.getElementById('editStaffPassword').value;
-        const loginId = document.getElementById('editStaffLoginId').value.trim();
-        const email = document.getElementById('editStaffEmail').value.trim();
-        const sendEmail = document.getElementById('editStaffSendEmail').checked;
+        const loginId = val('editStaffLoginId');
+        const email = val('editStaffEmail');
+        const sendEmail = document.getElementById('editStaffSendEmail').checked && !!email;
         const sendSms = document.getElementById('editStaffSendSms').checked;
         if (!name || !role) { showToast('Error', 'Name and role are required', 'error'); return; }
-        if (!email) { showToast('Error', 'Email is required', 'error'); return; }
+        // Mobile is required, but an older account that never had one can still be saved without.
+        if (!phone && item.phone) { showToast('Error', 'Mobile number is required', 'error'); return; }
+        if (sendSms && !phone) { showToast('Error', 'Enter a mobile number to send the text message', 'error'); return; }
+        if (!isValidOptionalEmail(email)) { showToast('Error', 'Enter a valid email address (or leave it blank)', 'error'); return; }
+        if (!email && item.email && !loginId && !item.loginId) { showToast('Error', 'This account signs in with its email — set a Login ID before removing the email', 'error'); return; }
         if (loginId && !/^[A-Za-z0-9][A-Za-z0-9._@+-]{2,49}$/.test(loginId)) { showToast('Error', 'Login ID must be 3-50 characters using letters, numbers and . _ - @ + only (no spaces)', 'error'); return; }
         if (password && password.length < 8) { showToast('Error', 'Password must be at least 8 characters', 'error'); return; }
         const assignedClasses = role === 'teacher' ? collectCheckedClasses('editStaffClass') : [];
         const assignedSubjects = role === 'teacher' ? collectCheckedSubjects('editStaffSubject') : [];
-        const body = { name, phone, role, assignedClasses, assignedSubjects, email, sendEmail, sendSms };
+        const body = {
+            name, phone, role, email, assignedClasses, assignedSubjects, sendEmail, sendSms,
+            isActive: document.getElementById('editStaffStatus').value === 'active',
+            designation: val('editStaffDesignation'), qualification: val('editStaffQualification'),
+            address: val('editStaffAddress'), joiningDate: val('editStaffJoiningDate'), notes: val('editStaffNotes'),
+        };
         if (loginId && loginId.toLowerCase() !== (item.loginId || '').toLowerCase()) body.loginId = loginId;
         if (password) body.password = password; // blank = unchanged
-        const result = await apiCall(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(body) });
-        if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update staff account', 'error'); return; }
-        showToast('Success', result.message || 'Staff account updated', 'success');
-        closeModal();
-        loadStaff();
+
+        const saveBtn = document.getElementById('modalSaveBtn');
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+        try {
+            const result = await apiCall(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+            if (!result || !result.success) { showToast('Error', result?.message || 'Failed to update staff account', 'error'); return; }
+            const photo = await applyProfilePhotoChange('editStaff', `/staff/${id}/photo`);
+            if (!photo.ok) {
+                showToast('Saved (photo not updated)', `Details were saved, but the photo failed: ${photo.message}`, 'info');
+            } else {
+                showToast('Success', result.message || 'Staff account updated', 'success');
+            }
+            closeModal();
+            loadStaff();
+        } finally {
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        }
     });
+    initProfilePhoto('editStaff', `/staff/${id}/photo`, item.hasPhoto);
 }
 
 async function toggleStaffActive(id) {

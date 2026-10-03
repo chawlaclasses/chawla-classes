@@ -50,7 +50,7 @@ class BulkMessagingService {
     // claim the launch atomically so a double-click can't launch twice
     const claimed = await Campaign.findOneAndUpdate(
       { _id: c._id, status: { $in: ["draft", "preview"] } },
-      { status: "running", startedAt: new Date(), approvedBy: user, "stats.total": recipients.length }, { new: true });
+      { status: "running", startedAt: new Date(), approvedBy: user, "stats.total": recipients.length }, { returnDocument: "after" });
     if (!claimed) throw new MessagingError("Campaign already launched", { code: "BAD_STATE", status: 409 });
 
     let queued = 0, skipped = 0;

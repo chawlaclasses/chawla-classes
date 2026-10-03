@@ -39,7 +39,7 @@ module.exports = (c) => ({
 
   retry: handle(async (req) => {
     const r = await NotificationLog.findOneAndUpdate({ messageId: req.params.messageId, status: STATUS.FAILED, sensitive: false },
-      { $set: { status: STATUS.QUEUED, nextAttemptAt: new Date(), attempts: 0 }, $push: { events: { status: "queued", note: `manual retry by ${adminId(req)}` } } }, { new: true });
+      { $set: { status: STATUS.QUEUED, nextAttemptAt: new Date(), attempts: 0 }, $push: { events: { status: "queued", note: `manual retry by ${adminId(req)}` } } }, { returnDocument: "after" });
     if (!r) throw new MessagingError("Only failed, non-OTP messages can be retried", { code: "BAD_STATE", status: 409 });
     return { messageId: r.messageId, status: r.status };
   }),
@@ -69,7 +69,7 @@ module.exports = (c) => ({
       const phone = normalizePhone(req.body.phone, c.config.defaultCountryCode);
       if (!phone) throw new MessagingError("Invalid phone", { code: "INVALID_PHONE" });
       return OptOut.findOneAndUpdate({ phone, channel: req.body.channel || "all" },
-        { phone, channel: req.body.channel || "all", scope: req.body.scope || "promotional", reason: req.body.reason, source: "admin" }, { upsert: true, new: true });
+        { phone, channel: req.body.channel || "all", scope: req.body.scope || "promotional", reason: req.body.reason, source: "admin" }, { upsert: true, returnDocument: "after" });
     }),
     remove: handle(async (req) => { await OptOut.deleteOne({ _id: req.params.id }); return { removed: true }; }),
   },

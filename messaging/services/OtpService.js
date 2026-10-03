@@ -83,7 +83,7 @@ class OtpService {
     // atomic attempt counter — parallel guesses can't bypass the cap
     const upd = await OtpRequest.findOneAndUpdate(
       { _id: rec._id, consumed: false, attempts: { $lt: rec.maxAttempts } },
-      { $inc: { attempts: 1 } }, { new: true });
+      { $inc: { attempts: 1 } }, { returnDocument: "after" });
     if (!upd) {
       await OtpRequest.updateOne({ _id: rec._id }, { consumed: true });
       throw new MessagingError("Too many wrong attempts. Request a new OTP.", { code: "OTP_LOCKED", status: 429 });

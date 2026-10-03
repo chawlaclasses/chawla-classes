@@ -22,7 +22,8 @@ function getConfig(env = process.env) {
 
     // Which provider handles which channel. Unknown names fail fast at boot.
     providers: {
-      [CHANNELS.SMS]: (env.MESSAGING_SMS_PROVIDER || "mock").toLowerCase(),
+      // Fast2SMS is the SMS provider; falls back to "mock" only when no API key is configured (dev/test).
+      [CHANNELS.SMS]: (env.MESSAGING_SMS_PROVIDER || (env.FAST2SMS_API_KEY ? "fast2sms" : "mock")).toLowerCase(),
       [CHANNELS.WHATSAPP]: (env.MESSAGING_WHATSAPP_PROVIDER || "mock").toLowerCase(),
     },
 

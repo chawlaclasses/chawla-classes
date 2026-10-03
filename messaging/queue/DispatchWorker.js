@@ -41,7 +41,7 @@ class DispatchWorker {
     return NotificationLog.findOneAndUpdate(
       { status: STATUS.QUEUED, nextAttemptAt: { $lte: new Date() } },
       { $set: { status: STATUS.PROCESSING, lockedAt: new Date(), lockedBy: this.id } },
-      { sort: { priority: 1, nextAttemptAt: 1 }, new: true });
+      { sort: { priority: 1, nextAttemptAt: 1 }, returnDocument: "after" });
   }
 
   async tick() {

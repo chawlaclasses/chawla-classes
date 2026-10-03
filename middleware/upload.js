@@ -289,6 +289,24 @@ const uploadStudentDocument = multer({
   },
 });
 
+// ── uploadProfilePhoto — student / staff profile photo (PRIVATE, R2) ───────────
+// Stored under "profile-photos/" and only readable through the authenticated
+// GET .../photo routes (routes/admin/student-profile.js, routes/staff.js),
+// which stream it through the server — same access model as student documents.
+const MAX_PROFILE_PHOTO_SIZE = 3 * 1024 * 1024; // 3MB
+
+const uploadProfilePhoto = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: MAX_PROFILE_PHOTO_SIZE, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_PHOTO_EXTENSIONS.has(ext)) {
+      return cb(new Error("Profile photo must be a PNG or JPG image"));
+    }
+    cb(null, true);
+  },
+});
+
 // ── uploadHomeworkAttachment — admin-attached homework material (PUBLIC) ──────
 // Goes to R2 under "homework-attachments/" with a public URL (this
 // category was already served with no auth via /homework-files, so no
@@ -356,6 +374,20 @@ const uploadDoubtAttachment = multer({
 const homeworkAttachmentMimeGuard = mimeGuard(ALLOWED_HOMEWORK_MIMES, "homework-attachments");
 const homeworkSubmissionMimeGuard = mimeGuard(ALLOWED_HOMEWORK_MIMES, "homework-submissions");
 const studentDocumentMimeGuard = mimeGuard(ALLOWED_NOTE_MIMES, "student-documents");
+const profilePhotoMimeGuard = mimeGuard(ALLOWED_PHOTO_MIMES, "profile-photos");
+
+// Wraps a multer .single() middleware so upload errors (wrong type, too big)
+// come back as a clean JSON 400 instead of falling through to the global
+// error handler.
+function handleUpload(multerMiddleware) {
+  return (req, res, next) => {
+    multerMiddleware(req, res, (err) => {
+      if (!err) return next();
+      const message = err.code === "LIMIT_FILE_SIZE" ? "Photo is too large (max 3 MB)" : err.message || "Upload failed";
+      res.status(400).json({ success: false, message });
+    });
+  };
+}
 
 // Doubts can arrive with an image, a voice note, both, or (rarely) neither if
 // the request only carries text — mimeGuard() (above) only looks at a
@@ -452,6 +484,9 @@ module.exports = {
   doubtMimeGuard,
   facultyApplicationMimeGuard,
   studentDocumentMimeGuard,
+  uploadProfilePhoto,
+  profilePhotoMimeGuard,
+  handleUpload,
   uploadFileToR2, // reused by routes/settings.js for branding logo/favicon uploads
   diskStorage, // exposed for routes/settings.js's own multer instance — no longer used there after this migration (see routes/settings.js), kept exported in case anything else relies on it
 

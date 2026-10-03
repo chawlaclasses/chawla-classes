@@ -72,3 +72,9 @@ A premium, production-ready learning management system for coaching institutes. 
 - Caching strategy
 
 ## 🏗️ Architecture
+
+## Messaging providers
+
+- **SMS:** Fast2SMS only. Set `FAST2SMS_API_KEY` (see `.env.example`). It powers OTPs, notifications, Marketing Campaigns, the Communication Center and credential texts. Without a key, SMS sends are skipped and logged.
+- **WhatsApp:** Meta WhatsApp Cloud API via `WHATSAPP_PHONE_NUMBER_ID` / `WHATSAPP_ACCESS_TOKEN` (optional).
+- No other SMS provider or fallback is configured.

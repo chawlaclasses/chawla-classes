@@ -20,7 +20,7 @@ router.post('/device-token', requireStudent, async (req, res) => {
     await DeviceToken.findOneAndUpdate(
       { token },
       { $set: { userId: uid(req), role: 'student', platform, lastSeenAt: new Date() } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
     console.log(`[FCM] token registered user=${uid(req)} platform=${platform} len=${token.length}`);
     res.json({ success: true });

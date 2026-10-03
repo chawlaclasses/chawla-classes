@@ -21,7 +21,7 @@ const DEFAULTS = {
         host: '', port: 587, secure: false, user: '', pass: '', fromName: '', fromAddress: ''
     },
     whatsapp: {
-        provider: 'twilio', accountSid: '', authToken: '', fromNumber: ''
+        provider: 'whatsapp_cloud', accountSid: '', authToken: '', fromNumber: ''
     },
     backup: {
         autoBackupEnabled: false, schedule: 'daily' // 'daily' | 'weekly'
@@ -43,6 +43,12 @@ const DEFAULTS = {
     googleReviews: {
         enabled: false, profileUrl: '', rating: null, reviewCount: null, placeId: '', updatedAt: null
     },
+    // Per-message cost used by Marketing -> Campaigns to estimate (and record)
+    // what a send will cost, in INR. SMS cost is per SMS *unit* (a long
+    // message is split into several units — see services/campaignChannels.js).
+    campaignCosts: {
+        sms: 0.20, whatsapp: 0, email: 0
+    },
     maintenanceMode: false,
     maintenanceMessage: 'We are performing scheduled maintenance. Please check back soon.'
 };
@@ -63,7 +69,8 @@ function getSettings() {
         whatsapp: { ...DEFAULTS.whatsapp, ...(existing.whatsapp || {}) },
         backup: { ...DEFAULTS.backup, ...(existing.backup || {}) },
         socialLinks: { ...DEFAULTS.socialLinks, ...(existing.socialLinks || {}) },
-        googleReviews: { ...DEFAULTS.googleReviews, ...(existing.googleReviews || {}) }
+        googleReviews: { ...DEFAULTS.googleReviews, ...(existing.googleReviews || {}) },
+        campaignCosts: { ...DEFAULTS.campaignCosts, ...(existing.campaignCosts || {}) }
     };
 }
 
@@ -76,7 +83,8 @@ function updateSettings(patch) {
         whatsapp: { ...current.whatsapp, ...(patch.whatsapp || {}) },
         backup: { ...current.backup, ...(patch.backup || {}) },
         socialLinks: { ...current.socialLinks, ...(patch.socialLinks || {}) },
-        googleReviews: { ...current.googleReviews, ...(patch.googleReviews || {}) }
+        googleReviews: { ...current.googleReviews, ...(patch.googleReviews || {}) },
+        campaignCosts: { ...current.campaignCosts, ...(patch.campaignCosts || {}) }
     };
     delete merged._id;
     const existing = db.findById('app-settings', SETTINGS_ID);

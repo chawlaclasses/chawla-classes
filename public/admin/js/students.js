@@ -89,7 +89,7 @@ function renderStudentsTable(list) {
                             <td><strong>${escapeHtml(s.name)}</strong></td>
                             <td>${escapeHtml(s.rollNumber) || '-'}</td>
                             <td>${escapeHtml(s.phone) || '-'}</td>
-                            <td>${escapeHtml(s.email)}</td>
+                            <td>${escapeHtml(s.email) || '<span style="color:var(--muted);">—</span>'}</td>
                             <td>${escapeHtml(s.class)}</td>
                             <td>${s.stream ? `<span class="status-badge status-draft">${escapeHtml(s.stream)}</span>` : (s.classHasStreams ? '<span class="status-badge status-inactive" title="Stream not selected yet">Not set</span>' : '<span style="color:var(--muted);">—</span>')}</td>
                             <td>${s.feeStatus === 'paid' ? '<span class="status-badge status-active">Paid</span>' : s.feeStatus === 'due' ? '<span class="status-badge status-inactive">Due</span>' : '<span class="status-badge status-draft">—</span>'}</td>
@@ -269,13 +269,14 @@ function addStudentModal() {
     const classOptions = window._allClasses.map(c => `<option value="${c._id}">${escapeHtml(c.displayName || c.name)}</option>`).join('');
     showModal('Add Student', 'Create a new student account', `
         <div class="form-group"><label>Name *</label><input type="text" id="newStudentName" placeholder="Full name"></div>
-        <div class="form-group"><label>Email *</label><input type="email" id="newStudentEmail" placeholder="student@example.com" autocomplete="off"></div>
-        <div class="form-group"><label>Password *</label><input type="password" id="newStudentPassword" placeholder="At least 6 characters" autocomplete="new-password"></div>
+        <div class="form-group"><label>Email ID <span class="opt-tag">(Optional)</span></label><input type="email" id="newStudentEmail" placeholder="student@example.com" autocomplete="off">
+            <div class="field-hint">Students sign in with their email. You can leave it blank and add one later from Edit Student.</div></div>
+        <div class="form-group"><label>Password <span class="opt-tag">(required only if you enter an email)</span></label><input type="password" id="newStudentPassword" placeholder="At least 6 characters" autocomplete="new-password"></div>
         <div class="form-group"><label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
             <input type="checkbox" id="newStudentSendEmail" checked> Email the login details (email &amp; password) to the student</label>
             <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:4px;">
-            <input type="checkbox" id="newStudentSendSms"> Also send as text message (SMS) to the student's phone <span style="color:var(--muted);">(goes to the phone number; needs SMS/Twilio set up)</span></label></div>
-        <div class="form-group"><label>Also send to parent email <span style="color:var(--muted);font-weight:normal;">(optional)</span></label>
+            <input type="checkbox" id="newStudentSendSms"> Also send as text message (SMS) to the student's phone <span style="color:var(--muted);">(goes to the phone number; needs Fast2SMS set up)</span></label></div>
+        <div class="form-group"><label>Also send to parent email <span class="opt-tag">(Optional)</span></label>
             <input type="email" id="newStudentParentEmail" placeholder="parent@example.com" autocomplete="off"></div>
         <div class="form-row">
             <div class="form-group"><label>Phone</label><input type="text" id="newStudentPhone" placeholder="Optional"></div>
@@ -299,8 +300,9 @@ function addStudentModal() {
         const parentEmail = document.getElementById('newStudentParentEmail').value.trim();
 
         if (!name) { showToast('Error', 'Name is required', 'error'); return; }
-        if (!email) { showToast('Error', 'Email is required', 'error'); return; }
-        if (!password || password.length < 6) { showToast('Error', 'Password must be at least 6 characters', 'error'); return; }
+        if (!isValidOptionalEmail(email)) { showToast('Error', 'Enter a valid email address (or leave it blank)', 'error'); return; }
+        if (email && (!password || password.length < 6)) { showToast('Error', 'Password must be at least 6 characters', 'error'); return; }
+        if (!email && password && password.length < 6) { showToast('Error', 'Password must be at least 6 characters', 'error'); return; }
         const chosenClass = (window._allClasses || []).find(c => c._id === classId);
         if (chosenClass && chosenClass.streams && chosenClass.streams.length && !stream) { showToast('Error', 'Please select a stream for this class', 'error'); return; }
 

@@ -1439,11 +1439,12 @@ document.addEventListener('keydown', (e) => {
         }
     }
     
-    // Escape - Clear selection / close modal
+    // Escape - Clear selection. Closing the modal on Esc is owned by AdminModal
+    // (ui-helpers.js) so Esc and overlay-click share one code path; here we only
+    // make sure the same Esc press doesn't ALSO clear the selection behind it.
     if (e.key === 'Escape') {
-        if (modalIsOpen) {
-            closeModal();
-        } else if (selectedQuestionIds.size > 0) {
+        if (modalIsOpen || e.defaultPrevented) return;
+        if (selectedQuestionIds.size > 0) {
             clearSelection();
             showToast('Selection Cleared', '', 'info');
         }

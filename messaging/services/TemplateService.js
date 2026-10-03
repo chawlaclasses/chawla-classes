@@ -49,7 +49,7 @@ class TemplateService {
   }
 
   async setActive(id, isActive) {
-    const doc = await MessageTemplate.findByIdAndUpdate(id, { isActive }, { new: true });
+    const doc = await MessageTemplate.findByIdAndUpdate(id, { isActive }, { returnDocument: "after" });
     if (!doc) throw new MessagingError("Template not found", { code: "NOT_FOUND", status: 404 });
     this.invalidate();
     return doc;

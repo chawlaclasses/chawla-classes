@@ -22,7 +22,7 @@ const db = require('../../services/jsonDb');
 const logger = require('../../utils/logger');
 const { logAudit } = require('../../utils/auditLog');
 const { requirePermission } = require('../../middleware/permissions');
-const { normalizeEmail } = require('../../utils/helpers');
+const { parseOptionalEmail } = require('../../utils/profileFields');
 const { isClassAllowedForUser } = require('../../config/permissions');
 const { sendStudentCredentials, sendStudentSms } = require('../../utils/studentMail');
 const { resolveStudentStream, classHasStreams, normalizeStream, resolveStudentSubjects } = require('../../utils/streams');
@@ -40,13 +40,18 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
         const { name, email, password, phone, rollNumber, classId, batch, stream, subjectIds, sendEmail, parentEmail, sendSms } = req.body;
 
         if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Name is required' });
-        if (!email || !email.trim()) return res.status(400).json({ success: false, message: 'Email is required' });
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return res.status(400).json({ success: false, message: 'Enter a valid email address' });
-        if (!password || password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
-
-        const normalizedEmail = normalizeEmail(email);
-        const existing = db.findOne('users', { email: normalizedEmail });
-        if (existing) return res.status(409).json({ success: false, message: 'A user with this email already exists' });
+        // Email is OPTIONAL. Blank = a record with no login email (the student
+        // can be given one later via Edit). Non-blank must be well-formed + unique.
+        const emailP = parseOptionalEmail(email);
+        if (emailP.error) return res.status(400).json({ success: false, message: emailP.error });
+        const normalizedEmail = emailP.value || '';
+        if (normalizedEmail) {
+            if (!password || password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+            const existing = db.findOne('users', { email: normalizedEmail });
+            if (existing) return res.status(409).json({ success: false, message: 'A user with this email already exists' });
+        } else if (password && password.length < 6) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        }
 
         let cls = null;
         if (classId) {
@@ -69,7 +74,8 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
             chosenSubjectIds = subjCheck.subjectIds;
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // No email => nothing to sign in with yet; store an unguessable password so the record is inert until an email + password are set.
+        const hashedPassword = await bcrypt.hash(normalizedEmail && password ? password : require('crypto').randomBytes(24).toString('hex'), 10);
 
         const student = db.insertOne('users', {
             name: name.trim(),
@@ -86,13 +92,13 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
             createdBy: req.user?.id || 'admin',
         });
 
-        logAudit(req, 'create', 'student', student._id, `Created student "${student.name}" (${student.email})${cls ? ` in ${cls.displayName || cls.name}` : ''}${streamCheck.stream ? ` [${streamCheck.stream}]` : ''}`);
+        logAudit(req, 'create', 'student', student._id, `Created student "${student.name}" (${student.email || 'no email'})${cls ? ` in ${cls.displayName || cls.name}` : ''}${streamCheck.stream ? ` [${streamCheck.stream}]` : ''}`);
 
         // Email the login details (default ON). Goes to the student's email and,
         // if given, a parent/other email as well.
         let emailNote = '';
         let emailSent = undefined;
-        if (sendEmail !== false) {
+        if (sendEmail !== false && normalizedEmail) {
             const recipients = [normalizedEmail];
             const pe = typeof parentEmail === 'string' ? parentEmail.trim().toLowerCase() : '';
             if (pe && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pe) && pe !== normalizedEmail) recipients.push(pe);
@@ -106,7 +112,7 @@ router.post('/students', requirePermission('students:create'), async (req, res) 
 
         // Optional text message (SMS) to the student's phone.
         let smsSent;
-        if (sendSms === true) {
+        if (sendSms === true && normalizedEmail) {
             const sms = await sendStudentSms(req, { name: student.name, loginEmail: normalizedEmail, password, phone: student.phone, isUpdate: false });
             smsSent = !!sms.sent;
             emailNote += sms.sent ? ' Text message sent.' : ` Text message not sent${sms.reason ? ` (${sms.reason})` : ''}.`;

@@ -374,6 +374,34 @@ app.set('trust proxy', 1);
   const STATIC_ASSET_OPTS = { maxAge: "1d", etag: true, lastModified: true };
   const IMMUTABLE_ASSET_OPTS = { maxAge: "1y", immutable: true, etag: true, lastModified: true };
 
+  // ── Admin dashboard: flag hard refreshes ─────────────────────────────────
+  // The dashboard remembers the open section across a normal refresh (F5) but
+  // must reset to Dashboard on a hard refresh (Ctrl+F5 / Ctrl+Shift+R). JS in the
+  // page cannot tell the two apart; the browser's request can: a normal reload
+  // revalidates ("Cache-Control: max-age=0") while a hard reload bypasses the
+  // cache ("Cache-Control: no-cache", plus "Pragma: no-cache"). We hand that to
+  // public/admin/js/init.js as a one-shot, 10-second, JS-readable cookie.
+  // Must be registered BEFORE express.static() below, which would otherwise
+  // answer the request first. (If a CDN/proxy answers hard reloads from its own
+  // cache, this never sees them and hard refresh simply behaves like F5.)
+  app.get("/admin/dashboard.html", (req, res, next) => {
+    const cacheControl = String(req.headers["cache-control"] || "")
+      .toLowerCase()
+      .split(",")
+      .map((d) => d.trim());
+    const pragma = String(req.headers.pragma || "").toLowerCase();
+    if (cacheControl.includes("no-cache") || pragma.includes("no-cache")) {
+      res.cookie("cc_hard_reload", "1", {
+        maxAge: 10 * 1000,
+        path: "/admin",
+        sameSite: "lax",
+        httpOnly: false, // init.js must be able to read (and then clear) it
+        secure: req.secure,
+      });
+    }
+    next();
+  });
+
   app.use(express.static(path.join(__dirname, "public"), STATIC_ASSET_OPTS));
   app.use("/images", express.static(path.join(STATIC_DIR, "images"), STATIC_ASSET_OPTS));
   app.get("/style.css", (_req, res) => res.sendFile(path.join(STATIC_DIR, "style.css")));
